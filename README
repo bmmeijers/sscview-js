@@ -1,0 +1,47 @@
+## Development
+
+### Using ES6 modules with node
+
+node does not support ES6 modules at the moment of writing (2019-02-01).
+However, John-David Dalton [1], the developer of lodash, made it possible
+to use esm modules inside regular .js files with node, by making a 'userland'
+solution [2].
+
+This means that we can use esm modules (with import and export inside the 
+javascript files) *and* we can run node on a set of unit tests directly,
+without converting the code when doing that. For example:
+
+$ node -r esm test/test.rect.js
+
+Now works directly.
+
+[1] https://github.com/jdalton
+[2] https://github.com/standard-things/esm
+
+
+### Producing a javascript bundle for use in a browser
+
+As ES6 modules are not yet available in the browser, and many modules would
+lead to overhead (download many files over a network connection), it is common
+practice to make a bundle, i.e. one javascript file with content from all
+modules.
+
+One of the premises of ES6 modules is that (as we know completely beforehand
+what content is available), we can only preserve in the bundle what we need
+for running our javascript program.
+
+Many tools exists in the javascript ecosystem that allow to bundle the
+modules. In the process of bundling, it is also quite common to transpile
+the javascript code to a slightly older version, so that more (older) browsers
+are supported (even if the code in question uses new features/syntax).
+
+One tool that can be used for making a javascript bundle is `rollup`. `rollup`
+can furthermore be extended with plugins. `buble` is the plugin that transpiles
+code from ES6 to ES5 (rewriting the new syntax into old syntax, understood by
+slightly older browsers, that still exist out there).
+
+In this project `rollup` is used. The project was started from the template [1].
+[2] gives more information on why these templates were created.
+
+[1] https://voorhoede.github.io/front-end-tooling-recipes/rollup-bundle-and-watch/
+[2] https://www.voorhoede.nl/en/blog/fighting-front-end-fatigue-with-tooling-recipes/
