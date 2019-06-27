@@ -268,7 +268,7 @@ class TileContent {
     }
 
     _upload(gl, mesh) {
-        this.buffer = gl.createBuffer();
+        this.buffer = gl.createBuffer();  //buffer is a reference to the memory location on the GPU
         // bind buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
         // upload content to the GPU
