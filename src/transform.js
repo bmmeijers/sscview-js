@@ -90,7 +90,7 @@ class Transform
         // aspect ratio
         let aspect = width / height
         // size in real world of viewport
-        let dpi = 92. 
+        let dpi = 96. 
         // FIXME Use devicePixelRatio here?
         let inch = 1.0 / 39.37
         // # 0.0254 # in meter
@@ -105,7 +105,8 @@ class Transform
         // the size of the viewport 
         this.viewport = new Rectangle(0, 0, width, height)
         // we arrive at what part of the world then is visible
-        let visible_world = this.visibleWorld() //new Rectangle(xmin, ymin, xmax, ymax)
+        // let visible_world = this.visibleWorld() //
+        let visible_world = new Rectangle(xmin, ymin, xmax, ymax)
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(),
                      2. / visible_world.height()]

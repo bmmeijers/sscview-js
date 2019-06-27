@@ -2,7 +2,7 @@
 
 // const bindHandler = require('./handler');
 import { dragHandler } from './handlers/mouse.drag';
-import { moveHandler } from './handlers/mouse.move';
+// import { moveHandler } from './handlers/mouse.move';
 import { scrollHandler } from './handlers/mouse.scroll';
 
 import { touchPinchHandler } from './handlers/touch.pinch';
@@ -15,7 +15,8 @@ import { Renderer } from "./render";
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
 import { SSCTree } from './tiles';
-    
+
+import { MessageBusConnector } from './pubsub'
 
 class Map 
 {
@@ -36,29 +37,68 @@ class Map
         const rect = this.getCanvasContainer().getBoundingClientRect()
         this._transform = new Transform([186300, 310600],
                                         [rect.width, rect.height],
-                                        150000
+                                        15000
                                         )
         // renderer
         
-        
+        this._abort = null
+
         // data loader
+        this.msgbus = new MessageBusConnector()
+        this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
+            if (this._abort === null)
+            {
+                console.log('Rendering because received:', topic, ", ", message, ", ", sender)
+                this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
+            }
+        })
+
+        this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
+            const result = this.getTransform().stepMap()
+            const near = result[0]
+            let matrix = this.getTransform().world_square
+            const far = -1
+            matrix[10] = -2.0 / (near - far)
+            matrix[14] = (near + far) / (near - far)
+            const box2d = this.getTransform().visibleWorld()
+            const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+            let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
+            this.tileset.getTiles(box3d, gl)
+        })
+
+        this.msgbus.subscribe('map.scale', (topic, message, sender) => {
+            const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+            // console.log(`scale changed to: 1 : ${scale}`)
+
+            let el = document.getElementById("scale-denominator");
+            el.textContent = " 1:" + scale;
+            // var li = document.createElement('li');
+            // var val = document.createTextNode(" 1:" + scale );
+            // li.appendChild(val);
+            // if (list.childNodes[0] !== undefined)
+            // {
+            //     list.replaceChild(li, list.childNodes[0]);
+            // }
+            // else
+            // {
+            //     list.appendChild(li);
+            // }
+            // end modify
+        })
         
-        this.tileset = new SSCTree()
+        this.tileset = new SSCTree(this.msgbus)
         this.tileset.load()
-
-
 
         this.renderer = new Renderer(
                             this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
                             this.tileset);
         this.renderer.setViewport(rect.width, rect.height)
-
-        this._abort = null
+        
         this.abortAndRender()
     
         // attach mouse handlers
         dragHandler(this)
-        moveHandler(this)
+        // moveHandler(this)
         scrollHandler(this)
         // attach touch handlers
         touchPinchHandler(this)
@@ -86,6 +126,8 @@ class Map
     {
         const result = this.getTransform().stepMap()
         const near = result[0]
+        const scale = result[1]
+        this.msgbus.publish('map.scale', scale)
         // let box2d = this.getTransform().visibleWorld()
         // console.log(box2d + ' @' + near);
         // let denominator = result[1]
@@ -103,7 +145,7 @@ class Map
 
     doEaseNone(start, end)
     {
-        function interpolate(k)
+        let interpolate = ((k) =>
         {
             var m = new Float32Array(16);
             for (let i = 0; i < 16; i++) 
@@ -115,7 +157,11 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
-        }
+            if (k == 1)
+            {
+                this._abort = null
+            }
+        })
         return interpolate;
     }
 
@@ -135,13 +181,17 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
+            if (k == 1)
+            {
+                this._abort = null
+            }
         }
         return interpolate;
     }
 
     doEaseOutSine(start, end)
     {
-        function interpolate(k)
+        let interpolate = (k) =>
         {
             var m = new Float32Array(16);
             let D = (Math.sin(k * (Math.PI * 0.5)));
@@ -155,6 +205,11 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
+            if (k === 1)
+            {
+                console.log('setting _abort to null')
+                this._abort = null
+            }
         }
         return interpolate;
     }
@@ -176,6 +231,10 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
+            if (k == 1)
+            {
+                this._abort = null
+            }
         }
         return interpolate;
     }
