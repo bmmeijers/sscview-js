@@ -49,17 +49,19 @@ let isPowerOf2 = ((value) => {return (value & (value - 1)) == 0})
 // let q = new Queue();
 
 class TileContent {
-    constructor() {
+    constructor(msgbus) {
+        this.msgbus = msgbus
         this.buffer = null;
         this.texture = null;
         this.textureCoordBuffer = null;
     }
 
     load(url, gl) {
-        // console.log('fetching ' + url)
-        
         let f = () => { fetch(url).then(r => { return r.json() })
-            .then(mesh => { this._process(mesh, gl) })
+            .then(mesh => { 
+                this._process(mesh, gl)
+                // this.msgbus.publish('data', 'tile.loaded.triangles')
+            })
             .catch(err => { console.error(err) }) }
 
         f()
@@ -197,7 +199,10 @@ class TileContent {
         //     .catch(err => { console.error(err) })
 
         // console.log('Retrieve ' + response.texture)
-        fetch('/gpudemo/2019/03' + response.texture, {mode: 'cors'})
+        // fetch('/gpudemo/2019/03' 
+        // this.msgbus.publish('data', 'tile.loaded')
+
+        fetch(response.texture, {mode: 'cors'})
             .then((response) => {
                 if (!response.ok) {
                     throw response;
@@ -229,7 +234,7 @@ class TileContent {
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                 }
-
+                this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
             }).catch(function(e) {
                 console.error(e);
             });
@@ -324,6 +329,8 @@ function visit(node, box)
 
 function visit_dataelements(root)
 {
+    // FIXME: make iterator/generator function* 
+    // to avoid making the whole result list
     let result = []
     let stack = [root]
     while (stack.length > 0)
@@ -345,12 +352,16 @@ function visit_dataelements(root)
 
 
 export class SSCTree {
-    constructor() {
-        this.tree = null;
+    constructor(msgbus) {
+        this.msgbus = msgbus
+        this.tree = null
         this.retrieved = {}
     }
 
     load() {
+        //
+        // FIXME: convert to worker that does this
+        //
         fetch('nl/tree_max9_fanout10_9.json')
             .then((r) => { 
                 return r.json() 
@@ -365,6 +376,12 @@ export class SSCTree {
                     // console.log(tile.info)
                 })
             })
+            .then(
+                () => {
+                    this.msgbus.publish('data.tree.loaded', 'tree.ready')
+                } // FIXME: Notify via PubSub that tree has loaded (should re-render map if not rendering)
+
+            )
             .catch(err => { 
                 console.error(err) 
             })
@@ -380,10 +397,10 @@ export class SSCTree {
                 if (!this.retrieved[elem.url] && elem.content === null) {
                     // console.log("fetch: " + elem.url)
 
-                    let content = new TileContent()
+                    let content = new TileContent(this.msgbus)
                     content.load(elem.url, gl)
                     elem.content = content
-                    this.retrieved[elem.url] = true
+                    this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
                 }
             })
     }
@@ -391,7 +408,6 @@ export class SSCTree {
     getActiveTiles(box) {
         if (this.tree === null) { return [] }
 
-        console.log(box)
         let tiles = visit(this.tree, box)
         // console.log(tiles.length)
         return tiles

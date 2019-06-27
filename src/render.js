@@ -303,12 +303,14 @@ export class Renderer
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
+        
         var tiles = this.tileset.getActiveTiles(box)
         if (tiles.length > 0)
         {
+            this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             // this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             tiles.forEach(tile => {
-                console.log("Drawing: " + tile.info)
+                // console.log("Drawing: " + tile.info)
                 this.programs[1].draw(matrix, tile.content)
             })
         }

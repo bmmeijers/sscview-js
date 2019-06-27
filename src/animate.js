@@ -57,7 +57,9 @@ export function timed (fn, dur, ctx) {
     const start = _now();
 
     function tick(now) {
-        if (abort) return;
+        if (abort) {
+            return;
+        }
         now = _now();
 
         if (now >= start + dur) {
