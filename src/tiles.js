@@ -362,7 +362,8 @@ export class SSCTree {
         //
         // FIXME: convert to worker that does this
         //
-        fetch('nl/tree_max9_fanout10_9.json')
+        let folder_name = 'de'
+        fetch(folder_name + '/tree_buchholz.json')
             .then((r) => { 
                 return r.json() 
             })
@@ -372,7 +373,7 @@ export class SSCTree {
                 dataelements.forEach((tile) => {
                     tile.content = null
                     tile.last_touched = null
-                    tile.url = "nl/" + tile.info + ".json"
+                    tile.url = folder_name + "/" + tile.info + ".json"
                     // console.log(tile.info)
                 })
             })
