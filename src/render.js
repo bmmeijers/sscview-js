@@ -79,6 +79,7 @@ class SimpleProgram
         // tilecontent.upload(gl);
         if (tilecontent.buffer === null)
         {
+            console.log("early return")
             return;
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.buffer);
@@ -276,7 +277,7 @@ export class Renderer
     {
         this.context = gl
         this.tileset = tileset
-        console.log(this.tileset)
+        //console.log(this.tileset)
         // this.map = map;
         // this.buckets = [];
         this.programs = [new SimpleProgram(gl),
@@ -303,15 +304,13 @@ export class Renderer
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
-        
         var tiles = this.tileset.getActiveTiles(box)
         if (tiles.length > 0)
         {
             this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             // this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             tiles.forEach(tile => {
-                // console.log("Drawing: " + tile.info)
-                this.programs[1].draw(matrix, tile.content)
+                this.programs[0].draw(matrix, tile.content)
             })
         }
         else

@@ -20,34 +20,33 @@ import { MessageBusConnector } from './pubsub'
 
 class Map 
 {
-    constructor(container)
-    {
-        if (typeof container === 'string')
-        {
+    constructor(container) {
+        if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
         }
-        else
-        {
+        else {
             this._container = container
         }
         if (!this._container) {
             throw new Error(`Container '${container}' not found.`)
         }
-        
+
         const rect = this.getCanvasContainer().getBoundingClientRect()
-        this._transform = new Transform([186300, 310600],
-                                        [rect.width, rect.height],
-                                        15000
-                                        )
+        this._transform = new Transform(
+            //[186300, 310600],
+            //[3565000.0, 5904000.0],
+            [3555384.53, 5907745.81], //center of dataset buchholz
+            [rect.width, rect.height],
+            200000
+        )
         // renderer
-        
+
         this._abort = null
 
         // data loader
         this.msgbus = new MessageBusConnector()
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
-            if (this._abort === null)
-            {
+            if (this._abort === null) {
                 console.log('Rendering because received:', topic, ", ", message, ", ", sender)
                 this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
             }
@@ -67,6 +66,7 @@ class Map
         })
 
         this.msgbus.subscribe('map.scale', (topic, message, sender) => {
+            //console.log('message:', message)
             const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             // console.log(`scale changed to: 1 : ${scale}`)
 
@@ -85,17 +85,17 @@ class Map
             // }
             // end modify
         })
-        
+
         this.tileset = new SSCTree(this.msgbus)
         this.tileset.load()
 
         this.renderer = new Renderer(
-                            this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
-                            this.tileset);
+            this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
+            this.tileset);
         this.renderer.setViewport(rect.width, rect.height)
-        
+
         this.abortAndRender()
-    
+
         // attach mouse handlers
         dragHandler(this)
         // moveHandler(this)
@@ -127,6 +127,7 @@ class Map
         const result = this.getTransform().stepMap()
         const near = result[0]
         const scale = result[1]
+        //console.log('map.scale:', scale)
         this.msgbus.publish('map.scale', scale)
         // let box2d = this.getTransform().visibleWorld()
         // console.log(box2d + ' @' + near);
@@ -207,7 +208,6 @@ class Map
             this.render();
             if (k === 1)
             {
-                console.log('setting _abort to null')
                 this._abort = null
             }
         }
@@ -261,7 +261,7 @@ class Map
 
     panBy(dx, dy)
     {
-
+        //console.log("_abort in map.js:", this._abort)
         if (this._abort !== null)
         {
             this._abort();

@@ -22,6 +22,7 @@ module.exports = {
     output: {
         file: 'dist/index.js',
         moduleName: 'varioscale',
+        name: 'varioscale',
         format: 'iife'
     },
     sourcemap: 'dist/index.js.map',
