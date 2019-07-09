@@ -192,14 +192,71 @@ class TileContent {
         // bind buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-        // remember size
+
+        //itemSize is the number of elements, which is 3 for position, i.e., x, y, z
         triangleVertexPositionBuffer.itemSize = 3;
-        triangleVertexPositionBuffer.numItems = (triangle_color_lt.length) / 6;
+
+        //numItems is the number of vertices; 
+        //each vertice has 6 elements in triangle_color_lt, 
+        //i.e., x, y, z, r_frac, g_frac, b_frac
+        triangleVertexPositionBuffer.numItems = triangle_color_lt.length / 6;
+        
         this.buffer = triangleVertexPositionBuffer;
         map.panBy(0, 0)
     }
 
+    _process_lines(response, gl, class_color_dt) {
+        //response is the content of an .obj file?
+        //console.log('response:', response)
+        var step_high = [];
+        var vertex_lt = [];
+        var feature_color = [];
+        var triangle_color_lt = [];
+        var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
+        var deltas_bound_triangles = []; //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
+        response.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
+            step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
+        let vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
+        let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
+
+        //console.log('Message received from worker');
+        let triangleVertexPositionBuffer = gl.createBuffer();
+        //let vertices = new Float32Array(triangle_color_lt);
+        // bind buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        // remember size
+
+        //itemSize is the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
+        triangleVertexPositionBuffer.itemSize = 4;
+
+        //numItems is the number of vertices; 
+        //each vertice has 4 elements, i.e., x, y, z (step_low), step_high
+        triangleVertexPositionBuffer.numItems = vertexElements.length / 4;
+
+
+        displacementBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
+        
+        displacementBuffer.itemSize = 2; //each item has only x and y
+        displacementBuffer.numItems = displacementElements.length / 2;
+
+        {
+            let width_in_pixels = 0.45;
+            let ratio = 0.0025 * width_in_pixels;
+            displacementElements.forEach(
+                function (val, index, arr) {
+                    arr[index] = val * ratio;
+                }
+            );
+        }
+
+
+
+        this.buffer = triangleVertexPositionBuffer;
+        map.panBy(0, 0)
+    }
     
     parseLine(line, vertex_lt, class_color_dt, triangle_color_lt,
         step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles) {
@@ -249,7 +306,6 @@ class TileContent {
                 var v = make_vector_start_end(start_xy, end_xy);
                 var length = norm(v);
 
-
                 if (length != 0) {
                     var unitvec = div(v, length);
                     var startr = bisector(mul(unitvec, -1), rotate90cw(unitvec));
@@ -257,27 +313,10 @@ class TileContent {
                     var endr = bisector(unitvec, rotate90cw(unitvec));
                     var endl = bisector(unitvec, rotate90ccw(unitvec));
 
-                    //var startr_xy = add(start_xy, startr);
-                    //var startl_xy = add(start_xy, startl);
-                    //var endr_xy = add(end_xy, endr);
-                    //var endl_xy = add(end_xy, endl);
-
-                    //var output_wkt =
-                    //    `LINESTRING(${start[0]} ${start[1]}, ${end[0]} ${end[1]}); segment\n` +
-                    //    `LINESTRING(${start[0]} ${start[1]}, ${Number(startr_xy[0])} ${startr_xy[1]}); startr\n` +
-                    //    `LINESTRING(${start[0]} ${start[1]}, ${startl_xy[0]} ${startl_xy[1]}); startl\n` +
-                    //    `LINESTRING(${end[0]} ${end[1]}, ${endr_xy[0]} ${endr_xy[1]}); endr\n` +
-                    //    `LINESTRING(${end[0]} ${end[1]}, ${endl_xy[0]} ${endl_xy[1]}); endl\n`;
-
-                    //fs.appendFile(file_out_wkt, output_wkt, function (err) {
-                    //    if (err) throw err;
-                    //});
-
+                    //start consists of x, y, z (step_low), step_high, while
+                    //startl consists of only x, y
                     vertices_bound_triangles.push(start, start, end, start, end, end);
                     deltas_bound_triangles.push(startl, startr, endl, startr, endr, endl);
-
-                    //console.log("vertices:", vertices);
-                    //console.log("deltas_bound_triangles:", deltas_bound_triangles);
                 }
             }
         }
@@ -536,12 +575,9 @@ class TileContent {
     }
 
     add_coordinates_colors(triangle_color_lt, vertex, feature_color) {
-        triangle_color_lt.push(vertex.x);
-        triangle_color_lt.push(vertex.y);
-        triangle_color_lt.push(vertex.z);
-        triangle_color_lt.push(feature_color.r_frac);
-        triangle_color_lt.push(feature_color.g_frac);
-        triangle_color_lt.push(feature_color.b_frac);
+        triangle_color_lt.push(
+            vertex.x, vertex.y, vertex.z,
+            feature_color.r_frac, feature_color.g_frac, feature_color.b_frac);
     }
 
     _process(response, gl) {
