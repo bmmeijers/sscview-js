@@ -269,13 +269,15 @@ class Transform
         //let Sb = 24000  // (start scale denominator)
         //let total_steps = 262144 - 1   // how many generalization steps did the process take?
 
-        let Sb = 50000  // (start scale denominator)
-        let total_steps = 4803   // how many generalization steps did the process take?
+        //let Sb = 50000  // start scale denominator, which is for calculating the number of steps according to the viewing scale
+        //let total_steps = 4803   // how many generalization steps did the process take?
 
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
-        let Nb = total_steps - 1
-        // reduction in percentage
-        let reductionf = 1 - Math.pow(Sb / St, 2)
+        let Sb = 50000  // start scale denominator
+        //let total_steps = 3   // how many generalization steps did the process take?
+
+        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator
+        let Nb = 3  //total number of objects on base map        
+        let reductionf = 1 - Math.pow(Sb / St, 2) // reduction in percentage
         let step = Nb * reductionf
         return [Math.max(0, step), St]
     }

@@ -140,7 +140,7 @@ class Map
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
         this.tileset.getTiles(box3d, gl)
-        this.renderer.render(matrix, box3d);
+        this.renderer.render(matrix, box3d, near);
         // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
     }
 

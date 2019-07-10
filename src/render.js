@@ -83,7 +83,7 @@ class PolygonDrawProgram extends DrawProgram
 
 
 
-    draw(matrix, tilecontent)
+    draw(matrix, tilecontent, near)
     {
         let gl = this.context;
         gl.useProgram(this.program);
@@ -176,14 +176,121 @@ class LineDrawProgram extends DrawProgram {
     }
 
 
-    draw(matrix, tilecontent) {
-        //let gl = this.context;
-        //gl.useProgram(this.program);
-        //// tilecontent.upload(gl);
-        //if (tilecontent.buffer === null) {
-        //    return;
+    draw(matrix, tilecontent, near) {
+        let gl = this.context;
+        let program = this.program;
+        let triangleVertexPositionBuffer = tilecontent.buffer;
+        let displacementBuffer = tilecontent.displacementBuffer;
+
+        gl.useProgram(program);
+        // tilecontent.upload(gl);
+        if (triangleVertexPositionBuffer === null) {
+            return;
+        }
+
+
+
+        
+
+        //void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
+        //size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
+        //alpha channel, RGBA, it would be 4. If we have location data with (x,y,z) attributes, it would be 3; and if we
+        //had a fourth parameter w, (x,y,z,w), it would be 4. Texture parameters (s,t) would be 2. type is the datatype,
+        //stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
+        //interleaved arrays.
+
+        //console.log("buffer:", triangleVertexPositionBuffer)
+        //console.log("displacementBuffer:", displacementBuffer)
+
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
+        const dxdyAttrib = gl.getAttribLocation(program, 'displacement');
+        gl.enableVertexAttribArray(displacementBuffer);
+        gl.vertexAttribPointer(
+            dxdyAttrib,    // * Attribute location
+            2,              // * Number of components per attribute ????? 
+            gl.FLOAT,       // * Type of elements
+            false,          // * Is normalized?
+            0,             // * stride 
+            0              // * Offset from the beginning of 
+            //     a single vertex to this attribute
+        );
+
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        const positionAttrib = gl.getAttribLocation(program, 'vertexPosition_modelspace');
+        gl.vertexAttribPointer(
+            positionAttrib,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+
+        //            console.log('positionAttrib ' + positionAttrib);
+        //            console.log('colorAttrib ' + colorAttrib);
+
+
+
+
+        gl.enableVertexAttribArray(positionAttrib);
+        //            gl.enableVertexAttribArray(colorAttrib);
+        {
+            let M = gl.getUniformLocation(program, 'M');
+            gl.uniformMatrix4fv(M, false, matrix)
+        }
+
+        //set the viewport inside the canvas container of the web map
+        //the following is a default setting
+        //{
+        //    let rect = el.getBoundingClientRect();
+        //    gl.viewport(0, 0, rect.width, rect.height);
         //}
-        //gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.buffer);
+
+        {
+            let where = gl.getUniformLocation(program, 'near');
+            //                let val = Math.min(near, 10000.0) / 10000.0;
+            //                console.log(val);
+            gl.uniform1f(where, near);
+        }
+
+        gl.clearColor(1., 1., 1., 1.0);
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT);
+
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
+
+        gl.enable(gl.CULL_FACE);
+        //            gl.disable(gl.CULL_FACE);
+
+        gl.cullFace(gl.BACK);
+        //            gl.cullFace(gl.FRONT);
+        //            gl.cullFace(gl.FRONT_AND_BACK);
+
+
+        //            gl.lineWidth(20);
+
+        gl.drawArrays(
+            //                gl.LINE_LOOP, 
+            //                gl.POINTS,
+            //                gl.TRIANGLES,
+            gl.TRIANGLES,
+            0,
+            triangleVertexPositionBuffer.numItems
+        );
+
+        //            gl.drawElements(gl.TRIANGLES, indexElements.length, gl.UNSIGNED_SHORT, 0);
+
+
+
+
+
+
+
+
+        //gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
         //// FIXME: better to store with bucket how the layout of the mesh is?
         //const positionAttrib = gl.getAttribLocation(this.program, 'vertexPosition_modelspace');
         //gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
@@ -205,7 +312,7 @@ class LineDrawProgram extends DrawProgram {
         //// gl.clear(gl.COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT);
         //gl.disable(gl.BLEND);
         //gl.enable(gl.DEPTH_TEST);
-        //gl.drawArrays(gl.TRIANGLES, 0, tilecontent.buffer.numItems);
+        //gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems);
         ////gl.drawArrays(gl.LINE_LOOP, 0, bucket.buffer.numItems);
     }
 }
@@ -250,7 +357,7 @@ class ImageTileProgram extends DrawProgram
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
-    draw(matrix, tilecontent)
+    draw(matrix, tilecontent, near)
     {
         let gl = this.context;
         gl.useProgram(this.program);
@@ -344,7 +451,7 @@ export class Renderer
         // this.map = map;
         // this.buckets = [];
         this.programs = [
-            new PolygonDrawProgram(gl),
+            //new PolygonDrawProgram(gl),
             new LineDrawProgram(gl),
             new ImageTileProgram(gl)
         ]
@@ -364,7 +471,7 @@ export class Renderer
     //     // }, 15000)
     // }
 
-    render(matrix, box)
+    render(matrix, box, near)
     {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
@@ -376,7 +483,7 @@ export class Renderer
             this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             // this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
             tiles.forEach(tile => {
-                this.programs[0].draw(matrix, tile.content)
+                this.programs[0].draw(matrix, tile.content, near)
             })
         }
         else
