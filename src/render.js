@@ -451,7 +451,7 @@ export class Renderer
         // this.map = map;
         // this.buckets = [];
         this.programs = [
-            //new PolygonDrawProgram(gl),
+            new PolygonDrawProgram(gl),
             new LineDrawProgram(gl),
             new ImageTileProgram(gl)
         ]

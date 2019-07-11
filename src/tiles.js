@@ -67,8 +67,8 @@ class TileContent {
                 })
                 .then(
                     data_text => {
-                        //this._process_polygons(data_text, gl, this.class_color_dt)
-                        this._process_lines(data_text, gl, this.class_color_dt)
+                        this._process_polygons(data_text, gl, this.class_color_dt)
+                        //this._process_lines(data_text, gl, this.class_color_dt)
                         
                         // this.msgbus.publish('data', 'tile.loaded.triangles')
 
@@ -190,33 +190,8 @@ class TileContent {
     to the main thread *without* copying overhead
     */
     _process_polygons(data_text, gl, class_color_dt) {
-        //response is the content of an .obj file
-
-        var step_high = [];
-        var vertex_lt = [];
-        var feature_color = [];
-        var triangle_color_lt = [];
-        var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
-        var deltas_bound_triangles = []; //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
-        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
-            step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
-        
-        //console.log('Message received from worker');
-        let triangleVertexPositionBuffer = gl.createBuffer();
-        let vertexElements = new Float32Array(triangle_color_lt);
-        // bind buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexElements, gl.STATIC_DRAW);
-
-        //itemSize is the number of elements, which is 3 for position, i.e., x, y, z
-        triangleVertexPositionBuffer.itemSize = 3;
-
-        //numItems is the number of vertices; 
-        //each vertice has 6 elements in triangle_color_lt, 
-        //i.e., x, y, z, r_frac, g_frac, b_frac
-        triangleVertexPositionBuffer.numItems = vertexElements.length / 6;
-        
-        this.buffer = triangleVertexPositionBuffer;
+        //data_text is the content of an .obj file
+        this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'polygon')
     }
 
     _obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
@@ -266,7 +241,7 @@ class TileContent {
     }
 
     _process_lines(data_text, gl, class_color_dt) {
-        //response is the content of an .obj file
+        //data_text is the content of an .obj file
 
         var deltas_bound_triangles = [];
         this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'line', deltas_bound_triangles)
@@ -821,7 +796,6 @@ export class SSCTree {
 
         let countrycodeslash = 'de/';
         let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        //let jsonfile = 'tree_astar_lines.json';
         //let jsonfile = 'tree_greedy_test.json';
 
         fetch(countrycodeslash + jsonfile)
