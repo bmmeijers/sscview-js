@@ -193,53 +193,7 @@ class TileContent {
     _process_polygons(data_text, gl, class_color_dt) {
         //data_text is the content of an .obj file
         this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'polygon')
-    }
-
-    _obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
-
-        var step_high = [];
-        var vertex_lt = [];
-        var feature_color = [];
-        var triangle_color_lt = [];
-        var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
-
-        if (deltas_bound_triangles == null) {
-            //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
-            var deltas_bound_triangles = []; 
-        }
-        
-        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
-            step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
-
-        //console.log('Message received from worker');
-        let triangleVertexPositionBuffer = gl.createBuffer();
-
-        if (feature_type == 'polygon') {
-            var vertexElements = new Float32Array(triangle_color_lt);
-            var itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z            
-            //each vertice has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
-            var extended_itemSize = 6; //for computing the number of vertices;  
-        }
-        else if (feature_type == 'line'){
-            var vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
-            var itemSize = 4; //the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
-            var extended_itemSize = itemSize;  //for computing the number of vertices; 
-        }
-        
-        // bind buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexElements, gl.STATIC_DRAW);
-
-        //itemSize is the number of elements, which is 3 for position, i.e., x, y, z
-        triangleVertexPositionBuffer.itemSize = itemSize;
-
-        //numItems is the number of vertices; 
-        //each vertice has 6 elements in triangle_color_lt, 
-        //i.e., x, y, z, r_frac, g_frac, b_frac
-        triangleVertexPositionBuffer.numItems = vertexElements.length / extended_itemSize;
-
-        return triangleVertexPositionBuffer;
-    }
+    }    
 
     _process_lines(data_text, gl, class_color_dt) {
         //data_text is the content of an .obj file
@@ -265,10 +219,54 @@ class TileContent {
         displacementBuffer.itemSize = 2; //each item has only x and y
         displacementBuffer.numItems = displacementElements.length / 2;
 
-        this.displacementBuffer = displacementBuffer;
-        
+        this.displacementBuffer = displacementBuffer;        
     }
 
+    _obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
+
+        var step_high = [];
+        var vertex_lt = [];
+        var feature_color = [];
+        var triangle_color_lt = [];
+        var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
+
+        if (deltas_bound_triangles == null) {
+            //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
+            var deltas_bound_triangles = [];
+        }
+
+        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
+            step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
+
+        //console.log('Message received from worker');
+        let triangleVertexPositionBuffer = gl.createBuffer();
+
+        if (feature_type == 'polygon') {
+            var vertexElements = new Float32Array(triangle_color_lt);
+            var itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z            
+            //each vertice has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
+            var extended_itemSize = 6; //for computing the number of vertices;  
+        }
+        else if (feature_type == 'line') {
+            var vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
+            var itemSize = 4; //the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
+            var extended_itemSize = itemSize;  //for computing the number of vertices; 
+        }
+
+        // bind buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexElements, gl.STATIC_DRAW);
+
+        //itemSize is the number of elements, which is 3 for position, i.e., x, y, z
+        triangleVertexPositionBuffer.itemSize = itemSize;
+
+        //numItems is the number of vertices; 
+        //each vertice has 6 elements in triangle_color_lt, 
+        //i.e., x, y, z, r_frac, g_frac, b_frac
+        triangleVertexPositionBuffer.numItems = vertexElements.length / extended_itemSize;
+
+        return triangleVertexPositionBuffer;
+    }
 
     parseLine(line, vertex_lt, class_color_dt, triangle_color_lt,
         step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles) {
@@ -846,7 +844,8 @@ export class SSCTree {
          //console.log(tiles.length)
         return overlapped_dataelements
             .filter(elem => { // those tiles that are loaded and overlap the screen
-                return elem.content !== null && overlaps3d(box3d, elem.box)
+                //elem.content may have been assigned in function set_active_tiles
+                return elem.content !== null && overlaps3d(box3d, elem.box)  
             })
             .map(elem => { // set for each tile to be rendered the last accessed time
                 elem.last_touched = now(); 

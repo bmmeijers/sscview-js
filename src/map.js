@@ -57,18 +57,6 @@ class Map
 
             const near_St = this.getTransform().stepMap()
             this._prepare_active_tiles(near_St[0])
-
-
-            //const result = this.getTransform().stepMap()
-            //const near = result[0]
-            //let matrix = this.getTransform().world_square
-            //const far = -1
-            //matrix[10] = -2.0 / (near - far)
-            //matrix[14] = (near + far) / (near - far)
-            //const box2d = this.getTransform().visibleWorld()
-            //const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-            //let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-            //this.ssctree.set_active_tiles(box3d, gl)
         })
 
         this.msgbus.subscribe('map.scale', (topic, message, sender) => {

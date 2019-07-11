@@ -67,6 +67,7 @@ class PolygonDrawProgram extends DrawProgram
               gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
             }
         `;
+
         let fragmentShaderText = `
             precision mediump float;
             
@@ -83,7 +84,7 @@ class PolygonDrawProgram extends DrawProgram
 
 
 
-    draw(matrix, tilecontent, near)
+    draw_tilecontent(matrix, tilecontent, near)
     {
         let gl = this.context;
         gl.useProgram(this.program);
@@ -176,7 +177,7 @@ class LineDrawProgram extends DrawProgram {
     }
 
 
-    draw(matrix, tilecontent, near) {
+    draw_tilecontent(matrix, tilecontent, near) {
         let gl = this.context;
         let program = this.program;
         let triangleVertexPositionBuffer = tilecontent.buffer;
@@ -187,8 +188,6 @@ class LineDrawProgram extends DrawProgram {
         if (triangleVertexPositionBuffer === null) {
             return;
         }
-
-
 
         
 
@@ -318,98 +317,167 @@ class LineDrawProgram extends DrawProgram {
 }
 
 
-class ImageTileProgram extends DrawProgram
+
+
+export class Renderer
 {
-    constructor(gl)
-    {
-        //console.log('here' + gl)
-        // this.context = gl;
-
-        let vertexShaderText = `
-            precision highp float;
-            
-            attribute vec3 vertexPosition_modelspace;         
-            attribute vec2 aTextureCoord;
-            
-            uniform mat4 M;
-
-            varying highp vec2 vTextureCoord;
-            
-            void main()
-            {
-              gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
-              vTextureCoord = aTextureCoord;
-            }
-        `
-        let fragmentShaderText = `
-            precision highp float;
-
-            varying highp vec2 vTextureCoord;
-
-            uniform sampler2D uSampler;
-            
-            void main()
-            {
-              gl_FragColor = texture2D(uSampler, vTextureCoord);
-            }
-        `
-
-        super(gl, vertexShaderText, fragmentShaderText)
+    constructor(gl, ssctree) {
+        this.context = gl
+        this.ssctree = ssctree
+        //console.log(this.ssctree)
+        // this.map = map;
+        // this.buckets = [];
+        this.programs = [
+            new PolygonDrawProgram(gl),
+            new LineDrawProgram(gl),
+            //new ImageTileProgram(gl)
+        ]
+        // console.log(this.context);
+        // console.log(this.buckets);
     }
 
-    draw(matrix, tilecontent, near)
+    // addBucket(mesh)
+    // {
+    //     console.log('making new mesh')
+    //     let b = new Bucket(this.context, mesh)
+    //     this.buckets.push(b)
+    //     // setTimeout(() => {
+    //     //     this.buckets.map(bucket => {
+    //     //         bucket.destroy()
+    //     //     })
+    //     // }, 15000)
+    // }
+
+    render_active_tiles(matrix, box3d, near)
     {
-        let gl = this.context;
-        gl.useProgram(this.program);
-        // tilecontent.upload(gl);
-        if (tilecontent.buffer === null)
-        {
-            return;
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.buffer);
-        // FIXME: better to store with bucket how the layout of the mesh is?
-        const positionAttrib = gl.getAttribLocation(this.program, 'vertexPosition_modelspace');
-        // gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
-        gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(positionAttrib);
-
-        {
-            let M = gl.getUniformLocation(this.program, 'M');
-            gl.uniformMatrix4fv(M, false, matrix);
+        // FIXME: 
+        // should a bucket have a method to 'draw' itself?
+        // e.g. by associating multiple programs with a bucket
+        // when the bucket is constructed?
+        this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
+        var tiles = this.ssctree.get_active_tiles(box3d)
+        if (tiles.length > 0) {
+            tiles.forEach(tile => {
+                this.programs[0].draw_tilecontent(matrix, tile.content, near)
+            })
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.textureCoordBuffer)
-        const textureAttrib = gl.getAttribLocation(this.program, 'aTextureCoord');
-        gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(textureAttrib);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tilecontent.texture);
-
-        const uSampler = gl.getUniformLocation(this.program, 'uSampler');
-        gl.uniform1i(uSampler, 0);
-
-        // FIXME: do we need to call this every time, or is it sufficient to do at init of transform?
-        // {
-        //     let rect = el.getBoundingClientRect();
-        //     gl.viewport(0, 0, rect.width, rect.height);
-        // }
-        // gl.clearColor(1., 1., 1., 1.0);
-        // gl.clearDepth(1.0);
-        // gl.clear(gl.COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT);
-        gl.disable(gl.BLEND);
-        gl.enable(gl.DEPTH_TEST);
-        gl.drawArrays(gl.TRIANGLES, 0, tilecontent.buffer.numItems);
-        //gl.drawArrays(gl.LINE_LOOP, 0, bucket.buffer.numItems);
+        // this.buckets.forEach(bucket => {
+        //     this.programs[0].draw(matrix, bucket);
+        // })
+        // FIXME:
+        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+        // we should this.context.clear()
     }
+
+    setViewport(width, height)
+    {
+        this.context.viewport(0, 0, width, height);
+    }
+
+    // onContentReady(obj)
+    // {
+    //     this.addBucket(obj.data)
+    //     // schedule re-render!
+    //     // FIXME: this should only happen when not already rendering /animating the map...
+    //     // should the map keep state of {animating|still} ???
+    //     // this.map.abortAndRender()
+    // }
 }
+
+
+//class ImageTileProgram extends DrawProgram
+//{
+//    constructor(gl)
+//    {
+//        //console.log('here' + gl)
+//        // this.context = gl;
+
+//        let vertexShaderText = `
+//            precision highp float;
+
+//            attribute vec3 vertexPosition_modelspace;         
+//            attribute vec2 aTextureCoord;
+
+//            uniform mat4 M;
+
+//            varying highp vec2 vTextureCoord;
+
+//            void main()
+//            {
+//              gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
+//              vTextureCoord = aTextureCoord;
+//            }
+//        `
+//        let fragmentShaderText = `
+//            precision highp float;
+
+//            varying highp vec2 vTextureCoord;
+
+//            uniform sampler2D uSampler;
+
+//            void main()
+//            {
+//              gl_FragColor = texture2D(uSampler, vTextureCoord);
+//            }
+//        `
+
+//        super(gl, vertexShaderText, fragmentShaderText)
+//    }
+
+//    draw_tilecontent(matrix, tilecontent, near)
+//    {
+//        let gl = this.context;
+//        gl.useProgram(this.program);
+//        // tilecontent.upload(gl);
+//        if (tilecontent.buffer === null)
+//        {
+//            return;
+//        }
+//        gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.buffer);
+//        // FIXME: better to store with bucket how the layout of the mesh is?
+//        const positionAttrib = gl.getAttribLocation(this.program, 'vertexPosition_modelspace');
+//        // gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
+//        gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+//        gl.enableVertexAttribArray(positionAttrib);
+
+//        {
+//            let M = gl.getUniformLocation(this.program, 'M');
+//            gl.uniformMatrix4fv(M, false, matrix);
+//        }
+
+//        gl.bindBuffer(gl.ARRAY_BUFFER, tilecontent.textureCoordBuffer)
+//        const textureAttrib = gl.getAttribLocation(this.program, 'aTextureCoord');
+//        gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
+//        gl.enableVertexAttribArray(textureAttrib);
+
+//        gl.activeTexture(gl.TEXTURE0);
+//        gl.bindTexture(gl.TEXTURE_2D, tilecontent.texture);
+
+//        const uSampler = gl.getUniformLocation(this.program, 'uSampler');
+//        gl.uniform1i(uSampler, 0);
+
+//        // FIXME: do we need to call this every time, or is it sufficient to do at init of transform?
+//        // {
+//        //     let rect = el.getBoundingClientRect();
+//        //     gl.viewport(0, 0, rect.width, rect.height);
+//        // }
+//        // gl.clearColor(1., 1., 1., 1.0);
+//        // gl.clearDepth(1.0);
+//        // gl.clear(gl.COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT);
+//        gl.disable(gl.BLEND);
+//        gl.enable(gl.DEPTH_TEST);
+//        gl.drawArrays(gl.TRIANGLES, 0, tilecontent.buffer.numItems);
+//        //gl.drawArrays(gl.LINE_LOOP, 0, bucket.buffer.numItems);
+//    }
+//}
 
 
 // class Bucket
 // {
 //     constructor(gl, mesh)
 //     {
-        
+
 //         this.buffer = null;
 //         this.context = gl;
 
@@ -441,69 +509,3 @@ class ImageTileProgram extends DrawProgram
 //         this.buffer = null;
 //     }
 // }
-
-export class Renderer
-{
-    constructor(gl, ssctree) {
-        this.context = gl
-        this.ssctree = ssctree
-        //console.log(this.ssctree)
-        // this.map = map;
-        // this.buckets = [];
-        this.programs = [
-            new PolygonDrawProgram(gl),
-            new LineDrawProgram(gl),
-            new ImageTileProgram(gl)
-        ]
-        // console.log(this.context);
-        // console.log(this.buckets);
-    }
-
-    // addBucket(mesh)
-    // {
-    //     console.log('making new mesh')
-    //     let b = new Bucket(this.context, mesh)
-    //     this.buckets.push(b)
-    //     // setTimeout(() => {
-    //     //     this.buckets.map(bucket => {
-    //     //         bucket.destroy()
-    //     //     })
-    //     // }, 15000)
-    // }
-
-    render_active_tiles(matrix, box3d, near)
-    {
-        // FIXME: 
-        // should a bucket have a method to 'draw' itself?
-        // e.g. by associating multiple programs with a bucket
-        // when the bucket is constructed?
-        this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
-        var tiles = this.ssctree.get_active_tiles(box3d)
-        if (tiles.length > 0) {
-            tiles.forEach(tile => {
-                this.programs[0].draw(matrix, tile.content, near)
-            })
-        }
-
-        // this.buckets.forEach(bucket => {
-        //     this.programs[0].draw(matrix, bucket);
-        // })
-        // FIXME:
-        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-        // we should this.context.clear()
-    }
-
-    setViewport(width, height)
-    {
-        this.context.viewport(0, 0, width, height);
-    }
-
-    // onContentReady(obj)
-    // {
-    //     this.addBucket(obj.data)
-    //     // schedule re-render!
-    //     // FIXME: this should only happen when not already rendering /animating the map...
-    //     // should the map keep state of {animating|still} ???
-    //     // this.map.abortAndRender()
-    // }
-}
