@@ -282,7 +282,7 @@ class Transform
         //If the base map has 5537 features and the goal map has 734 features,
         //then there are 4803 steps (this.Nb != this.Ns + 1).
         //It is better to use 'this.Ns + 1' instead of this.Nb
-        let step = (this.Ns + 1) * reductionf 
+        let step = (this.Ns + 1) * reductionf //step is not necessarily an integer
         return [Math.max(0, step), St]
     }
 

@@ -471,25 +471,20 @@ export class Renderer
     //     // }, 15000)
     // }
 
-    render(matrix, box, near)
+    render_active_tiles(matrix, box3d, near)
     {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
-        var tiles = this.ssctree.getActiveTiles(box)
-        if (tiles.length > 0)
-        {
-            this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
-            // this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
+        this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
+        var tiles = this.ssctree.get_active_tiles(box3d)
+        if (tiles.length > 0) {
             tiles.forEach(tile => {
                 this.programs[0].draw(matrix, tile.content, near)
             })
         }
-        else
-        {
-            this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)
-        }
+
         // this.buckets.forEach(bucket => {
         //     this.programs[0].draw(matrix, bucket);
         // })

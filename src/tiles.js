@@ -53,6 +53,7 @@ class TileContent {
     constructor(msgbus) {
         this.msgbus = msgbus
         this.buffer = null;
+
         this.displacementBuffer = null;
         this.texture = null;
         this.textureCoordBuffer = null;
@@ -591,144 +592,144 @@ class TileContent {
             feature_color.r_frac, feature_color.g_frac, feature_color.b_frac);        
     }
 
-    _process(response, gl) {
-        let result = []
+    //_process(response, gl) {
+    //    let result = []
         
-        response.points.forEach(
-            point => result.push(...point)
-        )
+    //    response.points.forEach(
+    //        point => result.push(...point)
+    //    )
         
-        this._upload(gl, new Float32Array(result))
+    //    this._upload(gl, new Float32Array(result))
 
-        // fetch(response.texture)
-        //     .then(r => { return r.blob() })
-        //     .then(data => {
-        //         console.log(data) 
+    //    // fetch(response.texture)
+    //    //     .then(r => { return r.blob() })
+    //    //     .then(data => {
+    //    //         console.log(data) 
 
-        //         /*
-        //         function showImage(responseAsBlob) {
-        //             const container = document.getElementById('img-container');
-        //             const imgElem = document.createElement('img');
-        //             container.appendChild(imgElem);
-        //             const imgUrl = URL.createObjectURL(responseAsBlob);
-        //             imgElem.src = imgUrl;
-        //           }
-        //           */
+    //    //         /*
+    //    //         function showImage(responseAsBlob) {
+    //    //             const container = document.getElementById('img-container');
+    //    //             const imgElem = document.createElement('img');
+    //    //             container.appendChild(imgElem);
+    //    //             const imgUrl = URL.createObjectURL(responseAsBlob);
+    //    //             imgElem.src = imgUrl;
+    //    //           }
+    //    //           */
                   
                 
-        //         const imgElem = document.createElement('img');
+    //    //         const imgElem = document.createElement('img');
 
-        //         const imgUrl = URL.createObjectURL(data)
-        //         imgElem.src = imgUrl
+    //    //         const imgUrl = URL.createObjectURL(data)
+    //    //         imgElem.src = imgUrl
 
-        //         this.texture = gl.createTexture();
-        //         gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-        //         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgElem);
-        //         gl.generateMipmap(gl.TEXTURE_2D);
-        //     })
-        //     .catch(err => { console.error(err) })
+    //    //         this.texture = gl.createTexture();
+    //    //         gl.bindTexture(gl.TEXTURE_2D, this.texture);         
+    //    //         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgElem);
+    //    //         gl.generateMipmap(gl.TEXTURE_2D);
+    //    //     })
+    //    //     .catch(err => { console.error(err) })
 
-        // console.log('Retrieve ' + response.texture)
-        // fetch('/gpudemo/2019/03' 
-        // this.msgbus.publish('data', 'tile.loaded')
+    //    // console.log('Retrieve ' + response.texture)
+    //    // fetch('/gpudemo/2019/03' 
+    //    // this.msgbus.publish('data', 'tile.loaded')
 
-        fetch(response.texture, {mode: 'cors'})
-            .then((response) => {
-                if (!response.ok) {
-                    throw response;
-                }
+    //    fetch(response.texture, {mode: 'cors'})
+    //        .then((response) => {
+    //            if (!response.ok) {
+    //                throw response;
+    //            }
                 
-                return response.blob();
-            })
-            .then((blob) => {
-                // Giving options does not work for Firefox (do we need to give all option fields?)
-                return createImageBitmap(blob
-                    // , 
-                    // {
-                    // premultiplyAlpha: 'none',
-                    // colorSpaceConversion: 'none',
-                    // }
-                    );
-            }).then((bitmap) => {
+    //            return response.blob();
+    //        })
+    //        .then((blob) => {
+    //            // Giving options does not work for Firefox (do we need to give all option fields?)
+    //            return createImageBitmap(blob
+    //                // , 
+    //                // {
+    //                // premultiplyAlpha: 'none',
+    //                // colorSpaceConversion: 'none',
+    //                // }
+    //                );
+    //        }).then((bitmap) => {
                 
-                this.texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-                if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) 
-                {
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                }
-                else
-                {
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                }
-                this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
-            }).catch(function(e) {
-                console.error(e);
-            });
+    //            this.texture = gl.createTexture();
+    //            gl.bindTexture(gl.TEXTURE_2D, this.texture);         
+    //            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+    //            if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) 
+    //            {
+    //                gl.generateMipmap(gl.TEXTURE_2D);
+    //            }
+    //            else
+    //            {
+    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    //            }
+    //            this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
+    //        }).catch(function(e) {
+    //            console.error(e);
+    //        });
 
-        // // fetch texture, based on url inside the tile
-        // let image = new Image()
-        // let now = performance.now()
-        // image.crossOrigin = ""
-        // image.src = response.texture
-        // image.addEventListener('load', () => {
-        //     this.texture = gl.createTexture();
-        //     gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        //     console.log(performance.now() - now)
-        //     if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
-        //     {
-        //         gl.generateMipmap(gl.TEXTURE_2D);
-        //     }
-        //     else
-        //     {
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        //     }
-        // })
+    //    // // fetch texture, based on url inside the tile
+    //    // let image = new Image()
+    //    // let now = performance.now()
+    //    // image.crossOrigin = ""
+    //    // image.src = response.texture
+    //    // image.addEventListener('load', () => {
+    //    //     this.texture = gl.createTexture();
+    //    //     gl.bindTexture(gl.TEXTURE_2D, this.texture);         
+    //    //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    //    //     console.log(performance.now() - now)
+    //    //     if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
+    //    //     {
+    //    //         gl.generateMipmap(gl.TEXTURE_2D);
+    //    //     }
+    //    //     else
+    //    //     {
+    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    //    //     }
+    //    // })
 
-        // let result = [];
-        // const splitted = response.split('\n');
-        // for (let i = 0, l = splitted.length; i < l; i++) {
-        //     const line = splitted[i];
-        //     line.split(",").forEach(element => {
-        //         result.push(parseFloat(element));
-        //     });
-        // }
-        // this._upload(gl, new Float32Array(result))
-    }
+    //    // let result = [];
+    //    // const splitted = response.split('\n');
+    //    // for (let i = 0, l = splitted.length; i < l; i++) {
+    //    //     const line = splitted[i];
+    //    //     line.split(",").forEach(element => {
+    //    //         result.push(parseFloat(element));
+    //    //     });
+    //    // }
+    //    // this._upload(gl, new Float32Array(result))
+    //}
 
-    _upload(gl, mesh) {
-        this.buffer = gl.createBuffer();  //buffer is a reference to the memory location on the GPU
-        // bind buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-        // upload content to the GPU
-        gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
-        // remember number of triangles for this buffer
-        this.buffer.numItems = (mesh.length) / 3;
-        // do not keep the floatarray object alive
-        // now we have uploaded the triangles to the GPU
-        // FIXME: is this needed?
-        this.buffer.buffer = null
-    }
+    //_upload(gl, mesh) {
+    //    this.buffer = gl.createBuffer();  //buffer is a reference to the memory location on the GPU
+    //    // bind buffer
+    //    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    //    // upload content to the GPU
+    //    gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
+    //    // remember number of triangles for this buffer
+    //    this.buffer.numItems = (mesh.length) / 3;
+    //    // do not keep the floatarray object alive
+    //    // now we have uploaded the triangles to the GPU
+    //    // FIXME: is this needed?
+    //    this.buffer.buffer = null
+    //}
 
-    destroy(gl) {
-        gl.deleteBuffer(this.buffer);
-        gl.deleteBuffer(this.textureCoordBuffer);
-        gl.deleteTexture(this.texture);
+    //destroy(gl) {
+    //    gl.deleteBuffer(this.buffer);
+    //    gl.deleteBuffer(this.textureCoordBuffer);
+    //    gl.deleteTexture(this.texture);
 
-        this.buffer = null;
-        this.textureCoordBuffer = null;
-        this.texture = null;
-    }
+    //    this.buffer = null;
+    //    this.textureCoordBuffer = null;
+    //    this.texture = null;
+    //}
 }
 
 
-function visit(node, box3d)
+function obtain_overlapped_dataelements(node, box3d)
 {
     // console.log(box)
     let result = []
@@ -757,7 +758,7 @@ function visit(node, box3d)
 }
 
 
-function visit_dataelements(root)
+function obtain_dataelements(root)
 {
     // FIXME: make iterator/generator function* 
     // to avoid making the whole result list
@@ -795,44 +796,39 @@ export class SSCTree {
         // fetch('nl/tree_max9_fanout10_9.json')
 
         let countrycodeslash = 'de/';
-        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        //let jsonfile = 'tree_greedy_test.json';
+        //let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
+        let jsonfile = 'tree_greedy_test.json';
 
         fetch(countrycodeslash + jsonfile)
             .then(r => {
                 return r.json()
             })
-            .then(
-                (tree) => {
-                    this.tree = tree;
-                    let box3d = tree.box3d;
-                    tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-                    let dataelements = visit_dataelements(this.tree)
-                    dataelements.forEach((tile) => {
-                        tile.content = null
-                        tile.last_touched = null
-                        tile.url = countrycodeslash + tile.info
-                        //console.log('tile.url (dataset):', tile.url)
-                    })
-                }
-            )
-            .then(
-                () => {
-                    this.msgbus.publish('data.tree.loaded', 'tree.ready')
-                } // FIXME: Notify via PubSub that tree has loaded (should re-render map if not rendering)
-
-            )
+            .then(tree => {
+                this.tree = tree;
+                let box3d = tree.box3d;
+                tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
+                let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
+                dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
+                    element.content = null
+                    element.last_touched = null
+                    element.url = countrycodeslash + element.info
+                    //console.log('tile.url (dataset):', tile.url)
+                })
+            })
+            .then(() => {
+                this.msgbus.publish('data.tree.loaded', 'tree.ready')
+            }) // FIXME: Notify via PubSub that tree has loaded (should re-render map if not rendering)
             .catch(err => {
                 console.error(err)
             })
     }
 
-    getTiles(box3d, gl) {
+    set_active_tiles(box3d, gl) {
         if (this.tree === null) { return }
 
-        let tiles = visit(this.tree, box3d)
+        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
         // FIXME: sort the tiles via the distance from center of the box?
-        tiles.map(elem => {
+        overlapped_dataelements.map(elem => {
             if (!this.retrieved[elem.url] && elem.content === null) {
                 let content = new TileContent(this.msgbus)
                 content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
@@ -843,14 +839,14 @@ export class SSCTree {
         //map.panBy(0, 0);
     }
 
-    getActiveTiles(box) {
+    get_active_tiles(box3d) {
         if (this.tree === null) { return [] }
 
-        let tiles = visit(this.tree, box)
+        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
          //console.log(tiles.length)
-        return tiles
+        return overlapped_dataelements
             .filter(elem => { // those tiles that are loaded and overlap the screen
-                return elem.content !== null && overlaps3d(box, elem.box)
+                return elem.content !== null && overlaps3d(box3d, elem.box)
             })
             .map(elem => { // set for each tile to be rendered the last accessed time
                 elem.last_touched = now(); 

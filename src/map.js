@@ -54,16 +54,21 @@ class Map
                 [rect.width, rect.height],
                 tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
             )
-            const result = this.getTransform().stepMap()
-            const near = result[0]
-            let matrix = this.getTransform().world_square
-            const far = -1
-            matrix[10] = -2.0 / (near - far)
-            matrix[14] = (near + far) / (near - far)
-            const box2d = this.getTransform().visibleWorld()
-            const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-            let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-            this.ssctree.getTiles(box3d, gl)
+
+            const near_St = this.getTransform().stepMap()
+            this._prepare_active_tiles(near_St[0])
+
+
+            //const result = this.getTransform().stepMap()
+            //const near = result[0]
+            //let matrix = this.getTransform().world_square
+            //const far = -1
+            //matrix[10] = -2.0 / (near - far)
+            //matrix[14] = (near + far) / (near - far)
+            //const box2d = this.getTransform().visibleWorld()
+            //const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+            //let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
+            //this.ssctree.set_active_tiles(box3d, gl)
         })
 
         this.msgbus.subscribe('map.scale', (topic, message, sender) => {
@@ -127,14 +132,15 @@ class Map
 
     drawmap()
     {
-        const result = this.getTransform().stepMap()
-        const near = result[0]
-        const scale = result[1]
-        //console.log('map.scale:', scale)
-        this.msgbus.publish('map.scale', scale)
-        // let box2d = this.getTransform().visibleWorld()
-        // console.log(box2d + ' @' + near);
-        // let denominator = result[1]
+        const near_St = this.getTransform().stepMap()
+        this.msgbus.publish('map.scale', near_St[1])
+
+        var matrix_box3d = this._prepare_active_tiles(near_St[0])
+        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St[0]);
+    }
+
+    _prepare_active_tiles(near) {
+
         let matrix = this.getTransform().world_square
         const far = -1
         matrix[10] = -2.0 / (near - far)
@@ -142,9 +148,9 @@ class Map
         const box2d = this.getTransform().visibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-        this.ssctree.getTiles(box3d, gl)
-        this.renderer.render(matrix, box3d, near);
-        // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
+        this.ssctree.set_active_tiles(box3d, gl)
+
+        return [matrix, box3d]
     }
 
     doEaseNone(start, end)
