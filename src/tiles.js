@@ -819,7 +819,12 @@ export class SSCTree {
         // 
         // fetch('nl/tree_max9_fanout10_9.json')
 
-        fetch('de/tree_buchholz.json')
+        let countrycodeslash = 'de/';
+        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
+        //let jsonfile = 'tree_astar_lines.json';
+        //let jsonfile = 'tree_greedy_test.json';
+
+        fetch(countrycodeslash + jsonfile)
             .then(r => {
                 return r.json()
             })
@@ -832,7 +837,7 @@ export class SSCTree {
                     dataelements.forEach((tile) => {
                         tile.content = null
                         tile.last_touched = null
-                        tile.url = "de/" + tile.info + ".obj"
+                        tile.url = countrycodeslash + tile.info
                         //console.log('tile.url (dataset):', tile.url)
                     })
                 }
@@ -871,10 +876,6 @@ export class SSCTree {
          //console.log(tiles.length)
         return tiles
             .filter(elem => { // those tiles that are loaded and overlap the screen
-                //if (elem.content !== null && overlaps3d(box, elem.box)) {
-                //    console.log("elem.content !== null && overlaps3d(box, elem.box): True")
-                //}
-
                 return elem.content !== null && overlaps3d(box, elem.box)
             })
             .map(elem => { // set for each tile to be rendered the last accessed time

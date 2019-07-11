@@ -49,6 +49,7 @@ class Map
             this._transform = new Transform(
                 tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
                 tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
+                tree.no_of_steps_Ns,        //number of steps of the SSCTree (according to dataset) 
                 tree.center2d,              //center of the map extent (according to dataset)
                 [rect.width, rect.height],
                 tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)

@@ -61,11 +61,11 @@ function square_viewport_matrix(box)
 
 class Transform
 {
-    constructor(Sb, Nb, center_world, viewport_size, denominator) {
+    constructor(Sb, Nb, Ns, center_world, viewport_size, denominator) {
 
         this.Sb = Sb; // start scale denominator
         this.Nb = Nb; //total number of objects on base map 
-
+        this.Ns = Ns; //total number of steps
         // matrices
         this.viewport_world = create();
         this.world_viewport = create();
@@ -272,15 +272,17 @@ class Transform
         //let Sb = 24000  // (start scale denominator)
         //let total_steps = 262144 - 1   // how many generalization steps did the process take?
 
-        //let Sb = 50000  // start scale denominator, which is for calculating the number of steps according to the viewing scale
-        //let total_steps = 4803   // how many generalization steps did the process take?
-
-
-        //let total_steps = 3   // how many generalization steps did the process take?
+  
 
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator               
         let reductionf = 1 - Math.pow(this.Sb / St, 2) // reduction in percentage
-        let step = this.Nb * reductionf
+
+        //Originally, step = this.Nb * reductionf.
+        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
+        //If the base map has 5537 features and the goal map has 734 features,
+        //then there are 4803 steps (this.Nb != this.Ns + 1).
+        //It is better to use 'this.Ns + 1' instead of this.Nb
+        let step = (this.Ns + 1) * reductionf 
         return [Math.max(0, step), St]
     }
 
