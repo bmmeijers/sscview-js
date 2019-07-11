@@ -322,7 +322,7 @@ class ImageTileProgram extends DrawProgram
 {
     constructor(gl)
     {
-        console.log('here' + gl)
+        //console.log('here' + gl)
         // this.context = gl;
 
         let vertexShaderText = `
@@ -444,10 +444,10 @@ class ImageTileProgram extends DrawProgram
 
 export class Renderer
 {
-    constructor(gl, tileset) {
+    constructor(gl, ssctree) {
         this.context = gl
-        this.tileset = tileset
-        //console.log(this.tileset)
+        this.ssctree = ssctree
+        //console.log(this.ssctree)
         // this.map = map;
         // this.buckets = [];
         this.programs = [
@@ -477,7 +477,7 @@ export class Renderer
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
-        var tiles = this.tileset.getActiveTiles(box)
+        var tiles = this.ssctree.getActiveTiles(box)
         if (tiles.length > 0)
         {
             this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT)

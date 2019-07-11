@@ -61,8 +61,11 @@ function square_viewport_matrix(box)
 
 class Transform
 {
-    constructor(center_world, viewport_size, denominator)
-    {
+    constructor(Sb, Nb, center_world, viewport_size, denominator) {
+
+        this.Sb = Sb; // start scale denominator
+        this.Nb = Nb; //total number of objects on base map 
+
         // matrices
         this.viewport_world = create();
         this.world_viewport = create();
@@ -73,7 +76,7 @@ class Transform
         this.viewport = null;
         // set up initial transformation
         this.initTransform(center_world, viewport_size, denominator)
-        console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator() )
+        console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
     }
 
     // fixme: rename -> initTransform
@@ -272,13 +275,12 @@ class Transform
         //let Sb = 50000  // start scale denominator, which is for calculating the number of steps according to the viewing scale
         //let total_steps = 4803   // how many generalization steps did the process take?
 
-        let Sb = 50000  // start scale denominator
+
         //let total_steps = 3   // how many generalization steps did the process take?
 
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator
-        let Nb = 3  //total number of objects on base map        
-        let reductionf = 1 - Math.pow(Sb / St, 2) // reduction in percentage
-        let step = Nb * reductionf
+        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator               
+        let reductionf = 1 - Math.pow(this.Sb / St, 2) // reduction in percentage
+        let step = this.Nb * reductionf
         return [Math.max(0, step), St]
     }
 

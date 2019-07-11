@@ -32,20 +32,12 @@ class Map
         }
 
         const rect = this.getCanvasContainer().getBoundingClientRect()
-        this._transform = new Transform(
-            //[186300, 310600],
-            //[3565000.0, 5904000.0],
-            [3555384.53, 5907745.81], //center of dataset buchholz
-            [rect.width, rect.height],
-            200000
-        )
-        // renderer
-
         this._abort = null
 
         // data loader
         this.msgbus = new MessageBusConnector()
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
+            //console.log('1 subscribe data.tile.loaded')
             if (this._abort === null) {
                 console.log('Rendering because received:', topic, ", ", message, ", ", sender)
                 this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
@@ -53,6 +45,14 @@ class Map
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
+            var tree = this.ssctree.tree;
+            this._transform = new Transform(
+                tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
+                tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
+                tree.center2d,              //center of the map extent (according to dataset)
+                [rect.width, rect.height],
+                tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
+            )
             const result = this.getTransform().stepMap()
             const near = result[0]
             let matrix = this.getTransform().world_square
@@ -62,7 +62,7 @@ class Map
             const box2d = this.getTransform().visibleWorld()
             const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
             let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-            this.tileset.getTiles(box3d, gl)
+            this.ssctree.getTiles(box3d, gl)
         })
 
         this.msgbus.subscribe('map.scale', (topic, message, sender) => {
@@ -86,15 +86,17 @@ class Map
             // end modify
         })
 
-        this.tileset = new SSCTree(this.msgbus)
-        this.tileset.load()
+        this.ssctree = new SSCTree(this.msgbus)
+        this.ssctree.load()
+
+
 
         this.renderer = new Renderer(
             this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
-            this.tileset);
+            this.ssctree);
         this.renderer.setViewport(rect.width, rect.height)
 
-        this.abortAndRender()
+        //this.abortAndRender()
 
         // attach mouse handlers
         dragHandler(this)
@@ -104,7 +106,7 @@ class Map
         touchPinchHandler(this)
         touchDragHandler(this)
 
-        // this.evictor = new Evictor(this.tileset,
+        // this.evictor = new Evictor(this.ssctree,
         //                             this._container.getContext('webgl', { alpha: false, antialias: true }))
         // window.setInterval(() => {
         //     const box2d = this.getTransform().visibleWorld()
@@ -122,7 +124,7 @@ class Map
         return this._transform;
     }
 
-    render()
+    drawmap()
     {
         const result = this.getTransform().stepMap()
         const near = result[0]
@@ -139,7 +141,7 @@ class Map
         const box2d = this.getTransform().visibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-        this.tileset.getTiles(box3d, gl)
+        this.ssctree.getTiles(box3d, gl)
         this.renderer.render(matrix, box3d, near);
         // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
     }
@@ -157,7 +159,7 @@ class Map
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.drawmap();
             if (k == 1)
             {
                 this._abort = null
@@ -205,7 +207,7 @@ class Map
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.drawmap();
             if (k === 1)
             {
                 this._abort = null
@@ -267,7 +269,7 @@ class Map
             this._abort();
         }
         this.getTransform().pan(dx, -dy);
-        this.render();
+        this.drawmap();
     }
 
     zoom(x, y, factor)
@@ -287,7 +289,7 @@ class Map
             this._abort = null;
         }
         this.getTransform().pan(0, 0);
-        this.render();
+        this.drawmap();
     }
 
     zoomInAnimated(x, y, step)

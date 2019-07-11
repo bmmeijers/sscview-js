@@ -1,4 +1,5 @@
 import { now } from "./animate"
+import Transform from './transform';
 
 function overlaps2d(one, other) {
     // Separating axes theorem
@@ -60,19 +61,25 @@ class TileContent {
 
     load(url, gl) {
         let f = () => {
-            fetch(url)
-                .then(r => { return r.text() })
+            fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
+                .then(response => {
+                    return response.text()  //e.g., the text (dataset) stored in an .obj file
+                })
                 .then(
-                    mesh => {
-                        //this._process_polygons(mesh, gl, this.class_color_dt)
-                        this._process_lines(mesh, gl, this.class_color_dt)
+                    data_text => {
+                        //this._process_polygons(data_text, gl, this.class_color_dt)
+                        this._process_lines(data_text, gl, this.class_color_dt)
+                        
                         // this.msgbus.publish('data', 'tile.loaded.triangles')
+
+                        map.panBy(0, 0);
                     }
                 )
                 .catch(err => { console.error(err) })
         }
 
         f()
+        
         // q.add(f)
 
         // let image = new Image()
@@ -136,7 +143,8 @@ class TileContent {
         // let scope = this;
         // let client = new XMLHttpRequest();
         // client.open('GET', this.url, true);
-        // client.responseType = "text";  // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
+        // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
+        // client.responseType = "text";  
         // client.onreadystatechange = function()
         // {
         //     if (client.readyState === XMLHttpRequest.DONE && client.status === 200)
@@ -157,6 +165,11 @@ class TileContent {
         // client.send(null);
     }
 
+
+
+
+
+
     // let process_mesh = (data) => 
     // {
     //     return data.split('\n').map(
@@ -176,7 +189,7 @@ class TileContent {
     Allocates an ArrayBuffer and makes the data available
     to the main thread *without* copying overhead
     */
-    _process_polygons(response, gl, class_color_dt) {
+    _process_polygons(data_text, gl, class_color_dt) {
         //response is the content of an .obj file
 
         var step_high = [];
@@ -185,7 +198,7 @@ class TileContent {
         var triangle_color_lt = [];
         var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
         var deltas_bound_triangles = []; //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
-        response.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
+        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
         
         //console.log('Message received from worker');
@@ -204,10 +217,9 @@ class TileContent {
         triangleVertexPositionBuffer.numItems = vertexElements.length / 6;
         
         this.buffer = triangleVertexPositionBuffer;
-        map.panBy(0, 0)
     }
 
-    _obtain_triangleVertexPositionBuffer(response, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
+    _obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
 
         var step_high = [];
         var vertex_lt = [];
@@ -220,7 +232,7 @@ class TileContent {
             var deltas_bound_triangles = []; 
         }
         
-        response.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
+        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
         //console.log('Message received from worker');
@@ -253,11 +265,11 @@ class TileContent {
         return triangleVertexPositionBuffer;
     }
 
-    _process_lines(response, gl, class_color_dt) {
+    _process_lines(data_text, gl, class_color_dt) {
         //response is the content of an .obj file
 
         var deltas_bound_triangles = [];
-        this.buffer = this._obtain_triangleVertexPositionBuffer(response, gl, class_color_dt, 'line', deltas_bound_triangles)
+        this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'line', deltas_bound_triangles)
 
         let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         let displacementBuffer = gl.createBuffer();
@@ -278,7 +290,7 @@ class TileContent {
         displacementBuffer.numItems = displacementElements.length / 2;
 
         this.displacementBuffer = displacementBuffer;
-        map.panBy(0, 0);
+        
     }
 
 
@@ -741,7 +753,7 @@ class TileContent {
 }
 
 
-function visit(node, box)
+function visit(node, box3d)
 {
     // console.log(box)
     let result = []
@@ -752,7 +764,7 @@ function visit(node, box)
 
         // visit chids, if they overlap
         node.children.forEach(child => {
-            if (overlaps3d(node.box, box))
+            if (overlaps3d(node.box, box3d))
             {
                 stack.push(child)
             }
@@ -760,7 +772,7 @@ function visit(node, box)
 
         // add data elements to result list, if box overlaps
         node.dataelements.forEach(element => {
-            if (overlaps3d(element.box, box))
+            if (overlaps3d(element.box, box3d))
             {
                 result.push(element)
             }
@@ -808,19 +820,20 @@ export class SSCTree {
         // fetch('nl/tree_max9_fanout10_9.json')
 
         fetch('de/tree_buchholz.json')
-            .then((r) => {
-                return r.json()                
+            .then(r => {
+                return r.json()
             })
-            .then(                
+            .then(
                 (tree) => {
-                    //start_scale = tree.start_scale
                     this.tree = tree;
+                    let box3d = tree.box3d;
+                    tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                     let dataelements = visit_dataelements(this.tree)
                     dataelements.forEach((tile) => {
                         tile.content = null
                         tile.last_touched = null
                         tile.url = "de/" + tile.info + ".obj"
-                        console.log('tile.url (dataset):', tile.url)
+                        //console.log('tile.url (dataset):', tile.url)
                     })
                 }
             )
@@ -835,29 +848,27 @@ export class SSCTree {
             })
     }
 
-    getTiles(box, gl) {
+    getTiles(box3d, gl) {
         if (this.tree === null) { return }
 
-        let tiles = visit(this.tree, box)
+        let tiles = visit(this.tree, box3d)
         // FIXME: sort the tiles via the distance from center of the box?
-        tiles
-            .map(elem => {
-                if (!this.retrieved[elem.url] && elem.content === null) {
-                    // console.log("fetch: " + elem.url)
-
-                    let content = new TileContent(this.msgbus)
-                    content.load(elem.url, gl)
-                    elem.content = content
-                    this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
-                }
-            })
+        tiles.map(elem => {
+            if (!this.retrieved[elem.url] && elem.content === null) {
+                let content = new TileContent(this.msgbus)
+                content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
+                elem.content = content
+                this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
+            }
+        })
+        //map.panBy(0, 0);
     }
 
     getActiveTiles(box) {
         if (this.tree === null) { return [] }
 
         let tiles = visit(this.tree, box)
-        // console.log(tiles.length)
+         //console.log(tiles.length)
         return tiles
             .filter(elem => { // those tiles that are loaded and overlap the screen
                 //if (elem.content !== null && overlaps3d(box, elem.box)) {
@@ -875,56 +886,10 @@ export class SSCTree {
 
 }
 
-// export class TileSet {
-//     constructor() {
-//         this.tileset = null;
-//         this.retrieved = {}
-//     }
-
-//     load() {
-//         fetch('nl/7_tiles.json')
-//             .then((r) => { return r.json() })
-//             .then((tileset) => { 
-//                 this.tileset = tileset; 
-//                 this.tileset.forEach(tile =>
-//                     {
-//                         tile.content = null
-//                         tile.last_touched = null
-//                     })
-//             })
-//             .catch(err => { console.error(err) })
-//     }
-
-//     getTiles(box, gl) {
-//         if (this.tileset === null) { return }
-
-//         this.tileset.filter(elem => {
-//             return overlaps2d(box, elem.box)
-//         }).map(elem => {
-//             if (!this.retrieved[elem.url] && elem.content === null) {
-//                 let content = new TileContent()
-//                 content.load(elem.url, gl)
-//                 elem.content = content;
-//                 this.retrieved[elem.url] = true;
-//             }
-//         })
-//     }
-
-//     getActiveTiles(box) {
-//         if (this.tileset === null) { return [] }
-
-//         return this.tileset
-//             .filter(elem => { // those tiles that are loaded and overlap the screen
-//                 return elem.content !== null && overlaps2d(box, elem.box)
-//             })
-//             .map(elem => { // set for each tile to be rendered the last accessed time
-//                 elem.last_touched = now(); return elem})
-//     }
-// }
 
 export class Evictor {
-    constructor(tileset, gl) {
-        this.tileset = tileset
+    constructor(ssctree, gl) {
+        this.ssctree = ssctree
         this.gl = gl
     }
 
@@ -932,8 +897,8 @@ export class Evictor {
         console.log('evict called')
         let gl = this.gl
         let to_evict = []
-        if (this.tileset.tileset === null) { return; }
-        this.tileset.tileset.forEach(tile => {
+        if (this.ssctree.ssctree === null) { return; }
+        this.ssctree.ssctree.forEach(tile => {
             // remove tiles that were rendered more than 3 seconds ago
             // and that are currently not on the screen
             if (tile.last_touched !== null && (tile.last_touched + 3000) < now() && !overlaps2d(box, tile.box)) {
@@ -942,7 +907,7 @@ export class Evictor {
         })
         console.log(to_evict)
         to_evict.forEach(tile => {
-            this.tileset.retrieved[tile.url] = false
+            this.ssctree.retrieved[tile.url] = false
             tile.content.destroy(gl)
             tile.content = null
             tile.last_touched = null
