@@ -34,154 +34,72 @@ export function overlaps3d(one, other) {
 
 let isPowerOf2 = ((value) => {return (value & (value - 1)) == 0})
 
-// class Queue
-// {
-//     constructor()
-//     {
-//         // 
-//     }
-
-//     add()
-//     {
-
-//     }
-// }
-
-// let q = new Queue();
 
 class TileContent {
     constructor(msgbus) {
         this.msgbus = msgbus
-        this.buffer = null;
-
+        this.polygon_triangleVertexPositionBuffer = null;
+        this.line_triangleVertexPositionBuffer = null;
         this.displacementBuffer = null;
-        this.texture = null;
-        this.textureCoordBuffer = null;
+        // this.texture = null;
+        // this.textureCoordBuffer = null;
         this.class_color_dt = this.generate_class_color_dt();
+
+        //this.line_vertexElements = null;
+        //this.polygon_vertexElements = null;
+        //this.polygon_vertexElements = null;
     }
 
     load(url, gl) {
-        let f = () => {
-            fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
-                .then(response => {
-                    return response.text()  //e.g., the text (dataset) stored in an .obj file
-                })
-                .then(
-                    data_text => {
-                        this._process_polygons(data_text, gl, this.class_color_dt)
-                        //this._process_lines(data_text, gl, this.class_color_dt)
-                        
-                        // this.msgbus.publish('data', 'tile.loaded.triangles')
 
-                        map.panBy(0, 0);
-                    }
-                )
-                .catch(err => { console.error(err) })
-        }
+        fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
+            .then(response => {
+                return response.text()  //e.g., the text (dataset) stored in an .obj file
+            })
+            .then(
+                data_text => {
 
-        f()
-        
-        // q.add(f)
+                    this._process_lines(data_text, gl, this.class_color_dt)
+                    this._process_polygons(data_text, gl, this.class_color_dt)
+                    // this.msgbus.publish('data', 'tile.loaded.triangles')
 
-        // let image = new Image()
-        // let now = performance.now()
-        // image.crossOrigin = ""
-        // image.src = 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/0/0/0.png'
-        // image.addEventListener('load', () => {
-        //     this.texture = gl.createTexture();
-        //     gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        //     console.log(performance.now() - now)
-        //     if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
-        //     {
-        //         gl.generateMipmap(gl.TEXTURE_2D);
-        //     }
-        //     else
-        //     {
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        //     }
-        // })
+                    map.panBy(0, 0);
+                }
+            )
+            .catch(err => { console.error(err) })
 
-        // setup texture as placeholder for texture to be retrieved later
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        // Because images have to be download over the internet
-        // they might take a moment until they are ready.
-        // Until then put a single pixel in the texture so we can
-        // use it immediately. When the image has finished downloading
-        // we'll update the texture with the contents of the image.
-        const level = 0;
-        const internalFormat = gl.RGBA;
-        const width = 1;
-        const height = 1;
-        const border = 0;
-        const srcFormat = gl.RGBA;
-        const srcType = gl.UNSIGNED_BYTE;
-        const pixel = new Uint8Array([255, 255, 255, 255]);  // opaque blue
-        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                        width, height, border, srcFormat, srcType,
-                        pixel);
-
-        this.textureCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            0.0, 0.0, 
-            0.0, 1.0,
-            1.0, 1.0,
-            0.0, 0.0,
-            1.0, 1.0,
-            1.0, 0.0
-        ]), gl.STATIC_DRAW);
-    /*
-    this.texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-
-    var now = performance.now();
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-*/
-        // let scope = this;
-        // let client = new XMLHttpRequest();
-        // client.open('GET', this.url, true);
-        // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
-        // client.responseType = "text";  
-        // client.onreadystatechange = function()
-        // {
-        //     if (client.readyState === XMLHttpRequest.DONE && client.status === 200)
-        //     {
-        //         console.log('loaded tile ' + scope.url)
-        //         scope._process(client.response);
-        //         // var buf = new ArrayBuffer(client.response.length);
-        //         // buf = client.response;
-        //         // // Here we do transfer the buffer in a way that does not involve
-        //         // // copying the ArrayBuffer
-        //         // // Note, we do assume that this works, but as it has been added
-        //         // // to the spec later, this could not be implemented in a browser!
-        //         // postMessage(buf, [buf]);
-        //     }
-        //     // we close the worker process
-        //     // close();
-        // }
-        // client.send(null);
     }
 
+    //_obtain_data_from_text(data_text, gl, class_color_dt) {
+    //    var deltas_bound_triangles = [];
+    //    var line_and_polygon_vertexElements = 
+    //        _obtain_line_and_polygon_vertexElements(data_text, gl, class_color_dt, deltas_bound_triangles)
 
 
 
 
+    //}
 
-    // let process_mesh = (data) => 
-    // {
-    //     return data.split('\n').map(
-    //         line => 
-    //         {
-    //             return line.split(',').map(
-    //                 elem => {return parseFloat(elem)}
-    //             )
-    //         }
-    //     )
-    // }
+    //_obtain_line_and_polygon_vertexElements(data_text, gl,
+    //    class_color_dt, deltas_bound_triangles) {
+
+    //    var step_high = [];
+    //    var vertex_lt = [];
+    //    var feature_color = [];
+    //    var triangle_color_lt = [];
+    //    var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
+
+
+    //    data_text.split("\n").forEach(l => this.parseLine(l,
+    //        vertex_lt, class_color_dt, triangle_color_lt,
+    //        step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
+
+    //    var line_vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
+    //    var polygon_vertexElements = new Float32Array(triangle_color_lt);
+
+    //    return [line_vertexElements, polygon_vertexElements];
+    //}
+
 
 
     /**
@@ -192,14 +110,17 @@ class TileContent {
     */
     _process_polygons(data_text, gl, class_color_dt) {
         //data_text is the content of an .obj file
-        this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'polygon')
-    }    
+        this.polygon_triangleVertexPositionBuffer =
+            this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'polygon');
+    }
 
     _process_lines(data_text, gl, class_color_dt) {
         //data_text is the content of an .obj file
 
         var deltas_bound_triangles = [];
-        this.buffer = this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'line', deltas_bound_triangles)
+        this.line_triangleVertexPositionBuffer =
+            this._obtain_triangleVertexPositionBuffer(data_text, gl,
+                class_color_dt, 'line', deltas_bound_triangles)
 
         let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         let displacementBuffer = gl.createBuffer();
@@ -208,6 +129,7 @@ class TileContent {
         {
             let width_in_pixels = 0.45;
             let ratio = 0.0025 * width_in_pixels;
+            //let ratio = 0.01 * width_in_pixels;
             displacementElements.forEach(
                 function (val, index, arr) {
                     arr[index] = val * ratio;
@@ -219,10 +141,12 @@ class TileContent {
         displacementBuffer.itemSize = 2; //each item has only x and y
         displacementBuffer.numItems = displacementElements.length / 2;
 
-        this.displacementBuffer = displacementBuffer;        
+        this.displacementBuffer = displacementBuffer;
+        console.log("line displacementBuffer:", displacementBuffer)
     }
 
-    _obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, feature_type, deltas_bound_triangles = null) {
+    _obtain_triangleVertexPositionBuffer(data_text, gl,
+        class_color_dt, feature_type, deltas_bound_triangles = null) {
 
         var step_high = [];
         var vertex_lt = [];
@@ -235,17 +159,42 @@ class TileContent {
             var deltas_bound_triangles = [];
         }
 
-        data_text.split("\n").forEach(l => this.parseLine(l, vertex_lt, class_color_dt, triangle_color_lt,
+        data_text.split("\n").forEach(l => this.parseLine(l,
+            vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
         //console.log('Message received from worker');
         let triangleVertexPositionBuffer = gl.createBuffer();
 
+
+        console.log(feature_type + " triangleVertexPositionBuffer:", triangleVertexPositionBuffer)
+
         if (feature_type == 'polygon') {
             var vertexElements = new Float32Array(triangle_color_lt);
             var itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z            
             //each vertice has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
-            var extended_itemSize = 6; //for computing the number of vertices;  
+            var extended_itemSize = 6; //for computing the number of vertices;
+
+
+
+
+            //var numItems = vertexElements.length / extended_itemSize;
+            //var str = '[';
+
+            //for (var i = 0; i < 3; i++) {
+            //    for (var j = 0; j < numItems; j++) {
+            //        var index = j * 6 + i;
+            //        str += vertexElements[index] + ' ';
+            //    }
+            //    str += '; ';
+            //}
+
+            //for (var j = 0; j < numItems; j++) {
+            //    str += '1 ';
+            //}
+
+            //str += ']';
+            //console.log("triangleVertexPosition:", str);
         }
         else if (feature_type == 'line') {
             var vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
@@ -282,10 +231,13 @@ class TileContent {
             var feature_class = Number(words[1].split('_')[0]);
             feature_color[0] = class_color_dt[feature_class];
         } else if (words[0] == 'f') {
-            // 3 vertex indentifiers make a triangle
-            this.add_coordinates_colors(triangle_color_lt, vertex_lt[Number(words[1]) - 1], feature_color[0]);
-            this.add_coordinates_colors(triangle_color_lt, vertex_lt[Number(words[2]) - 1], feature_color[0]);
-            this.add_coordinates_colors(triangle_color_lt, vertex_lt[Number(words[3]) - 1], feature_color[0]);
+            // 3 vertex indentifiers make a triangle; add coordinates and colors
+            var f_color = feature_color[0];
+            for (i = 1; i <= 3; i++) {
+                var vertex = vertex_lt[Number(words[i]) - 1];
+                triangle_color_lt.push(vertex.x, vertex.y, vertex.z,
+                    f_color.r_frac, f_color.g_frac, f_color.b_frac);
+            }
         }
         else if (words[0] == '#') {
             // words[1]: step_high; words[2]: edge_id
@@ -330,6 +282,8 @@ class TileContent {
                 }
             }
         }
+
+        //#region vector computation
 
         function sub(a, b) {
             /*Subtract a vector b from a, or subtract a scalar*/
@@ -553,10 +507,10 @@ class TileContent {
             */
             return [v[1], -v[0]];
         }
+    
+
+    //#endregion
     }
-
-
-
 
     generate_class_color_dt() {
         var class_color_dt = {
@@ -583,147 +537,6 @@ class TileContent {
         };
         return class_color_dt;
     }
-
-    add_coordinates_colors(triangle_color_lt, vertex, feature_color) {
-        triangle_color_lt.push(
-            vertex.x, vertex.y, vertex.z,
-            feature_color.r_frac, feature_color.g_frac, feature_color.b_frac);        
-    }
-
-    //_process(response, gl) {
-    //    let result = []
-        
-    //    response.points.forEach(
-    //        point => result.push(...point)
-    //    )
-        
-    //    this._upload(gl, new Float32Array(result))
-
-    //    // fetch(response.texture)
-    //    //     .then(r => { return r.blob() })
-    //    //     .then(data => {
-    //    //         console.log(data) 
-
-    //    //         /*
-    //    //         function showImage(responseAsBlob) {
-    //    //             const container = document.getElementById('img-container');
-    //    //             const imgElem = document.createElement('img');
-    //    //             container.appendChild(imgElem);
-    //    //             const imgUrl = URL.createObjectURL(responseAsBlob);
-    //    //             imgElem.src = imgUrl;
-    //    //           }
-    //    //           */
-                  
-                
-    //    //         const imgElem = document.createElement('img');
-
-    //    //         const imgUrl = URL.createObjectURL(data)
-    //    //         imgElem.src = imgUrl
-
-    //    //         this.texture = gl.createTexture();
-    //    //         gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-    //    //         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgElem);
-    //    //         gl.generateMipmap(gl.TEXTURE_2D);
-    //    //     })
-    //    //     .catch(err => { console.error(err) })
-
-    //    // console.log('Retrieve ' + response.texture)
-    //    // fetch('/gpudemo/2019/03' 
-    //    // this.msgbus.publish('data', 'tile.loaded')
-
-    //    fetch(response.texture, {mode: 'cors'})
-    //        .then((response) => {
-    //            if (!response.ok) {
-    //                throw response;
-    //            }
-                
-    //            return response.blob();
-    //        })
-    //        .then((blob) => {
-    //            // Giving options does not work for Firefox (do we need to give all option fields?)
-    //            return createImageBitmap(blob
-    //                // , 
-    //                // {
-    //                // premultiplyAlpha: 'none',
-    //                // colorSpaceConversion: 'none',
-    //                // }
-    //                );
-    //        }).then((bitmap) => {
-                
-    //            this.texture = gl.createTexture();
-    //            gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-    //            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-    //            if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) 
-    //            {
-    //                gl.generateMipmap(gl.TEXTURE_2D);
-    //            }
-    //            else
-    //            {
-    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    //            }
-    //            this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
-    //        }).catch(function(e) {
-    //            console.error(e);
-    //        });
-
-    //    // // fetch texture, based on url inside the tile
-    //    // let image = new Image()
-    //    // let now = performance.now()
-    //    // image.crossOrigin = ""
-    //    // image.src = response.texture
-    //    // image.addEventListener('load', () => {
-    //    //     this.texture = gl.createTexture();
-    //    //     gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-    //    //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    //    //     console.log(performance.now() - now)
-    //    //     if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
-    //    //     {
-    //    //         gl.generateMipmap(gl.TEXTURE_2D);
-    //    //     }
-    //    //     else
-    //    //     {
-    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    //    //     }
-    //    // })
-
-    //    // let result = [];
-    //    // const splitted = response.split('\n');
-    //    // for (let i = 0, l = splitted.length; i < l; i++) {
-    //    //     const line = splitted[i];
-    //    //     line.split(",").forEach(element => {
-    //    //         result.push(parseFloat(element));
-    //    //     });
-    //    // }
-    //    // this._upload(gl, new Float32Array(result))
-    //}
-
-    //_upload(gl, mesh) {
-    //    this.buffer = gl.createBuffer();  //buffer is a reference to the memory location on the GPU
-    //    // bind buffer
-    //    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    //    // upload content to the GPU
-    //    gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
-    //    // remember number of triangles for this buffer
-    //    this.buffer.numItems = (mesh.length) / 3;
-    //    // do not keep the floatarray object alive
-    //    // now we have uploaded the triangles to the GPU
-    //    // FIXME: is this needed?
-    //    this.buffer.buffer = null
-    //}
-
-    //destroy(gl) {
-    //    gl.deleteBuffer(this.buffer);
-    //    gl.deleteBuffer(this.textureCoordBuffer);
-    //    gl.deleteTexture(this.texture);
-
-    //    this.buffer = null;
-    //    this.textureCoordBuffer = null;
-    //    this.texture = null;
-    //}
 }
 
 
@@ -794,8 +607,8 @@ export class SSCTree {
         // fetch('nl/tree_max9_fanout10_9.json')
 
         let countrycodeslash = 'de/';
-        //let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        let jsonfile = 'tree_greedy_test.json';
+        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
+        //let jsonfile = 'tree_greedy_test.json';
 
         fetch(countrycodeslash + jsonfile)
             .then(r => {
@@ -852,40 +665,6 @@ export class SSCTree {
                 // console.log(elem.info)
                 return elem
             })
-    }
-
-}
-
-
-export class Evictor {
-    constructor(ssctree, gl) {
-        this.ssctree = ssctree
-        this.gl = gl
-    }
-
-    evict(box) {
-        console.log('evict called')
-        let gl = this.gl
-        let to_evict = []
-        if (this.ssctree.ssctree === null) { return; }
-        this.ssctree.ssctree.forEach(tile => {
-            // remove tiles that were rendered more than 3 seconds ago
-            // and that are currently not on the screen
-            if (tile.last_touched !== null && (tile.last_touched + 3000) < now() && !overlaps2d(box, tile.box)) {
-                to_evict.push(tile)
-            }
-        })
-        console.log(to_evict)
-        to_evict.forEach(tile => {
-            this.ssctree.retrieved[tile.url] = false
-            tile.content.destroy(gl)
-            tile.content = null
-            tile.last_touched = null
-        })
-        // when we have removed tiles, let's clear the screen
-        if (to_evict.length > 0) {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        }
     }
 
 }

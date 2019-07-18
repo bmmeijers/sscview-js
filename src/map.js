@@ -124,7 +124,7 @@ class Map
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
-        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St[0]);
+        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St[0], this.getCanvasContainer().getBoundingClientRect());
     }
 
     _prepare_active_tiles(near) {
