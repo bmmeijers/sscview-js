@@ -1,106 +1,101 @@
 import { now } from "./animate"
 import Transform from './transform';
 
-function overlaps2d(one, other) {
-    // Separating axes theorem
-    // xmin=[0][0]
-    // xmax=[1][0]
-    // ymin=[0][1]
-    // ymax=[1][1]
-    // If one of the following is true then there can be no overlap
-    return !(one[1][0] < other[0][0] ||
-        one[0][0] > other[1][0] ||
-        one[1][1] < other[0][1] ||
-        one[0][1] > other[1][1])
-}
-
-
-export function overlaps3d(one, other) {
-    // Separating axes theorem, nD
-    const dims = 3
-    let are_overlapping = true;
-    for (let min = 0; min < dims; min++)
-    {
-        let max = min + dims
-        if ((one[max] < other[min]) || (one[min] > other[max]))
-        {
-            are_overlapping = false
-            break
-        }
+export class SSCTree {
+    constructor(msgbus) {
+        this.msgbus = msgbus
+        this.tree = null
+        this.retrieved = {}
     }
-    return are_overlapping
+
+    load() {
+        //
+        // FIXME: convert to worker that does this
+        // 
+        // fetch('nl/tree_max9_fanout10_9.json')
+
+        let countrycodeslash = 'de/';
+        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
+        //let jsonfile = 'tree_greedy_test.json';
+
+        fetch(countrycodeslash + jsonfile)
+            .then(r => {
+                return r.json()
+            })
+            .then(tree => {
+                this.tree = tree;
+                let box3d = tree.box3d;
+                tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
+                let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
+                dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
+                    element.content = null
+                    element.last_touched = null
+                    element.url = countrycodeslash + element.info
+                })
+            })
+            .then(() => {
+                this.msgbus.publish('data.tree.loaded', 'tree.ready')
+            }) // FIXME: Notify via PubSub that tree has loaded (should re-render map if not rendering)
+            .catch(err => {
+                console.error(err)
+            })
+    }
+
+    set_active_tiles(box3d, gl) {
+        if (this.tree === null) { return }
+
+        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
+        // FIXME: sort the tiles via the distance from center of the box?
+        overlapped_dataelements.map(elem => {
+            if (!this.retrieved[elem.url] && elem.content === null) {
+                let content = new TileContent(this.msgbus)
+                content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
+                elem.content = content
+                this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
+            }
+        })
+    }
+
+    get_active_tiles(box3d) {
+        if (this.tree === null) { return [] }
+
+        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
+        return overlapped_dataelements
+            .filter(elem => { // those tiles that are loaded and overlap the screen
+                //elem.content may have been assigned in function set_active_tiles
+                return elem.content !== null && overlaps3d(box3d, elem.box)
+            })
+            .map(elem => { // set for each tile to be rendered the last accessed time
+                elem.last_touched = now();
+                // console.log(elem.info)
+                return elem
+            })
+    }
+
 }
-
-
-let isPowerOf2 = ((value) => {return (value & (value - 1)) == 0})
 
 
 class TileContent {
     constructor(msgbus) {
         this.msgbus = msgbus
-        this.polygon_triangleVertexPositionBuffer = null;
         this.line_triangleVertexPositionBuffer = null;
         this.displacementBuffer = null;
-        // this.texture = null;
-        // this.textureCoordBuffer = null;
-        this.class_color_dt = this.generate_class_color_dt();
-
-        //this.line_vertexElements = null;
-        //this.polygon_vertexElements = null;
-        //this.polygon_vertexElements = null;
+        this.polygon_triangleVertexPositionBuffer = null;
     }
 
     load(url, gl) {
-
         fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
-            .then(response => {
-                return response.text()  //e.g., the text (dataset) stored in an .obj file
+            .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            
+            .then(data_text => {
+                var data_from_text = this._obtain_data_from_text(data_text, gl, this.class_color_dt);
+                this.line_triangleVertexPositionBuffer = data_from_text[0];
+                this.displacementBuffer = data_from_text[1];
+                this.polygon_triangleVertexPositionBuffer = data_from_text[2];
+
+                map.panBy(0, 0);
             })
-            .then(
-                data_text => {
-
-                    this._process_lines(data_text, gl, this.class_color_dt)
-                    this._process_polygons(data_text, gl, this.class_color_dt)
-                    // this.msgbus.publish('data', 'tile.loaded.triangles')
-
-                    map.panBy(0, 0);
-                }
-            )
-            .catch(err => { console.error(err) })
-
+            .catch(err => { console.error(err) });
     }
-
-    //_obtain_data_from_text(data_text, gl, class_color_dt) {
-    //    var deltas_bound_triangles = [];
-    //    var line_and_polygon_vertexElements = 
-    //        _obtain_line_and_polygon_vertexElements(data_text, gl, class_color_dt, deltas_bound_triangles)
-
-
-
-
-    //}
-
-    //_obtain_line_and_polygon_vertexElements(data_text, gl,
-    //    class_color_dt, deltas_bound_triangles) {
-
-    //    var step_high = [];
-    //    var vertex_lt = [];
-    //    var feature_color = [];
-    //    var triangle_color_lt = [];
-    //    var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
-
-
-    //    data_text.split("\n").forEach(l => this.parseLine(l,
-    //        vertex_lt, class_color_dt, triangle_color_lt,
-    //        step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
-
-    //    var line_vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
-    //    var polygon_vertexElements = new Float32Array(triangle_color_lt);
-
-    //    return [line_vertexElements, polygon_vertexElements];
-    //}
-
-
 
     /**
     Retrieve a chunk of data from the server
@@ -108,19 +103,13 @@ class TileContent {
     Allocates an ArrayBuffer and makes the data available
     to the main thread *without* copying overhead
     */
-    _process_polygons(data_text, gl, class_color_dt) {
-        //data_text is the content of an .obj file
-        this.polygon_triangleVertexPositionBuffer =
-            this._obtain_triangleVertexPositionBuffer(data_text, gl, class_color_dt, 'polygon');
-    }
-
-    _process_lines(data_text, gl, class_color_dt) {
+    _obtain_data_from_text(data_text, gl) {
         //data_text is the content of an .obj file
 
+        var class_color_dt = generate_class_color_dt();
         var deltas_bound_triangles = [];
-        this.line_triangleVertexPositionBuffer =
-            this._obtain_triangleVertexPositionBuffer(data_text, gl,
-                class_color_dt, 'line', deltas_bound_triangles)
+        var line_and_polygon_triangleVertexPositionBuffer = 
+            this._obtain_line_and_polygon_triangleVertexPositionBuffer(data_text, gl, class_color_dt, deltas_bound_triangles)
 
         let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         let displacementBuffer = gl.createBuffer();
@@ -141,12 +130,13 @@ class TileContent {
         displacementBuffer.itemSize = 2; //each item has only x and y
         displacementBuffer.numItems = displacementElements.length / 2;
 
-        this.displacementBuffer = displacementBuffer;
-        console.log("line displacementBuffer:", displacementBuffer)
+
+        return [line_and_polygon_triangleVertexPositionBuffer[0], displacementBuffer, line_and_polygon_triangleVertexPositionBuffer[1]];
     }
 
-    _obtain_triangleVertexPositionBuffer(data_text, gl,
-        class_color_dt, feature_type, deltas_bound_triangles = null) {
+
+    _obtain_line_and_polygon_triangleVertexPositionBuffer(data_text, gl,
+        class_color_dt, deltas_bound_triangles) {
 
         var step_high = [];
         var vertex_lt = [];
@@ -154,70 +144,43 @@ class TileContent {
         var triangle_color_lt = [];
         var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
 
-        if (deltas_bound_triangles == null) {
-            //movements of the vertices of the boundaries, in order to form triangles to display the boundaries
-            var deltas_bound_triangles = [];
-        }
-
-        data_text.split("\n").forEach(l => this.parseLine(l,
+        data_text.split("\n").forEach(l => this._parseLine(l,
             vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
-        //console.log('Message received from worker');
+        //obtain line_triangleVertexPositionBuffer;
+        var line_vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
+        var line_itemSize = 4; //the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
+        var line_extended_itemSize = line_itemSize; //for computing the number of vertices; 
+        var line_triangleVertexPositionBuffer = this._obtain_triangleVertexPositionBuffer(
+            gl, line_vertexElements, line_itemSize, line_extended_itemSize);
+
+        //obtain polygon_triangleVertexPositionBuffer;
+        var polygon_vertexElements = new Float32Array(triangle_color_lt);
+        var polygon_itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z 
+        //each vertex has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
+        var polygon_extended_itemSize = 6; //for computing the number of vertices;        
+        var polygon_triangleVertexPositionBuffer = this._obtain_triangleVertexPositionBuffer(
+            gl, polygon_vertexElements, polygon_itemSize, polygon_extended_itemSize);
+
+        return [line_triangleVertexPositionBuffer, polygon_triangleVertexPositionBuffer];
+    }
+
+
+    _obtain_triangleVertexPositionBuffer(gl, vertexElements, itemSize, extended_itemSize) {
+        
         let triangleVertexPositionBuffer = gl.createBuffer();
-
-
-        console.log(feature_type + " triangleVertexPositionBuffer:", triangleVertexPositionBuffer)
-
-        if (feature_type == 'polygon') {
-            var vertexElements = new Float32Array(triangle_color_lt);
-            var itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z            
-            //each vertice has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
-            var extended_itemSize = 6; //for computing the number of vertices;
-
-
-
-
-            //var numItems = vertexElements.length / extended_itemSize;
-            //var str = '[';
-
-            //for (var i = 0; i < 3; i++) {
-            //    for (var j = 0; j < numItems; j++) {
-            //        var index = j * 6 + i;
-            //        str += vertexElements[index] + ' ';
-            //    }
-            //    str += '; ';
-            //}
-
-            //for (var j = 0; j < numItems; j++) {
-            //    str += '1 ';
-            //}
-
-            //str += ']';
-            //console.log("triangleVertexPosition:", str);
-        }
-        else if (feature_type == 'line') {
-            var vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
-            var itemSize = 4; //the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
-            var extended_itemSize = itemSize;  //for computing the number of vertices; 
-        }
-
-        // bind buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertexElements, gl.STATIC_DRAW);
 
-        //itemSize is the number of elements, which is 3 for position, i.e., x, y, z
-        triangleVertexPositionBuffer.itemSize = itemSize;
-
-        //numItems is the number of vertices; 
-        //each vertice has 6 elements in triangle_color_lt, 
-        //i.e., x, y, z, r_frac, g_frac, b_frac
-        triangleVertexPositionBuffer.numItems = vertexElements.length / extended_itemSize;
+        triangleVertexPositionBuffer.itemSize = itemSize;        
+        triangleVertexPositionBuffer.numItems = vertexElements.length / extended_itemSize; //the number of vertices;
 
         return triangleVertexPositionBuffer;
     }
 
-    parseLine(line, vertex_lt, class_color_dt, triangle_color_lt,
+
+    _parseLine(line, vertex_lt, class_color_dt, triangle_color_lt,
         step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles) {
 
         var words = line.split(' ');
@@ -250,9 +213,6 @@ class TileContent {
             for (var i = 1; i < words.length; i++) {
                 polyline.push(vertex_lt[words[i] - 1]);
             }
-
-            //console.log("step_high[0]:", step_high[0]);
-            //console.log("polyline:", polyline);
 
             var point_records = [];
             for (var j = 0; j < polyline.length; j++) {
@@ -512,55 +472,30 @@ class TileContent {
     //#endregion
     }
 
-    generate_class_color_dt() {
-        var class_color_dt = {
-            2101: { r: 239, g: 200, b: 200, r_frac: 239 / 255, g_frac: 200 / 255, b_frac: 200 / 255 },
-            2112: { r: 255, g: 174, b: 185, r_frac: 255 / 255, g_frac: 174 / 255, b_frac: 185 / 255 },
-            2114: { r: 204, g: 204, b: 204, r_frac: 204 / 255, g_frac: 204 / 255, b_frac: 204 / 255 },
-            2201: { r: 138, g: 211, b: 175, r_frac: 138 / 255, g_frac: 211 / 255, b_frac: 175 / 255 },
-            2202: { r: 51, g: 204, b: 153, r_frac: 51 / 255, g_frac: 204 / 255, b_frac: 153 / 255 },
-            2213: { r: 170, g: 203, b: 175, r_frac: 170 / 255, g_frac: 203 / 255, b_frac: 175 / 255 },
-            2230: { r: 181, g: 227, b: 181, r_frac: 181 / 255, g_frac: 227 / 255, b_frac: 181 / 255 },
-            2301: { r: 157, g: 157, b: 108, r_frac: 157 / 255, g_frac: 157 / 255, b_frac: 108 / 255 },
-            3103: { r: 254, g: 254, b: 254, r_frac: 254 / 255, g_frac: 254 / 255, b_frac: 254 / 255 },
-            3302: { r: 204, g: 153, b: 255, r_frac: 204 / 255, g_frac: 153 / 255, b_frac: 255 / 255 },
-            4101: { r: 234, g: 216, b: 189, r_frac: 234 / 255, g_frac: 216 / 255, b_frac: 189 / 255 },
-            4102: { r: 230, g: 255, b: 204, r_frac: 230 / 255, g_frac: 255 / 255, b_frac: 204 / 255 },
-            4103: { r: 171, g: 223, b: 150, r_frac: 171 / 255, g_frac: 223 / 255, b_frac: 150 / 255 },
-            4104: { r: 255, g: 255, b: 192, r_frac: 255 / 255, g_frac: 255 / 255, b_frac: 192 / 255 },
-            4105: { r: 40, g: 200, b: 254, r_frac: 40 / 255, g_frac: 200 / 255, b_frac: 254 / 255 },
-            4107: { r: 141, g: 197, b: 108, r_frac: 141 / 255, g_frac: 197 / 255, b_frac: 108 / 255 },
-            4108: { r: 174, g: 209, b: 160, r_frac: 174 / 255, g_frac: 209 / 255, b_frac: 160 / 255 },
-            4109: { r: 207, g: 236, b: 168, r_frac: 207 / 255, g_frac: 236 / 255, b_frac: 168 / 255 },
-            4111: { r: 190, g: 239, b: 255, r_frac: 190 / 255, g_frac: 239 / 255, b_frac: 255 / 255 },
-            5112: { r: 181, g: 208, b: 208, r_frac: 181 / 255, g_frac: 208 / 255, b_frac: 208 / 255 },
-        };
-        return class_color_dt;
-    }
+
 }
 
 
-function obtain_overlapped_dataelements(node, box3d)
-{
+
+
+
+function obtain_overlapped_dataelements(node, box3d) {
     // console.log(box)
     let result = []
     let stack = [node]
-    while (stack.length > 0)
-    {
+    while (stack.length > 0) {
         let node = stack.pop()
 
         // visit chids, if they overlap
         node.children.forEach(child => {
-            if (overlaps3d(node.box, box3d))
-            {
+            if (overlaps3d(node.box, box3d)) {
                 stack.push(child)
             }
         });
 
         // add data elements to result list, if box overlaps
         node.dataelements.forEach(element => {
-            if (overlaps3d(element.box, box3d))
-            {
+            if (overlaps3d(element.box, box3d)) {
                 result.push(element)
             }
         });
@@ -569,14 +504,12 @@ function obtain_overlapped_dataelements(node, box3d)
 }
 
 
-function obtain_dataelements(root)
-{
+function obtain_dataelements(root) {
     // FIXME: make iterator/generator function* 
     // to avoid making the whole result list
     let result = []
     let stack = [root]
-    while (stack.length > 0)
-    {
+    while (stack.length > 0) {
         const node = stack.pop()
 
         // visit chids, if they overlap
@@ -592,82 +525,62 @@ function obtain_dataelements(root)
     return result
 }
 
-
-export class SSCTree {
-    constructor(msgbus) {
-        this.msgbus = msgbus
-        this.tree = null
-        this.retrieved = {}
-    }
-
-    load() {
-        //
-        // FIXME: convert to worker that does this
-        // 
-        // fetch('nl/tree_max9_fanout10_9.json')
-
-        let countrycodeslash = 'de/';
-        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        //let jsonfile = 'tree_greedy_test.json';
-
-        fetch(countrycodeslash + jsonfile)
-            .then(r => {
-                return r.json()
-            })
-            .then(tree => {
-                this.tree = tree;
-                let box3d = tree.box3d;
-                tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-                let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
-                dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
-                    element.content = null
-                    element.last_touched = null
-                    element.url = countrycodeslash + element.info
-                    //console.log('tile.url (dataset):', tile.url)
-                })
-            })
-            .then(() => {
-                this.msgbus.publish('data.tree.loaded', 'tree.ready')
-            }) // FIXME: Notify via PubSub that tree has loaded (should re-render map if not rendering)
-            .catch(err => {
-                console.error(err)
-            })
-    }
-
-    set_active_tiles(box3d, gl) {
-        if (this.tree === null) { return }
-
-        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
-        // FIXME: sort the tiles via the distance from center of the box?
-        overlapped_dataelements.map(elem => {
-            if (!this.retrieved[elem.url] && elem.content === null) {
-                let content = new TileContent(this.msgbus)
-                content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
-                elem.content = content
-                this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
-            }
-        })
-        //map.panBy(0, 0);
-    }
-
-    get_active_tiles(box3d) {
-        if (this.tree === null) { return [] }
-
-        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
-         //console.log(tiles.length)
-        return overlapped_dataelements
-            .filter(elem => { // those tiles that are loaded and overlap the screen
-                //elem.content may have been assigned in function set_active_tiles
-                return elem.content !== null && overlaps3d(box3d, elem.box)  
-            })
-            .map(elem => { // set for each tile to be rendered the last accessed time
-                elem.last_touched = now(); 
-                // console.log(elem.info)
-                return elem
-            })
-    }
-
+function overlaps2d(one, other) {
+    // Separating axes theorem
+    // xmin=[0][0]
+    // xmax=[1][0]
+    // ymin=[0][1]
+    // ymax=[1][1]
+    // If one of the following is true then there can be no overlap
+    return !(one[1][0] < other[0][0] ||
+        one[0][0] > other[1][0] ||
+        one[1][1] < other[0][1] ||
+        one[0][1] > other[1][1])
 }
+
+
+export function overlaps3d(one, other) {
+    // Separating axes theorem, nD
+    const dims = 3
+    let are_overlapping = true;
+    for (let min = 0; min < dims; min++) {
+        let max = min + dims
+        if ((one[max] < other[min]) || (one[min] > other[max])) {
+            are_overlapping = false
+            break
+        }
+    }
+    return are_overlapping
+}
+
+function generate_class_color_dt() {
+    var class_color_dt = {
+        2101: { r: 239, g: 200, b: 200, r_frac: 239 / 255, g_frac: 200 / 255, b_frac: 200 / 255 },
+        2112: { r: 255, g: 174, b: 185, r_frac: 255 / 255, g_frac: 174 / 255, b_frac: 185 / 255 },
+        2114: { r: 204, g: 204, b: 204, r_frac: 204 / 255, g_frac: 204 / 255, b_frac: 204 / 255 },
+        2201: { r: 138, g: 211, b: 175, r_frac: 138 / 255, g_frac: 211 / 255, b_frac: 175 / 255 },
+        2202: { r: 51, g: 204, b: 153, r_frac: 51 / 255, g_frac: 204 / 255, b_frac: 153 / 255 },
+        2213: { r: 170, g: 203, b: 175, r_frac: 170 / 255, g_frac: 203 / 255, b_frac: 175 / 255 },
+        2230: { r: 181, g: 227, b: 181, r_frac: 181 / 255, g_frac: 227 / 255, b_frac: 181 / 255 },
+        2301: { r: 157, g: 157, b: 108, r_frac: 157 / 255, g_frac: 157 / 255, b_frac: 108 / 255 },
+        3103: { r: 254, g: 254, b: 254, r_frac: 254 / 255, g_frac: 254 / 255, b_frac: 254 / 255 },
+        3302: { r: 204, g: 153, b: 255, r_frac: 204 / 255, g_frac: 153 / 255, b_frac: 255 / 255 },
+        4101: { r: 234, g: 216, b: 189, r_frac: 234 / 255, g_frac: 216 / 255, b_frac: 189 / 255 },
+        4102: { r: 230, g: 255, b: 204, r_frac: 230 / 255, g_frac: 255 / 255, b_frac: 204 / 255 },
+        4103: { r: 171, g: 223, b: 150, r_frac: 171 / 255, g_frac: 223 / 255, b_frac: 150 / 255 },
+        4104: { r: 255, g: 255, b: 192, r_frac: 255 / 255, g_frac: 255 / 255, b_frac: 192 / 255 },
+        4105: { r: 40, g: 200, b: 254, r_frac: 40 / 255, g_frac: 200 / 255, b_frac: 254 / 255 },
+        4107: { r: 141, g: 197, b: 108, r_frac: 141 / 255, g_frac: 197 / 255, b_frac: 108 / 255 },
+        4108: { r: 174, g: 209, b: 160, r_frac: 174 / 255, g_frac: 209 / 255, b_frac: 160 / 255 },
+        4109: { r: 207, g: 236, b: 168, r_frac: 207 / 255, g_frac: 236 / 255, b_frac: 168 / 255 },
+        4111: { r: 190, g: 239, b: 255, r_frac: 190 / 255, g_frac: 239 / 255, b_frac: 255 / 255 },
+        5112: { r: 181, g: 208, b: 208, r_frac: 181 / 255, g_frac: 208 / 255, b_frac: 208 / 255 },
+    };
+    return class_color_dt;
+}
+
+
+let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
 
 export default SSCTree
 

@@ -456,3 +456,16 @@
 //         //     // close();
 //         // }
 //         // client.send(null);
+
+
+
+
+
+    // onContentReady(obj)
+    // {
+    //     this.addBucket(obj.data)
+    //     // schedule re-render!
+    //     // FIXME: this should only happen when not already rendering /animating the map...
+    //     // should the map keep state of {animating|still} ???
+    //     // this.map.abortAndRender()
+    // }
