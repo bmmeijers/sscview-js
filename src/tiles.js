@@ -67,7 +67,6 @@ export class SSCTree {
             })
             .map(elem => { // set for each tile to be rendered the last accessed time
                 elem.last_touched = now();
-                // console.log(elem.info)
                 return elem
             })
     }
@@ -78,9 +77,9 @@ export class SSCTree {
 class TileContent {
     constructor(msgbus) {
         this.msgbus = msgbus
-        this.line_triangleVertexPositionBuffer = null;
+        this.line_triangleVertexPosBufr = null;
         this.displacementBuffer = null;
-        this.polygon_triangleVertexPositionBuffer = null;
+        this.polygon_triangleVertexPosBufr = null;
     }
 
     load(url, gl) {
@@ -88,9 +87,9 @@ class TileContent {
             .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            
             .then(data_text => {
                 var data_from_text = this._obtain_data_from_text(data_text, gl, this.class_color_dt);
-                this.line_triangleVertexPositionBuffer = data_from_text[0];
+                this.line_triangleVertexPosBufr = data_from_text[0];
                 this.displacementBuffer = data_from_text[1];
-                this.polygon_triangleVertexPositionBuffer = data_from_text[2];
+                this.polygon_triangleVertexPosBufr = data_from_text[2];
 
                 map.panBy(0, 0);
             })
@@ -108,8 +107,8 @@ class TileContent {
 
         var class_color_dt = generate_class_color_dt();
         var deltas_bound_triangles = [];
-        var line_and_polygon_triangleVertexPositionBuffer = 
-            this._obtain_line_and_polygon_triangleVertexPositionBuffer(data_text, gl, class_color_dt, deltas_bound_triangles)
+        var line_and_polygon_triangleVertexPosBufr = 
+            this._obtain_line_and_polygon_triangleVertexPosBufr(data_text, gl, class_color_dt, deltas_bound_triangles)
 
         let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         let displacementBuffer = gl.createBuffer();
@@ -131,11 +130,14 @@ class TileContent {
         displacementBuffer.numItems = displacementElements.length / 2;
 
 
-        return [line_and_polygon_triangleVertexPositionBuffer[0], displacementBuffer, line_and_polygon_triangleVertexPositionBuffer[1]];
+        return [
+            line_and_polygon_triangleVertexPosBufr[0],
+            displacementBuffer,
+            line_and_polygon_triangleVertexPosBufr[1]];
     }
 
 
-    _obtain_line_and_polygon_triangleVertexPositionBuffer(data_text, gl,
+    _obtain_line_and_polygon_triangleVertexPosBufr(data_text, gl,
         class_color_dt, deltas_bound_triangles) {
 
         var step_high = [];
@@ -148,35 +150,35 @@ class TileContent {
             vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
-        //obtain line_triangleVertexPositionBuffer;
+        //obtain line_triangleVertexPosBufr;
         var line_vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
         var line_itemSize = 4; //the number of elements, which is 4 for position, i.e., x, y, z (step_low), step_high
         var line_extended_itemSize = line_itemSize; //for computing the number of vertices; 
-        var line_triangleVertexPositionBuffer = this._obtain_triangleVertexPositionBuffer(
+        var line_triangleVertexPosBufr = this._obtain_triangleVertexPosBufr(
             gl, line_vertexElements, line_itemSize, line_extended_itemSize);
 
-        //obtain polygon_triangleVertexPositionBuffer;
+        //obtain polygon_triangleVertexPosBufr;
         var polygon_vertexElements = new Float32Array(triangle_color_lt);
         var polygon_itemSize = 3; //the number of elements, which is 3 for position, i.e., x, y, z 
         //each vertex has 6 elements in triangle_color_lt, i.e., x, y, z, r_frac, g_frac, b_frac
         var polygon_extended_itemSize = 6; //for computing the number of vertices;        
-        var polygon_triangleVertexPositionBuffer = this._obtain_triangleVertexPositionBuffer(
+        var polygon_triangleVertexPosBufr = this._obtain_triangleVertexPosBufr(
             gl, polygon_vertexElements, polygon_itemSize, polygon_extended_itemSize);
 
-        return [line_triangleVertexPositionBuffer, polygon_triangleVertexPositionBuffer];
+        return [line_triangleVertexPosBufr, polygon_triangleVertexPosBufr];
     }
 
 
-    _obtain_triangleVertexPositionBuffer(gl, vertexElements, itemSize, extended_itemSize) {
+    _obtain_triangleVertexPosBufr(gl, vertexElements, itemSize, extended_itemSize) {
         
-        let triangleVertexPositionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        let triangleVertexPosBufr = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         gl.bufferData(gl.ARRAY_BUFFER, vertexElements, gl.STATIC_DRAW);
 
-        triangleVertexPositionBuffer.itemSize = itemSize;        
-        triangleVertexPositionBuffer.numItems = vertexElements.length / extended_itemSize; //the number of vertices;
+        triangleVertexPosBufr.itemSize = itemSize;        
+        triangleVertexPosBufr.numItems = vertexElements.length / extended_itemSize; //the number of vertices;
 
-        return triangleVertexPositionBuffer;
+        return triangleVertexPosBufr;
     }
 
 
@@ -554,28 +556,37 @@ export function overlaps3d(one, other) {
 }
 
 function generate_class_color_dt() {
+
     var class_color_dt = {
-        2101: { r: 239, g: 200, b: 200, r_frac: 239 / 255, g_frac: 200 / 255, b_frac: 200 / 255 },
-        2112: { r: 255, g: 174, b: 185, r_frac: 255 / 255, g_frac: 174 / 255, b_frac: 185 / 255 },
-        2114: { r: 204, g: 204, b: 204, r_frac: 204 / 255, g_frac: 204 / 255, b_frac: 204 / 255 },
-        2201: { r: 138, g: 211, b: 175, r_frac: 138 / 255, g_frac: 211 / 255, b_frac: 175 / 255 },
-        2202: { r: 51, g: 204, b: 153, r_frac: 51 / 255, g_frac: 204 / 255, b_frac: 153 / 255 },
-        2213: { r: 170, g: 203, b: 175, r_frac: 170 / 255, g_frac: 203 / 255, b_frac: 175 / 255 },
-        2230: { r: 181, g: 227, b: 181, r_frac: 181 / 255, g_frac: 227 / 255, b_frac: 181 / 255 },
-        2301: { r: 157, g: 157, b: 108, r_frac: 157 / 255, g_frac: 157 / 255, b_frac: 108 / 255 },
-        3103: { r: 254, g: 254, b: 254, r_frac: 254 / 255, g_frac: 254 / 255, b_frac: 254 / 255 },
-        3302: { r: 204, g: 153, b: 255, r_frac: 204 / 255, g_frac: 153 / 255, b_frac: 255 / 255 },
-        4101: { r: 234, g: 216, b: 189, r_frac: 234 / 255, g_frac: 216 / 255, b_frac: 189 / 255 },
-        4102: { r: 230, g: 255, b: 204, r_frac: 230 / 255, g_frac: 255 / 255, b_frac: 204 / 255 },
-        4103: { r: 171, g: 223, b: 150, r_frac: 171 / 255, g_frac: 223 / 255, b_frac: 150 / 255 },
-        4104: { r: 255, g: 255, b: 192, r_frac: 255 / 255, g_frac: 255 / 255, b_frac: 192 / 255 },
-        4105: { r: 40, g: 200, b: 254, r_frac: 40 / 255, g_frac: 200 / 255, b_frac: 254 / 255 },
-        4107: { r: 141, g: 197, b: 108, r_frac: 141 / 255, g_frac: 197 / 255, b_frac: 108 / 255 },
-        4108: { r: 174, g: 209, b: 160, r_frac: 174 / 255, g_frac: 209 / 255, b_frac: 160 / 255 },
-        4109: { r: 207, g: 236, b: 168, r_frac: 207 / 255, g_frac: 236 / 255, b_frac: 168 / 255 },
-        4111: { r: 190, g: 239, b: 255, r_frac: 190 / 255, g_frac: 239 / 255, b_frac: 255 / 255 },
-        5112: { r: 181, g: 208, b: 208, r_frac: 181 / 255, g_frac: 208 / 255, b_frac: 208 / 255 },
+        2101: { r: 239, g: 200, b: 200 },
+        2112: { r: 255, g: 174, b: 185 },
+        2114: { r: 204, g: 204, b: 204 },
+        2201: { r: 138, g: 211, b: 175 },
+        2202: { r: 51, g: 204, b: 153 },
+        2213: { r: 170, g: 203, b: 175 },
+        2230: { r: 181, g: 227, b: 181 },
+        2301: { r: 157, g: 157, b: 108 },
+        3103: { r: 254, g: 254, b: 254 },
+        3302: { r: 204, g: 153, b: 255 },
+        4101: { r: 234, g: 216, b: 189 },
+        4102: { r: 230, g: 255, b: 204 },
+        4103: { r: 171, g: 223, b: 150 },
+        4104: { r: 255, g: 255, b: 192 },
+        4105: { r: 40, g: 200, b: 254 },
+        4107: { r: 141, g: 197, b: 108 },
+        4108: { r: 174, g: 209, b: 160 },
+        4109: { r: 207, g: 236, b: 168 },
+        4111: { r: 190, g: 239, b: 255 },
+        5112: { r: 181, g: 208, b: 208 },
     };
+
+    for (var key in class_color_dt) {
+        var color = class_color_dt[key];  //color is a dictionary of elements r, g, b
+        color.r_frac = color.r / 255;
+        color.g_frac = color.g / 255;
+        color.b_frac = color.b / 255;
+    }
+
     return class_color_dt;
 }
 

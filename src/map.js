@@ -92,12 +92,11 @@ class Map
 
         //this.abortAndRender()
 
-        // attach mouse handlers
-        dragHandler(this)
+        
+        dragHandler(this)  // attach mouse handlers
         // moveHandler(this)
-        scrollHandler(this)
-        // attach touch handlers
-        touchPinchHandler(this)
+        scrollHandler(this)        
+        touchPinchHandler(this) // attach touch handlers
         touchDragHandler(this)
 
         // this.evictor = new Evictor(this.ssctree,

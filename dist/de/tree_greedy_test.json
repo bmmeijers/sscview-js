@@ -3,7 +3,7 @@
   "start_scale_Sb": 50000,
   "no_of_objects_Nb": 3,
   "no_of_steps_Ns": 2,
-  "view_scale_Sv": 40000,
+  "view_scale_Sv": 50000,
   "box3d": [ 3542312.75, 5895329.47, 0.0, 3568456.31, 5920162.15, 4803.0 ],
   "children": [],
   "dataelements": [

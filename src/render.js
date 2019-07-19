@@ -117,12 +117,12 @@ class LineDrawProgram extends DrawProgram {
     draw_tilecontent(matrix, tilecontent, near) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
-        let triangleVertexPositionBuffer = tilecontent.line_triangleVertexPositionBuffer;
+        let triangleVertexPosBufr = tilecontent.line_triangleVertexPosBufr;
         let displacementBuffer = tilecontent.displacementBuffer;
 
         gl.useProgram(shaderProgram);
         // tilecontent.upload(gl);
-        if (triangleVertexPositionBuffer === null) {
+        if (triangleVertexPosBufr === null) {
             return;
         }
 
@@ -135,7 +135,7 @@ class LineDrawProgram extends DrawProgram {
         //stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
         //interleaved arrays.
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
@@ -169,7 +169,7 @@ class LineDrawProgram extends DrawProgram {
         gl.drawArrays(
             gl.TRIANGLES, //kind of primitives to render; e.g., POINTS, LINES
             0,            //Specifies the starting index in the enabled arrays.
-            triangleVertexPositionBuffer.numItems // Specifies the number of indices to be rendered.
+            triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
         );
     }
 }
@@ -216,13 +216,13 @@ class PolygonDrawProgram extends DrawProgram
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
         // tilecontent.upload(gl);
-        var triangleVertexPositionBuffer = tilecontent.polygon_triangleVertexPositionBuffer;
-        if (triangleVertexPositionBuffer === null)
+        var triangleVertexPosBufr = tilecontent.polygon_triangleVertexPosBufr;
+        if (triangleVertexPosBufr === null)
         {
             return;
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
         this._prepare_vertices(gl, shaderProgram, 'vertexColor', 3, 24, 12);
 
@@ -233,7 +233,7 @@ class PolygonDrawProgram extends DrawProgram
 
         //gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
-        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems);
+        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }    
 }
 
