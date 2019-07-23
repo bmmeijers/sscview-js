@@ -14,11 +14,13 @@ export class SSCTree {
         // 
         // fetch('nl/tree_max9_fanout10_9.json')
 
-        let countrycodeslash = 'de/';
-        let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
+        let data_folder = 'data/';
+        let jsonfile = 'tree.json';
+        // let jsonfile = 'tree_buchholz_greedy_tgap_bottoms_vario.json';
+        // let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
         //let jsonfile = 'tree_greedy_test.json';
 
-        fetch(countrycodeslash + jsonfile)
+        fetch(data_folder + jsonfile)
             .then(r => {
                 return r.json()
             })
@@ -30,7 +32,7 @@ export class SSCTree {
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
-                    element.url = countrycodeslash + element.info
+                    element.url = data_folder + element.info
                 })
             })
             .then(() => {

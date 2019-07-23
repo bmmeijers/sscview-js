@@ -1,7 +1,6 @@
 // FIXME: rename draw to renderFunc ?
 
-class DrawProgram
-{
+class DrawProgram {
     constructor(gl, vertexShaderText, fragmentShaderText) {
 
         const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderText);
@@ -31,7 +30,7 @@ class DrawProgram
         // gl.deleteShader(vertexShader);
         // gl.deleteShader(fragmentShader);
 
-        
+
 
         //
         // creates a shader of the given type, uploads the source and
@@ -39,7 +38,7 @@ class DrawProgram
         //
         function loadShader(gl, type, source) {
 
-            const shader = gl.createShader(type);            
+            const shader = gl.createShader(type);
             gl.shaderSource(shader, source); // Send the source to the shader object            
             gl.compileShader(shader); // Compile the shader program
 
@@ -55,7 +54,7 @@ class DrawProgram
     }
 
     _prepare_vertices(gl, shaderProgram, attribute_name, itemSize, stride, offset) {
-        
+
         const attrib_location = gl.getAttribLocation(shaderProgram, attribute_name);
         gl.enableVertexAttribArray(attrib_location);
         gl.vertexAttribPointer(
@@ -140,7 +139,7 @@ class LineDrawProgram extends DrawProgram {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
         this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
-    
+
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M_location, false, matrix);
@@ -176,8 +175,7 @@ class LineDrawProgram extends DrawProgram {
 
 
 
-class PolygonDrawProgram extends DrawProgram
-{
+class PolygonDrawProgram extends DrawProgram {
     constructor(gl) {
 
         let vertexShaderText = `
@@ -210,15 +208,13 @@ class PolygonDrawProgram extends DrawProgram
 
 
 
-    draw_tilecontent(matrix, tilecontent)
-    {
+    draw_tilecontent(matrix, tilecontent) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
         // tilecontent.upload(gl);
         var triangleVertexPosBufr = tilecontent.polygon_triangleVertexPosBufr;
-        if (triangleVertexPosBufr === null)
-        {
+        if (triangleVertexPosBufr === null) {
             return;
         }
 
@@ -234,7 +230,7 @@ class PolygonDrawProgram extends DrawProgram
         //gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-    }    
+    }
 }
 
 
@@ -242,8 +238,7 @@ class PolygonDrawProgram extends DrawProgram
 
 
 
-export class Renderer
-{
+export class Renderer {
     constructor(gl, ssctree) {
         this.gl = gl
         this.ssctree = ssctree
@@ -300,8 +295,7 @@ export class Renderer
     }
 
 
-    setViewport(width, height)
-    {
+    setViewport(width, height) {
         this.gl.viewport(0, 0, width, height);
     }
 

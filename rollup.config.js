@@ -17,15 +17,17 @@ if (isProduction) {
     plugins.push(uglify());
 }
 
+ var dist_folder = 'dist_buchholz_greedy';
+//var dist_folder = 'dist_buchholz_astar';
 module.exports = {
     input: 'src/index.js',
     output: {
-        file: 'dist/index.js',
+        file: dist_folder + '/index.js',
         moduleName: 'varioscale',
         name: 'varioscale',
         format: 'iife'
     },
-    sourcemap: 'dist/index.js.map',
+    sourcemap: dist_folder + '/index.js.map',
     plugins,
 };
 

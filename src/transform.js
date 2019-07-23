@@ -76,7 +76,7 @@ class Transform
         this.viewport = null;
         // set up initial transformation
         this.initTransform(center_world, viewport_size, denominator)
-        console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
+        //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
     }
 
     // fixme: rename -> initTransform
