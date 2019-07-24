@@ -22,6 +22,7 @@ export function scrollHandler (map) {
 
     function doMouseWheel(evt)
     {
+        console.log("doing mouse wheel!");
         // prevent from also scrolling the page -- not allowed when passive: true
         evt.preventDefault();
         // return if previous evt is shorter than n msec ago

@@ -25,7 +25,7 @@ const _now = (function () {
     else {
         return Date.now.bind(Date);
     }
-} ());
+}());
 export { _now as now };
 
 const frame = window.requestAnimationFrame ||
@@ -47,7 +47,7 @@ export function cancelFrame(id) {
     cancel(id);
 }
 
-export function timed (fn, dur, ctx) {
+export function timed(fn, dur, ctx) {
     if (!dur) {
         fn.call(ctx, 1);
         return null;
@@ -73,6 +73,6 @@ export function timed (fn, dur, ctx) {
 
     _frame(tick);
 
-    return function() { abort = true; };
+    return function () { abort = true; };
 }
 

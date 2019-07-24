@@ -37,6 +37,7 @@ export function touchPinchHandler (map) {
     }
 
     function getTouchPoints(event) {
+        console.log("doing mouse pinch touch points!");
         const r = canvas.getBoundingClientRect();
         const touches = event.touches;
         var points = [];
@@ -55,6 +56,7 @@ export function touchPinchHandler (map) {
     // var _startCenter = null;
 
     function doPinchStart(event) {
+        console.log("doing mouse pinch start!");
         if (!event.touches || event.touches.length !== 2) { return; }
         event.preventDefault();
 
@@ -74,6 +76,7 @@ export function touchPinchHandler (map) {
     }
 
     function doPinchMove(event) {
+        console.log("doing mouse pinch move!");
         if (!event.touches || event.touches.length !== 2 || (_now() - _startTime) < 30) { return; }
         console.log('time of touch ' + (_now() - _startTime));
         // we discard the first few movement events at the beginning (30 ms since start)
@@ -95,6 +98,7 @@ export function touchPinchHandler (map) {
     }
 
     function doPinchEnd(event) {
+        console.log("doing mouse pinch end!");
         if (event.touches.length !== 0) { return; }
         event.preventDefault();
         console.log('end');

@@ -17,8 +17,9 @@ if (isProduction) {
     plugins.push(uglify());
 }
 
- var dist_folder = 'dist_buchholz_greedy';
-//var dist_folder = 'dist_buchholz_astar';
+//var dist_folder = 'dist_test';
+//var dist_folder = 'dist_buchholz_greedy';
+var dist_folder = 'dist_buchholz_astar';
 module.exports = {
     input: 'src/index.js',
     output: {

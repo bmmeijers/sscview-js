@@ -12,9 +12,14 @@ import Rectangle from './rect';
 
 function pixel_to_meter(pixel)
 {
-    let inch = 0.0254000508001016002
-    let dpi = 144.0
-    return pixel * inch / dpi
+    return pixel / 3779.5275590551; 
+
+
+
+
+    //let inch = 0.0254000508001016002
+    //let dpi = 144.0
+    //return pixel * inch / dpi
 }
 
 function world_square_matrix(box, ar)
@@ -231,6 +236,7 @@ class Transform
 
     visibleWorld()
     {
+        //console.log("visibleWorld in transform.js")
         var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
         // we arrive at what part of the world then is visible
@@ -239,6 +245,7 @@ class Transform
 
     getCenter()
     {
+        //console.log("getCenter in transform.js")
         var center = this.backward([this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5, 
                                     this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
         return center
@@ -260,6 +267,21 @@ class Transform
                                               pixel_to_meter(this.viewport.width()), 
                                               pixel_to_meter(this.viewport.height()))
         let world_in_meter = this.visibleWorld()
+
+
+        console.log("this.viewport.width():", this.viewport.width());
+        console.log("this.viewport.height():", this.viewport.height());
+        console.log();
+        console.log("viewport_in_meter.width():", viewport_in_meter.width());
+        console.log("viewport_in_meter.height():", viewport_in_meter.height());
+        console.log("viewport_in_meter.area():", viewport_in_meter.area());
+        console.log();
+        console.log("world_in_meter.width():", world_in_meter.width());
+        console.log("world_in_meter.height():", world_in_meter.height());
+        console.log("world_in_meter.area():", world_in_meter.area());
+
+
+
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
@@ -274,7 +296,9 @@ class Transform
 
   
 
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator               
+        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
+        console.log("St:", St);
+
         let reductionf = 1 - Math.pow(this.Sb / St, 2) // reduction in percentage
 
         //Originally, step = this.Nb * reductionf.

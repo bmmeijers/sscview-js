@@ -22,6 +22,7 @@ export function touchDragHandler(map) {
     var _state = null;
 
     function doTouchDragStart(evt) {
+        console.log("doing mouse drag!");
         if (evt.touches.length > 1) {
             return;
         }
