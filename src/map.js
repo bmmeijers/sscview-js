@@ -39,14 +39,14 @@ class Map
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
             //console.log('1 subscribe data.tile.loaded')
             if (this._abort === null) {
-                console.log('Rendering because received:', topic, ", ", message, ", ", sender)
+                //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
                 this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
             }
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
             var tree = this.ssctree.tree;
-            console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
+            //console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
             this._transform = new Transform(
                 tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
                 tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
@@ -61,7 +61,7 @@ class Map
         })
 
         this.msgbus.subscribe('map.scale', (topic, message, sender) => {
-            console.log('message:', message)
+            //console.log('message:', message)
             const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             // console.log(`scale changed to: 1 : ${scale}`)
 

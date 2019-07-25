@@ -10,20 +10,9 @@ import Rectangle from './rect';
 // var = global / function scoped
 
 
-function pixel_to_meter(pixel)
-{
-    return pixel / 3779.5275590551; 
+var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
-
-
-
-    //let inch = 0.0254000508001016002
-    //let dpi = 144.0
-    //return pixel * inch / dpi
-}
-
-function world_square_matrix(box, ar)
-{
+function world_square_matrix(box, ar) {
     // Returns transform matrix to go from world to normalized square
     // FIXME: aspect ratio - is NOT taken into account ??? !!!
     let sx = 2. / ((box.xmax - box.xmin) * ar)
@@ -39,14 +28,13 @@ function world_square_matrix(box, ar)
 }
 
 
-function square_viewport_matrix(box)
-{
+function square_viewport_matrix(box) {
     // Returns transform matrix to go from normalized square to viewport
     // FIXME: can overflow? better to first multiply with 1/2?
     let sx = (box.xmax - box.xmin) * .5
     let sy = (box.ymax - box.ymin) * .5
-    let tx = (box.xmax + box.xmin)  * .5
-    let ty = (box.ymax + box.ymin)  * .5
+    let tx = (box.xmax + box.xmin) * .5
+    let ty = (box.ymax + box.ymin) * .5
     let m = create()
     m[0] = sx
     m[5] = sy
@@ -54,7 +42,6 @@ function square_viewport_matrix(box)
     m[13] = ty
     return m
 }
-
 
 // FIXME
 //
@@ -64,8 +51,7 @@ function square_viewport_matrix(box)
 // OrthoLH
 // OrthoRH
 
-class Transform
-{
+class Transform {
     constructor(Sb, Nb, Ns, center_world, viewport_size, denominator) {
 
         this.Sb = Sb; // start scale denominator
@@ -85,8 +71,7 @@ class Transform
     }
 
     // fixme: rename -> initTransform
-    initTransform(center_world, viewport_size, denominator)
-    {
+    initTransform(center_world, viewport_size, denominator) {
         // compute from the center of the world, the viewport size and the scale
         // denominator how much of the world is visible
         let cx = center_world[0],
@@ -95,17 +80,10 @@ class Transform
             height = viewport_size[1]
         let halfw = 0.5 * width,
             halfh = 0.5 * height
-        // aspect ratio
-        let aspect = width / height
-        // size in real world of viewport
-        let dpi = 96. 
-        // FIXME Use devicePixelRatio here?
-        let inch = 1.0 / 39.37
-        // # 0.0254 # in meter
-        let px_world = inch / dpi
+
         // get half visible screen size in world units,
         // when we look at it at this map scale (1:denominator)
-        let half_visible_screen = [px_world * halfw * denominator, px_world * halfh * denominator]
+        let half_visible_screen = [halfw / meter_to_pixel * denominator, halfh / meter_to_pixel * denominator]
         let xmin = cx - half_visible_screen[0],
             xmax = cx + half_visible_screen[0],
             ymin = cy - half_visible_screen[1],
@@ -116,8 +94,7 @@ class Transform
         // let visible_world = this.visibleWorld() //
         let visible_world = new Rectangle(xmin, ymin, xmax, ymax)
         // scaling/translating is then as follows:
-        let scale = [2. / visible_world.width(),
-                     2. / visible_world.height()]
+        let scale = [2. / visible_world.width(), 2. / visible_world.height()]
         let translate = [-scale[0] * cx, -scale[1] * cy]
         // by means of which we can calculate a world -> ndc square matrix
         let world_square = create()
@@ -139,8 +116,7 @@ class Transform
         //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
     }
 
-    backward(vec3)
-    {
+    backward(vec3) {
         let result = createvec3()
         vec3transform(result, vec3, this.viewport_world)
         return result
@@ -152,8 +128,7 @@ class Transform
         invert(this.viewport_world, this.world_viewport)
     }
 
-    pan(dx, dy)
-    {
+    pan(dx, dy) {
         this.square_viewport[12] += dx
         this.square_viewport[13] += dy
 
@@ -185,8 +160,7 @@ class Transform
         this.updateViewportTransform()
     }
 
-    zoom(factor, x, y)
-    {
+    zoom(factor, x, y) {
         var tmp = create()
         // 1. translate
         {
@@ -234,8 +208,7 @@ class Transform
         this.updateViewportTransform()
     }
 
-    visibleWorld()
-    {
+    visibleWorld() {
         //console.log("visibleWorld in transform.js")
         var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
@@ -243,62 +216,44 @@ class Transform
         return new Rectangle(ll[0], ll[1], tr[0], tr[1])
     }
 
-    getCenter()
-    {
+    getCenter() {
         //console.log("getCenter in transform.js")
-        var center = this.backward([this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5, 
-                                    this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
+        var center = this.backward([this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
+        this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
         return center
     }
 
-    getScaleDenominator() 
-    {
+    getScaleDenominator() {
         let viewport_in_meter = new Rectangle(0, 0,
-                                              pixel_to_meter(this.viewport.width()), 
-                                              pixel_to_meter(this.viewport.height()))
+            this.viewport.width() / meter_to_pixel,
+            this.viewport.height() / meter_to_pixel)
         let world_in_meter = this.visibleWorld()
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
         return St
     }
 
-    stepMap()
-    {
+    stepMap() {
         let viewport_in_meter = new Rectangle(0, 0,
-                                              pixel_to_meter(this.viewport.width()), 
-                                              pixel_to_meter(this.viewport.height()))
+            this.viewport.width() / meter_to_pixel,
+            this.viewport.height() / meter_to_pixel)
         let world_in_meter = this.visibleWorld()
-
-
-        console.log("this.viewport.width():", this.viewport.width());
-        console.log("this.viewport.height():", this.viewport.height());
-        console.log();
-        console.log("viewport_in_meter.width():", viewport_in_meter.width());
-        console.log("viewport_in_meter.height():", viewport_in_meter.height());
-        console.log("viewport_in_meter.area():", viewport_in_meter.area());
-        console.log();
-        console.log("world_in_meter.width():", world_in_meter.width());
-        console.log("world_in_meter.height():", world_in_meter.height());
-        console.log("world_in_meter.area():", world_in_meter.area());
-
-
+        
 
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
         //         and be kept there (for every dataset visualized on the map)
         // FIXME: should use this.getScaleDenominator()
-        
+
         // let Sb = 48000  // (start scale denominator)
         // let total_steps = 65536 - 1   // how many generalization steps did the process take?
 
         //let Sb = 24000  // (start scale denominator)
         //let total_steps = 262144 - 1   // how many generalization steps did the process take?
 
-  
+
 
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
-        console.log("St:", St);
-
         let reductionf = 1 - Math.pow(this.Sb / St, 2) // reduction in percentage
 
         //Originally, step = this.Nb * reductionf.
@@ -311,34 +266,5 @@ class Transform
     }
 
 }
-
-//function tst()
-//{
-//    let world = new Rectangle(90000, 95000, 440000, 445000);
-//    //console.log(world);
-//    let ws = world_square_matrix(world, 1.0)
-//    //console.log(ws);
-
-//    let viewport = new Rectangle(0, 0, 500, 500);
-//    //console.log(viewport);
-//    let sv = square_viewport_matrix(viewport)
-//    //console.log(sv);
-
-//    let world_viewport = Mat4.create();
-//    Mat4.multiply(world_viewport, ws, sv);
-//    //console.log(world_viewport);
-
-//    let result = Mat4.createvec3()
-
-//    let input = Mat4.createvec3()
-//    input[0] = 92500
-//    input[1] = 442500
-//    input[2] = 0
-
-//    Mat4.vec3transform(result, input, world_viewport)
-//    //console.log(result);
-//}
-
-//tst()
 
 export default Transform

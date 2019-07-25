@@ -22,7 +22,6 @@ export function touchDragHandler(map) {
     var _state = null;
 
     function doTouchDragStart(evt) {
-        console.log("doing mouse drag!");
         if (evt.touches.length > 1) {
             return;
         }
@@ -44,7 +43,6 @@ export function touchDragHandler(map) {
         _state = 'pending';
     }
     function doTouchDragMove(evt) {
-        console.log('touchmove');
         
         // when we detect more than 1 finger on the screen
         // we obviously do not want to pan, so we set the state to
