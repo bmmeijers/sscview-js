@@ -218,8 +218,9 @@ class Transform {
 
     getCenter() {
         //console.log("getCenter in transform.js")
-        var center = this.backward([this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
-        this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
+        var center = this.backward([
+            this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
+            this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
         return center
     }
 
@@ -237,7 +238,7 @@ class Transform {
             this.viewport.width() / meter_to_pixel,
             this.viewport.height() / meter_to_pixel)
         let world_in_meter = this.visibleWorld()
-        
+
 
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...

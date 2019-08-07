@@ -31,7 +31,8 @@ class Map
             throw new Error(`Container '${container}' not found.`)
         }
 
-        const rect = this.getCanvasContainer().getBoundingClientRect()
+        const rect = this.getCanvasContainer().getBoundingClientRect();
+        this.rect = rect;
         this._abort = null
 
         // data loader
@@ -67,18 +68,6 @@ class Map
 
             let el = document.getElementById("scale-denominator");
             el.textContent = " 1:" + scale;
-            // var li = document.createElement('li');
-            // var val = document.createTextNode(" 1:" + scale );
-            // li.appendChild(val);
-            // if (list.childNodes[0] !== undefined)
-            // {
-            //     list.replaceChild(li, list.childNodes[0]);
-            // }
-            // else
-            // {
-            //     list.appendChild(li);
-            // }
-            // end modify
         })
 
         this.ssctree = new SSCTree(this.msgbus)
@@ -124,7 +113,7 @@ class Map
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
-        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St[0], this.getCanvasContainer().getBoundingClientRect());
+        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St, this.rect);
     }
 
     _prepare_active_tiles(near) {
@@ -238,9 +227,8 @@ class Map
 
     animateZoom(x, y, factor)
     {
-        const rect = this.getCanvasContainer().getBoundingClientRect();
         const start = this.getTransform().world_square;
-        this.getTransform().zoom(factor, x, rect.height - y);
+        this.getTransform().zoom(factor, x, this.rect.height - y);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -248,7 +236,6 @@ class Map
 
     animatePan(dx, dy)
     {
-        // const rect = this.getCanvasContainer().getBoundingClientRect();
         const start = this.getTransform().world_square;
         this.getTransform().pan(dx, -dy);
         const end = this.getTransform().world_square;
@@ -269,8 +256,7 @@ class Map
 
     zoom(x, y, factor)
     {
-        const rect = this.getCanvasContainer().getBoundingClientRect();
-        this.getTransform().zoom(factor, x, rect.height - y);
+        this.getTransform().zoom(factor, x, this.rect.height - y);
         this.render();
     }
 
@@ -321,7 +307,7 @@ class Map
 
     resize(newWidth, newHeight)
     {
-        console.log("resize");
+        //console.log("resize");
         let tr = this.getTransform();
         let center = tr.getCenter();
         let denominator = tr.getScaleDenominator();

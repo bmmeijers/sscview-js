@@ -340,10 +340,16 @@ var varioscale = (function () {
     //            console.log(delta + " " + prev[1] + " " + step);
             }
 
+            //if the canvas has size 800 x 800, 
+            //evt.clientX: x-coordinate in pixel, starting from the left of the canvas (800 x 800)
+            //evt.clientY: y-coordinate in pixel, starting from the top of the canvas (800 x 800)        
+            //r has size 800 x 760 because of the bar (with height 39.92) at the top
+            //r.left = 0 and r.top = 39.92
             var r = _canvas.getBoundingClientRect();
-            var x = evt.clientX - r.left - _canvas.clientLeft;
-            var y = evt.clientY - r.top - _canvas.clientTop;
-            //console.log('wheel ' + [x, y] + " " + delta);
+            //const x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is 0
+            //const y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is 0
+            var x = evt.clientX - r.left;
+            var y = evt.clientY - r.top;
             switch(direction) 
             {
                 case 1:
@@ -1156,14 +1162,7 @@ var varioscale = (function () {
             height = viewport_size[1];
         var halfw = 0.5 * width,
             halfh = 0.5 * height;
-        //// aspect ratio
-        //let aspect = width / height
-        //// size in real world of viewport
-        //let dpi = 96.
-        //// FIXME Use devicePixelRatio here?
-        //let inch = 1.0 / 39.37
-        //// # 0.0254 # in meter
-        //let px_world = inch / dpi
+
         // get half visible screen size in world units,
         // when we look at it at this map scale (1:denominator)
         var half_visible_screen = [halfw / meter_to_pixel * denominator, halfh / meter_to_pixel * denominator];
@@ -1177,8 +1176,7 @@ var varioscale = (function () {
         // let visible_world = this.visibleWorld() //
         var visible_world = new Rectangle(xmin, ymin, xmax, ymax);
         // scaling/translating is then as follows:
-        var scale = [2. / visible_world.width(),
-        2. / visible_world.height()];
+        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
         var translate = [-scale[0] * cx, -scale[1] * cy];
         // by means of which we can calculate a world -> ndc square matrix
         var world_square = create();
@@ -1302,8 +1300,9 @@ var varioscale = (function () {
 
     Transform.prototype.getCenter = function getCenter () {
         //console.log("getCenter in transform.js")
-        var center = this.backward([this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
-        this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
+        var center = this.backward([
+            this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
+            this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
         return center
     };
 
@@ -1311,8 +1310,6 @@ var varioscale = (function () {
         var viewport_in_meter = new Rectangle(0, 0,
             this.viewport.width() / meter_to_pixel,
             this.viewport.height() / meter_to_pixel);
-            //pixel_to_meter(this.viewport.width()),
-            //pixel_to_meter(this.viewport.height()))
         var world_in_meter = this.visibleWorld();
         var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area());
         return St
@@ -1322,23 +1319,7 @@ var varioscale = (function () {
         var viewport_in_meter = new Rectangle(0, 0,
             this.viewport.width() / meter_to_pixel,
             this.viewport.height() / meter_to_pixel);
-
-            //pixel_to_meter(this.viewport.width()),
-            //pixel_to_meter(this.viewport.height()))
         var world_in_meter = this.visibleWorld();
-
-
-        //console.log("this.viewport.width():", this.viewport.width());
-        //console.log("this.viewport.height():", this.viewport.height());
-        //console.log();
-        //console.log("viewport_in_meter.width():", viewport_in_meter.width());
-        //console.log("viewport_in_meter.height():", viewport_in_meter.height());
-        //console.log("viewport_in_meter.area():", viewport_in_meter.area());
-        //console.log();
-        //console.log("world_in_meter.width():", world_in_meter.width());
-        //console.log("world_in_meter.height():", world_in_meter.height());
-        //console.log("world_in_meter.area():", world_in_meter.area());
-
 
 
         // FIXME: these 2 variables should be adjusted
@@ -1356,8 +1337,6 @@ var varioscale = (function () {
 
 
         var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()); //current scale denominator 
-        //console.log("St:", St);
-
         var reductionf = 1 - Math.pow(this.Sb / St, 2); // reduction in percentage
 
         //Originally, step = this.Nb * reductionf.
@@ -1443,7 +1422,7 @@ var varioscale = (function () {
     var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function LineDrawProgram(gl) {
 
-            var vertexShaderText = "\n            precision highp float;\n\n            attribute vec2 displacement;\n            attribute vec4 vertexPosition_modelspace;\n            uniform mat4 M;\n            uniform float near;\n\n            void main()\n            {\n                vec4 pos = vertexPosition_modelspace;\n\n                if (pos.z <= near && pos.w > near)\n                {\n                    vec4 vout = M * vec4(pos.xyz, 1.0);\n                    vout.x += displacement.x;\n                    vout.y += displacement.y;\n                    gl_Position = vout;\n                } else {\n                    gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n                    return;\n                }\n            }\n            ";
+            var vertexShaderText = "\n            precision highp float;\n\n            attribute vec2 displacement;\n            attribute vec4 vertexPosition_modelspace;\n            uniform mat4 M;\n            uniform float near;\n            uniform float half_width_reality;\n\n            void main()\n            {\n                vec4 pos = vertexPosition_modelspace;\n\n                if (pos.z <= near && pos.w > near)\n                {\n                    pos.x +=  displacement.x * half_width_reality;\n                    pos.y +=  displacement.y * half_width_reality;\n                    gl_Position = M * vec4(pos.xyz, 1.0);\n\n                } else {\n                    gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n                    return;\n                }\n            }\n            ";
 
             var fragmentShaderText = "\n            precision mediump float;\n\n            void main()\n            {\n                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // color of the lines: black\n            }\n            ";
 
@@ -1455,19 +1434,17 @@ var varioscale = (function () {
         LineDrawProgram.prototype.constructor = LineDrawProgram;
 
 
-        LineDrawProgram.prototype.draw_tilecontent = function draw_tilecontent (matrix, tilecontent, near) {
+        LineDrawProgram.prototype.draw_tilecontent = function draw_tilecontent (matrix, tilecontent, near_St) {
             var gl = this.gl;
             var shaderProgram = this.shaderProgram;
             var triangleVertexPosBufr = tilecontent.line_triangleVertexPosBufr;
             var displacementBuffer = tilecontent.displacementBuffer;
 
             gl.useProgram(shaderProgram);
-            // tilecontent.upload(gl);
             if (triangleVertexPosBufr === null) {
                 return;
             }
 
-            //console.log("near:", near);
 
             //void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
             //size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
@@ -1482,12 +1459,19 @@ var varioscale = (function () {
             gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
             this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
 
+            //the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
+            var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
+            var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;  //The unit of the map must be meter!!!
+
             {
                 var M_location = gl.getUniformLocation(shaderProgram, 'M');
                 gl.uniformMatrix4fv(M_location, false, matrix);
 
-                var where = gl.getUniformLocation(shaderProgram, 'near');
-                gl.uniform1f(where, near);
+                var near_location = gl.getUniformLocation(shaderProgram, 'near');
+                gl.uniform1f(near_location, near_St[0]);
+
+                var half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
+                gl.uniform1f(half_width_reality_location, half_width_reality);
             }
 
             // Set clear color to white, fully opaque
@@ -1595,7 +1579,7 @@ var varioscale = (function () {
     // // }, 15000)
     // }
 
-    Renderer.prototype.render_active_tiles = function render_active_tiles (matrix, box3d, near, rect) {
+    Renderer.prototype.render_active_tiles = function render_active_tiles (matrix, box3d, near_St, rect) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
@@ -1610,7 +1594,7 @@ var varioscale = (function () {
 
             var line_drawprogram = new LineDrawProgram(this.gl);
             tiles.forEach(function (tile) {
-                line_drawprogram.draw_tilecontent(matrix, tile.content, near);
+                line_drawprogram.draw_tilecontent(matrix, tile.content, near_St);
             });
         }
 
@@ -1641,11 +1625,9 @@ var varioscale = (function () {
         // 
         // fetch('nl/tree_max9_fanout10_9.json')
 
+        //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
         var data_folder = 'data/';
         var jsonfile = 'tree.json';
-        // let jsonfile = 'tree_buchholz_greedy_tgap_bottoms_vario.json';
-        // let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        //let jsonfile = 'tree_greedy_test.json';
 
         fetch(data_folder + jsonfile)
             .then(function (r) {
@@ -1743,17 +1725,6 @@ var varioscale = (function () {
         var displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         var displacementBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
-
-        {
-            var width_in_pixels = 0.45;
-            var ratio = 0.0025 * width_in_pixels;
-            //let ratio = 0.01 * width_in_pixels;
-            displacementElements.forEach(
-                function (val, index, arr) {
-                    arr[index] = val * ratio;
-                }
-            );
-        }
         gl.bufferData(gl.ARRAY_BUFFER, displacementElements, gl.STATIC_DRAW);
 
         displacementBuffer.itemSize = 2; //each item has only x and y
@@ -1778,8 +1749,8 @@ var varioscale = (function () {
         var triangle_color_lt = [];
         var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
 
-        data_text.split("\n").forEach(function (l) { return this$1._parseLine(l,
-            vertex_lt, class_color_dt, triangle_color_lt,
+        data_text.split("\n").forEach(function (l) { return this$1._parseLine(
+            l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles); });
 
         //obtain line_triangleVertexPosBufr;
@@ -1864,10 +1835,12 @@ var varioscale = (function () {
 
                 if (length != 0) {
                     var unitvec = div(v, length);
-                    var startr = bisector(mul(unitvec, -1), rotate90cw(unitvec));
-                    var startl = bisector(mul(unitvec, -1), rotate90ccw(unitvec));
-                    var endr = bisector(unitvec, rotate90cw(unitvec));
-                    var endl = bisector(unitvec, rotate90ccw(unitvec));
+                    //The lengths of startr, startl, endr, and endl are sqrt(2)
+                    var startr = add(mul(unitvec, -1), rotate90cw(unitvec));
+                    var startl = add(mul(unitvec, -1), rotate90ccw(unitvec));
+                    var endr = add(unitvec, rotate90cw(unitvec));
+                    var endl = add(unitvec, rotate90ccw(unitvec));
+
 
                     //start consists of x, y, z (step_low), step_high, while
                     //startl consists of only x, y
@@ -2000,57 +1973,6 @@ var varioscale = (function () {
         function norm(a) {
             /*L2 norm*/
             return Math.sqrt(norm2(a));
-        }
-
-
-        function unit(v) {
-            /*Returns the unit vector in the direction of v.*/
-            return div(v, norm(v));
-        }
-
-        function angle_unit(v1, v2) {
-            /*angle between 2 *unit* vectors*/
-            var d = dot(v1, v2);
-            if (d > 1.0 || d < -1.0) {
-                console.log("dot not in [-1, 1] -- clamp");
-            }
-            d = Math.max(-1.0, Math.min(1.0, d));
-            return Math.acos(d);
-        }
-
-        function near_zero(val) {
-            if (Math.abs(val) <= Math.pow(0.1, 8)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-
-
-        function bisector(u1, u2) {
-            /*Based on two unit vectors perpendicular to the wavefront,
-            get the bisector
-                
-            The magnitude of the bisector vector represents the speed
-                in which a vertex has to move to keep up(stay at the intersection of)
-            the 2 wavefront edges
-            */
-            var direction = add(u1, u2);
-
-            var max_value = 0;
-            for (var i = 0; i < direction.length; i++) {
-                max_value = Math.max(max_value, Math.abs(direction[i]));
-            }
-
-            if (near_zero(max_value)) {
-                return (0);
-            }
-            var alpha = 0.5 * Math.PI + 0.5 * angle_unit(u1, u2);
-            var magnitude = Math.sin(alpha);
-
-            var bisector_result = div(unit(direction), magnitude);
-            return bisector_result;
         }
 
 
@@ -2296,6 +2218,7 @@ var varioscale = (function () {
         }
 
         var rect = this.getCanvasContainer().getBoundingClientRect();
+        this.rect = rect;
         this._abort = null;
 
         // data loader
@@ -2331,18 +2254,6 @@ var varioscale = (function () {
 
             var el = document.getElementById("scale-denominator");
             el.textContent = " 1:" + scale;
-            // var li = document.createElement('li');
-            // var val = document.createTextNode(" 1:" + scale );
-            // li.appendChild(val);
-            // if (list.childNodes[0] !== undefined)
-            // {
-            // list.replaceChild(li, list.childNodes[0]);
-            // }
-            // else
-            // {
-            // list.appendChild(li);
-            // }
-            // end modify
         });
 
         this.ssctree = new SSCTree(this.msgbus);
@@ -2388,7 +2299,7 @@ var varioscale = (function () {
         this.msgbus.publish('map.scale', near_St[1]);
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0]);
-        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St[0], this.getCanvasContainer().getBoundingClientRect());
+        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St, this.rect);
     };
 
     Map.prototype._prepare_active_tiles = function _prepare_active_tiles (near) {
@@ -2504,9 +2415,8 @@ var varioscale = (function () {
 
     Map.prototype.animateZoom = function animateZoom (x, y, factor)
     {
-        var rect = this.getCanvasContainer().getBoundingClientRect();
         var start = this.getTransform().world_square;
-        this.getTransform().zoom(factor, x, rect.height - y);
+        this.getTransform().zoom(factor, x, this.rect.height - y);
         var end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -2514,7 +2424,6 @@ var varioscale = (function () {
 
     Map.prototype.animatePan = function animatePan (dx, dy)
     {
-        // const rect = this.getCanvasContainer().getBoundingClientRect();
         var start = this.getTransform().world_square;
         this.getTransform().pan(dx, -dy);
         var end = this.getTransform().world_square;
@@ -2535,8 +2444,7 @@ var varioscale = (function () {
 
     Map.prototype.zoom = function zoom (x, y, factor)
     {
-        var rect = this.getCanvasContainer().getBoundingClientRect();
-        this.getTransform().zoom(factor, x, rect.height - y);
+        this.getTransform().zoom(factor, x, this.rect.height - y);
         this.render();
     };
 
@@ -2587,7 +2495,7 @@ var varioscale = (function () {
 
     Map.prototype.resize = function resize (newWidth, newHeight)
     {
-        console.log("resize");
+        //console.log("resize");
         var tr = this.getTransform();
         var center = tr.getCenter();
         var denominator = tr.getScaleDenominator();

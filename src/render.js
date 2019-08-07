@@ -82,6 +82,7 @@ class LineDrawProgram extends DrawProgram {
             attribute vec4 vertexPosition_modelspace;
             uniform mat4 M;
             uniform float near;
+            uniform float half_width_reality;
 
             void main()
             {
@@ -89,10 +90,10 @@ class LineDrawProgram extends DrawProgram {
 
                 if (pos.z <= near && pos.w > near)
                 {
-                    vec4 vout = M * vec4(pos.xyz, 1.0);
-                    vout.x += displacement.x;
-                    vout.y += displacement.y;
-                    gl_Position = vout;
+                    pos.x +=  displacement.x * half_width_reality;
+                    pos.y +=  displacement.y * half_width_reality;
+                    gl_Position = M * vec4(pos.xyz, 1.0);
+
                 } else {
                     gl_Position = vec4(-10.0,-10.0,-10.0,1.0);
                     return;
@@ -113,19 +114,17 @@ class LineDrawProgram extends DrawProgram {
     }
 
 
-    draw_tilecontent(matrix, tilecontent, near) {
+    draw_tilecontent(matrix, tilecontent, near_St) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         let triangleVertexPosBufr = tilecontent.line_triangleVertexPosBufr;
         let displacementBuffer = tilecontent.displacementBuffer;
 
         gl.useProgram(shaderProgram);
-        // tilecontent.upload(gl);
         if (triangleVertexPosBufr === null) {
             return;
         }
 
-        //console.log("near:", near);
 
         //void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
         //size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
@@ -140,12 +139,19 @@ class LineDrawProgram extends DrawProgram {
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
         this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
 
+        //the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
+        var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
+        var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;  //The unit of the map must be meter!!!
+
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M_location, false, matrix);
 
-            let where = gl.getUniformLocation(shaderProgram, 'near');
-            gl.uniform1f(where, near);
+            let near_location = gl.getUniformLocation(shaderProgram, 'near');
+            gl.uniform1f(near_location, near_St[0]);
+
+            let half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
+            gl.uniform1f(half_width_reality_location, half_width_reality);
         }
 
         // Set clear color to white, fully opaque
@@ -267,7 +273,7 @@ export class Renderer {
     //     // }, 15000)
     // }
 
-    render_active_tiles(matrix, box3d, near, rect) {
+    render_active_tiles(matrix, box3d, near_St, rect) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
@@ -282,7 +288,7 @@ export class Renderer {
 
             var line_drawprogram = new LineDrawProgram(this.gl);
             tiles.forEach(tile => {
-                line_drawprogram.draw_tilecontent(matrix, tile.content, near);
+                line_drawprogram.draw_tilecontent(matrix, tile.content, near_St);
             })
         }
 

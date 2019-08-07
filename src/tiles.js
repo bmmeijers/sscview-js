@@ -14,11 +14,9 @@ export class SSCTree {
         // 
         // fetch('nl/tree_max9_fanout10_9.json')
 
+        //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
         let data_folder = 'data/';
         let jsonfile = 'tree.json';
-        // let jsonfile = 'tree_buchholz_greedy_tgap_bottoms_vario.json';
-        // let jsonfile = 'tree_buchholz_astar_tgap_bottoms_vario.json';
-        //let jsonfile = 'tree_greedy_test.json';
 
         fetch(data_folder + jsonfile)
             .then(r => {
@@ -115,17 +113,6 @@ class TileContent {
         let displacementElements = new Float32Array(deltas_bound_triangles.flat(1));
         let displacementBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
-
-        {
-            let width_in_pixels = 0.45;
-            let ratio = 0.0025 * width_in_pixels;
-            //let ratio = 0.01 * width_in_pixels;
-            displacementElements.forEach(
-                function (val, index, arr) {
-                    arr[index] = val * ratio;
-                }
-            );
-        }
         gl.bufferData(gl.ARRAY_BUFFER, displacementElements, gl.STATIC_DRAW);
 
         displacementBuffer.itemSize = 2; //each item has only x and y
@@ -148,8 +135,8 @@ class TileContent {
         var triangle_color_lt = [];
         var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
 
-        data_text.split("\n").forEach(l => this._parseLine(l,
-            vertex_lt, class_color_dt, triangle_color_lt,
+        data_text.split("\n").forEach(l => this._parseLine(
+            l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
 
         //obtain line_triangleVertexPosBufr;
@@ -234,10 +221,12 @@ class TileContent {
 
                 if (length != 0) {
                     var unitvec = div(v, length);
-                    var startr = bisector(mul(unitvec, -1), rotate90cw(unitvec));
-                    var startl = bisector(mul(unitvec, -1), rotate90ccw(unitvec));
-                    var endr = bisector(unitvec, rotate90cw(unitvec));
-                    var endl = bisector(unitvec, rotate90ccw(unitvec));
+                    //The lengths of startr, startl, endr, and endl are sqrt(2)
+                    var startr = add(mul(unitvec, -1), rotate90cw(unitvec));
+                    var startl = add(mul(unitvec, -1), rotate90ccw(unitvec));
+                    var endr = add(unitvec, rotate90cw(unitvec));
+                    var endl = add(unitvec, rotate90ccw(unitvec));
+
 
                     //start consists of x, y, z (step_low), step_high, while
                     //startl consists of only x, y
@@ -428,7 +417,6 @@ class TileContent {
             }
         }
 
-
         function bisector(u1, u2) {
             /*Based on two unit vectors perpendicular to the wavefront,
             get the bisector
@@ -448,8 +436,7 @@ class TileContent {
                 return (0, 0);
             }
             let alpha = 0.5 * Math.PI + 0.5 * angle_unit(u1, u2);
-            let magnitude = Math.sin(alpha);
-
+            let magnitude = Math.sin(alpha); //if u1 and u2 are unit vectors, then magnitude = sqrt(2) / 2
             var bisector_result = div(unit(direction), magnitude);
             return bisector_result;
         }

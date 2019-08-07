@@ -100,10 +100,16 @@ export function scrollHandler (map) {
 //            console.log(delta + " " + prev[1] + " " + step);
         }
 
+        //if the canvas has size 800 x 800, 
+        //evt.clientX: x-coordinate in pixel, starting from the left of the canvas (800 x 800)
+        //evt.clientY: y-coordinate in pixel, starting from the top of the canvas (800 x 800)        
+        //r has size 800 x 760 because of the bar (with height 39.92) at the top
+        //r.left = 0 and r.top = 39.92
         const r = _canvas.getBoundingClientRect();
-        const x = evt.clientX - r.left - _canvas.clientLeft;
-        const y = evt.clientY - r.top - _canvas.clientTop;
-        //console.log('wheel ' + [x, y] + " " + delta);
+        //const x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is 0
+        //const y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is 0
+        const x = evt.clientX - r.left;
+        const y = evt.clientY - r.top;
         switch(direction) 
         {
             case 1:

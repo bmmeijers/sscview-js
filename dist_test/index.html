@@ -197,7 +197,7 @@
                             <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
                             <label for="speed-2"></label>
                             <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
-
+                            <label for="speed-3"></label>
                             <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
                             <label for="speed-4">large</label>
                         </div>
@@ -218,12 +218,22 @@
                             long
                         </div>
                     </fieldset>
+                    <fieldset>
+                        <legend> boundary width</legend>
+                        <div class="w3-padding">
+                            width value (mm): <span id="width_value_box"></span>
+                        </div>
+                        <div class="w3-padding">
+                            narrow
+                            <input type="range" value="0.2" step="0.1" min="0" max="10" id="boundary_width_slider" style="margin: 0 16px 0 16px;">
+                            wide
+                        </div>
+                    </fieldset>
                 </div>
 
             </div>
             <footer class="w3-container w3-light-grey w3-padding">
-                <button class="w3-button w3-right w3-white w3-border"
-                        id="closeSettingsButton">
+                <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
                     Close
                 </button>
             </footer>
@@ -315,6 +325,16 @@
                     }
                 }
                 map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
+            });
+
+            //when we sliding the slider to tune the boundary width of the map,
+            //the map will relect in real time
+            var slider_boundarywidth = document.getElementById("boundary_width_slider")
+            var box_widthvalue = document.getElementById("width_value_box")
+            box_widthvalue.innerHTML = slider_boundarywidth.value; //display the initial value
+            slider_boundarywidth.addEventListener('input', function () {
+                box_widthvalue.innerHTML = slider_boundarywidth.value;
+                map.panBy(0, 0);
             });
 
             /* opening and closing the settings modal dialog */
