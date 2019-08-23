@@ -107,17 +107,16 @@ class Map
         return this._transform;
     }
 
-    drawmap()
+    render()
     {
         const near_St = this.getTransform().stepMap()
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
-        this.renderer.render_active_tiles(matrix_box3d[0], matrix_box3d[1], near_St, this.rect);
+        this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], near_St);
     }
 
     _prepare_active_tiles(near) {
-
         let matrix = this.getTransform().world_square
         const far = -1
         matrix[10] = -2.0 / (near - far)
@@ -125,8 +124,7 @@ class Map
         const box2d = this.getTransform().visibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-        this.ssctree.set_active_tiles(box3d, gl)
-
+        this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     }
 
@@ -143,7 +141,7 @@ class Map
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.drawmap();
+            this.render();
             if (k == 1)
             {
                 this._abort = null
@@ -191,7 +189,7 @@ class Map
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.drawmap();
+            this.render();
             if (k === 1)
             {
                 this._abort = null
@@ -251,7 +249,7 @@ class Map
             this._abort();
         }
         this.getTransform().pan(dx, -dy);
-        this.drawmap();
+        this.render();
     }
 
     zoom(x, y, factor)
@@ -270,7 +268,7 @@ class Map
             this._abort = null;
         }
         this.getTransform().pan(0, 0);
-        this.drawmap();
+        this.render();
     }
 
     zoomInAnimated(x, y, step)

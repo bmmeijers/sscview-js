@@ -225,7 +225,7 @@
                         </div>
                         <div class="w3-padding">
                             narrow
-                            <input type="range" value="0.2" step="0.1" min="0" max="10" id="boundary_width_slider" style="margin: 0 16px 0 16px;">
+                            <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary_width_slider" style="margin: 0 16px 0 16px;">
                             wide
                         </div>
                     </fieldset>
@@ -327,14 +327,14 @@
                 map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
             });
 
-            //when we sliding the slider to tune the boundary width of the map,
-            //the map will relect in real time
+            // when we sliding the slider to tune the boundary width of the map,
+            // the map will react in real time
             var slider_boundarywidth = document.getElementById("boundary_width_slider")
             var box_widthvalue = document.getElementById("width_value_box")
-            box_widthvalue.innerHTML = slider_boundarywidth.value; //display the initial value
+            box_widthvalue.innerHTML = slider_boundarywidth.value; // display the initial value
             slider_boundarywidth.addEventListener('input', function () {
                 box_widthvalue.innerHTML = slider_boundarywidth.value;
-                map.panBy(0, 0);
+                map.abortAndRender();
             });
 
             /* opening and closing the settings modal dialog */
