@@ -18,6 +18,7 @@ export class SSCTree {
         let data_folder = 'data/';
 //        let jsonfile = 'nodes.json';
         let jsonfile = 'tree_buchholz.json';
+        //let jsonfile = 'tree.json';
 
         fetch(data_folder + jsonfile)
             .then(r => {

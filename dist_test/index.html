@@ -127,7 +127,7 @@
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
             <div id="menu"
                  class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
-                <a id="openSettingsButton" class="w3-bar-item w3-button">Interaction settings</a>
+                <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
                 <!--
                 <a href="#" class="w3-bar-item w3-button">Link 2</a>
                 <a href="#" class="w3-bar-item w3-button">Link 3</a>
@@ -177,13 +177,9 @@
     <div id="settingsModal" class="w3-modal">
         <!-- style="touch-action: none;" -->
         <div class="w3-modal-content">
+            <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
-            <header class="w3-container w3-light-grey w3-padding">
-                <span id="closeSettingsSpan"
-                      class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
-                <h2>Interaction settings</h2>
-            </header>
-
+            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
             <div class="w3-container w3-padding">
                 <div class="setting">
                     <fieldset>
@@ -218,6 +214,12 @@
                             long
                         </div>
                     </fieldset>
+                </div>
+            </div>
+
+            <header class="w3-container w3-light-grey w3-padding"><h2>Displaying settings</h2></header>
+            <div class="w3-container w3-padding">
+                <div class="setting">
                     <fieldset>
                         <legend> boundary width</legend>
                         <div class="w3-padding">
@@ -230,8 +232,9 @@
                         </div>
                     </fieldset>
                 </div>
-
             </div>
+
+
             <footer class="w3-container w3-light-grey w3-padding">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
                     Close
