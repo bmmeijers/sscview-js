@@ -16,7 +16,8 @@ export class SSCTree {
 
         //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
         let data_folder = 'data/';
-        let jsonfile = 'tree.json';
+//        let jsonfile = 'nodes.json';
+        let jsonfile = 'tree_buchholz.json';
 
         fetch(data_folder + jsonfile)
             .then(r => {
@@ -24,7 +25,7 @@ export class SSCTree {
             })
             .then(tree => {
                 this.tree = tree;
-                let box3d = tree.box3d;
+                let box3d = tree.box;
                 tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                 let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
@@ -41,7 +42,7 @@ export class SSCTree {
             })
     }
 
-    set_active_tiles(box3d, gl) {
+    fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
 
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
@@ -51,12 +52,14 @@ export class SSCTree {
                 let content = new TileContent(this.msgbus)
                 content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
                 elem.content = content
-                this.retrieved[elem.url] = true // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
+                this.retrieved[elem.url] = true 
+                // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
+                // FIXME: put this in the tile itself, instead of in extra object 'this.retrieved'
             }
         })
     }
 
-    get_active_tiles(box3d) {
+    get_relevant_tiles(box3d) {
         if (this.tree === null) { return [] }
 
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
@@ -90,18 +93,11 @@ class TileContent {
                 this.line_triangleVertexPosBufr = data_from_text[0];
                 this.displacementBuffer = data_from_text[1];
                 this.polygon_triangleVertexPosBufr = data_from_text[2];
-
-                map.panBy(0, 0);
+                this.msgbus.publish('data.tile.loaded', 'tile.ready')
             })
             .catch(err => { console.error(err) });
     }
 
-    /**
-    Retrieve a chunk of data from the server
-
-    Allocates an ArrayBuffer and makes the data available
-    to the main thread *without* copying overhead
-    */
     _obtain_data_from_text(data_text, gl) {
         //data_text is the content of an .obj file
 
@@ -118,7 +114,6 @@ class TileContent {
         displacementBuffer.itemSize = 2; //each item has only x and y
         displacementBuffer.numItems = displacementElements.length / 2;
 
-
         return [
             line_and_polygon_triangleVertexPosBufr[0],
             displacementBuffer,
@@ -134,7 +129,6 @@ class TileContent {
         var feature_color = [];
         var triangle_color_lt = [];
         var vertices_bound_triangles = []; //vertices of the boundaries, in order to form triangles to display the boundaries
-
         data_text.split("\n").forEach(l => this._parseLine(
             l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
@@ -580,7 +574,7 @@ function generate_class_color_dt() {
 }
 
 
-let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
+// let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
 
 export default SSCTree
 

@@ -6,7 +6,7 @@ class DrawProgram {
         const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderText);
         const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
 
-        // create program: attach, link, validate, detach, delete
+        // Create program: attach, link, validate, detach, delete
         const shaderProgram = gl.createProgram();
         gl.attachShader(shaderProgram, vertexShader);
         gl.attachShader(shaderProgram, fragmentShader);
@@ -24,27 +24,23 @@ class DrawProgram {
         this.shaderProgram = shaderProgram;
         this.gl = gl;
 
-        // FIXME: when to call these detach/delete's?
+        // FIXME: when to call these detach/delete's? After succesful compilation?
         // gl.detachShader(this.shaderProgram, vertexShader);
         // gl.detachShader(this.shaderProgram, fragmentShader);
         // gl.deleteShader(vertexShader);
         // gl.deleteShader(fragmentShader);
 
-
-
-        //
         // creates a shader of the given type, uploads the source and
         // compiles it.
-        //
         function loadShader(gl, type, source) {
 
             const shader = gl.createShader(type);
-            gl.shaderSource(shader, source); // Send the source to the shader object            
+            gl.shaderSource(shader, source); // Send the source of the shader
             gl.compileShader(shader); // Compile the shader program
 
             // See if it compiled successfully
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                console.error('ERROR occurred while compiling the shaders: ' + gl.getShaderInfoLog(shader));
                 gl.deleteShader(shader);
                 return null;
             }
@@ -75,63 +71,75 @@ class DrawProgram {
 class LineDrawProgram extends DrawProgram {
     constructor(gl) {
 
+        this.colors = [[141,211,199]
+            ,[190,186,218]
+            ,[251,128,114]
+            ,[128,177,211]
+            ,[253,180,98]
+            ,[179,222,105]
+            ,[252,205,229]
+            ,[217,217,217]
+            ,[188,128,189]
+            ,[204,235,197]
+        ].map(x => { return [x[0]/255., x[1]/255., x[2]/255.]; });
+
         let vertexShaderText = `
-            precision highp float;
+precision highp float;
 
-            attribute vec2 displacement;
-            attribute vec4 vertexPosition_modelspace;
-            uniform mat4 M;
-            uniform float near;
-            uniform float half_width_reality;
+attribute vec2 displacement;
+attribute vec4 vertexPosition_modelspace;
+uniform mat4 M;
+uniform float near;
+uniform float half_width_reality;
 
-            void main()
-            {
-                vec4 pos = vertexPosition_modelspace;
+void main()
+{
+    vec4 pos = vertexPosition_modelspace;
 
-                if (pos.z <= near && pos.w > near)
-                {
-                    pos.x +=  displacement.x * half_width_reality;
-                    pos.y +=  displacement.y * half_width_reality;
-                    gl_Position = M * vec4(pos.xyz, 1.0);
+    if (pos.z <= near && pos.w > near)
+    {
+        pos.x +=  displacement.x * half_width_reality;
+        pos.y +=  displacement.y * half_width_reality;
+        gl_Position = M * vec4(pos.xyz, 1.0);
 
-                } else {
-                    gl_Position = vec4(-10.0,-10.0,-10.0,1.0);
-                    return;
-                }
-            }
-            `;
+    } else {
+        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);
+        return;
+    }
+}
+`;
 
         let fragmentShaderText = `
-            precision mediump float;
+precision mediump float;
+uniform vec4 uColor;
 
-            void main()
-            {
-                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // color of the lines: black
-            }
-            `;
+void main()
+{
+    gl_FragColor = uColor; // color of the lines
+}
+`;
 
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
 
-    draw_tilecontent(matrix, tilecontent, near_St) {
+    draw_tile(matrix, tile, near_St, width_increase) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
-        let triangleVertexPosBufr = tilecontent.line_triangleVertexPosBufr;
-        let displacementBuffer = tilecontent.displacementBuffer;
+        let triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
+        let displacementBuffer = tile.content.displacementBuffer;
 
-        gl.useProgram(shaderProgram);
         if (triangleVertexPosBufr === null) {
             return;
         }
+        gl.useProgram(shaderProgram);
 
-
-        //void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
-        //size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
-        //alpha channel, RGBA, it would be 4. If we have location data with (x,y,z) attributes, it would be 3; and if we
-        //had a fourth parameter w, (x,y,z,w), it would be 4. Texture parameters (s,t) would be 2. type is the datatype,
-        //stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
-        //interleaved arrays.
+        // void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
+        // size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
+        // alpha channel, RGBA, it would be 4. If we have location data with (x,y,z) attributes, it would be 3; and if we
+        // had a fourth parameter w, (x,y,z,w), it would be 4. Texture parameters (s,t) would be 2. type is the datatype,
+        // stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
+        // interleaved arrays.
 
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
@@ -139,9 +147,15 @@ class LineDrawProgram extends DrawProgram {
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
         this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
 
-        //the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
+        // the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
+        // FIXME: MM: at which amount of dots per inch has this been calculated?
         var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
-        var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;  //The unit of the map must be meter!!!
+        // The unit of the map must be meter!!!
+        var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
+        if (width_increase > 0)
+        {
+            half_width_reality *= width_increase;
+        }
 
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
@@ -152,28 +166,40 @@ class LineDrawProgram extends DrawProgram {
 
             let half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
             gl.uniform1f(half_width_reality_location, half_width_reality);
+            if (width_increase > 0)
+            {
+                var c = [0.0, 0.0, 0.0]; // black
+            }
+            else
+            {
+                // var c = this.colors[tile.id % this.colors.length];
+                var c = [1.0, 1.0, 1.0]; // white
+            }
+            var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
+            gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
         }
 
         // Set clear color to white, fully opaque
-        //gl.clearColor(1., 1., 1., 1.0);
-        //gl.clearDepth(1.0); // Clear everything
+        // gl.clearColor(1., 1., 1., 1.0);
+        // gl.clearDepth(1.0); // Clear everything
 
-        //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-        //gl.clear(gl.COLOR_BUFFER_BIT)
+        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+        // gl.clear(gl.COLOR_BUFFER_BIT)
 
-        //gl.disable(gl.BLEND);
+        // gl.disable(gl.BLEND);
+        gl.enable(gl.BLEND); // FIXME: needed?
         gl.disable(gl.DEPTH_TEST);
 
-        //gl.enable(gl.CULL_FACE);
-        //            gl.disable(gl.CULL_FACE);
+        // gl.enable(gl.CULL_FACE);
+        // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        //gl.cullFace(gl.BACK);
-        //gl.cullFace(gl.FRONT);
-        //            gl.cullFace(gl.FRONT_AND_BACK);
+        // gl.cullFace(gl.BACK);
+        // gl.cullFace(gl.FRONT);
+        // gl.cullFace(gl.FRONT_AND_BACK);
 
         gl.drawArrays(
-            gl.TRIANGLES, //kind of primitives to render; e.g., POINTS, LINES
-            0,            //Specifies the starting index in the enabled arrays.
+            gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
+            0,            // Specifies the starting index in the enabled arrays.
             triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
         );
     }
@@ -183,43 +209,38 @@ class LineDrawProgram extends DrawProgram {
 
 class PolygonDrawProgram extends DrawProgram {
     constructor(gl) {
-
         let vertexShaderText = `
-            precision highp float;
-            
-            attribute vec3 vertexPosition_modelspace;
-            attribute vec4 vertexColor;
-            uniform mat4 M;
-            varying vec4 fragColor;
-            
-            void main()
-            {
-              fragColor = vertexColor;
-              gl_Position = M * vec4(vertexPosition_modelspace, 1);
-            }
-        `;
+precision highp float;
 
+attribute vec3 vertexPosition_modelspace;
+attribute vec4 vertexColor;
+uniform mat4 M;
+varying vec4 fragColor;
+
+void main()
+{
+    fragColor = vertexColor;
+    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+}
+`;
         let fragmentShaderText = `
-            precision mediump float;
-            
-            varying vec4 fragColor;            
-            void main()
-            {
-              gl_FragColor = vec4(fragColor);
-            }
-        `;
+precision mediump float;
 
+varying vec4 fragColor;
+void main()
+{
+    gl_FragColor = vec4(fragColor);
+}
+`;
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
-
-
-    draw_tilecontent(matrix, tilecontent) {
+    draw_tile(matrix, tile) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
-        // tilecontent.upload(gl);
-        var triangleVertexPosBufr = tilecontent.polygon_triangleVertexPosBufr;
+
+        var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {
             return;
         }
@@ -233,7 +254,7 @@ class PolygonDrawProgram extends DrawProgram {
             gl.uniformMatrix4fv(M_location, false, matrix);
         }
 
-        //gl.disable(gl.BLEND);
+        gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
@@ -273,22 +294,36 @@ export class Renderer {
     //     // }, 15000)
     // }
 
-    render_active_tiles(matrix, box3d, near_St, rect) {
+    render_relevant_tiles(matrix, box3d, near_St, rect) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
-        var tiles = this.ssctree.get_active_tiles(box3d)
+
+        var tiles = this.ssctree.get_relevant_tiles(box3d)
+
+//        let gl = this.gl;
+//        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+//        gl.clearDepth(1.0); // Clear everything
+//        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+
         if (tiles.length > 0) {
 
-            var polygon_drawprogram = new PolygonDrawProgram(this.gl);
+            var polygon_draw_program = new PolygonDrawProgram(this.gl);
             tiles.forEach(tile => {
-                polygon_drawprogram.draw_tilecontent(matrix, tile.content);
+                polygon_draw_program.draw_tile(matrix, tile);
             })
 
-            var line_drawprogram = new LineDrawProgram(this.gl);
+            // FIXME: if lines have width == 0; why draw them?
+            // If we want to draw lines twice -> thick line under / small line over
+            // we need to do this twice + move the code for determining line width here...
+            var line_draw_program = new LineDrawProgram(this.gl);
             tiles.forEach(tile => {
-                line_drawprogram.draw_tilecontent(matrix, tile.content, near_St);
+                // FIXME: would be nice to specify width here in pixels.
+                // bottom lines (black)
+                line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                // interior (color)
+                line_draw_program.draw_tile(matrix, tile, near_St, 0);
             })
         }
 
