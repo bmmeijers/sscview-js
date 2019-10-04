@@ -856,552 +856,6 @@ var varioscale = (function () {
                 this.ymin + this.height() * 0.5]
     };
 
-    // TODO
-    // - Aspect ratio / resize of viewport --> update transform
-    // - Take into account the z-value of the slice
-    // - Remove duplication inside functions
-
-    // let = block scoped
-    // var = global / function scoped
-
-
-    var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
-
-
-    function square_viewport_matrix(box) {
-        // Returns transform matrix to go from normalized square to viewport
-        // FIXME: can overflow? better to first multiply with 1/2?
-        var sx = (box.xmax - box.xmin) * .5;
-        var sy = (box.ymax - box.ymin) * .5;
-        var tx = (box.xmax + box.xmin) * .5;
-        var ty = (box.ymax + box.ymin) * .5;
-        var m = create();
-        m[0] = sx;
-        m[5] = sy;
-        m[12] = tx;
-        m[13] = ty;
-        return m
-    }
-
-    // FIXME
-    //
-    // Check handedness of the 3D system and get it right + consistent!
-    // https://github.com/g-truc/glm/blob/master/glm/gtc/matrix_transform.inl
-    //
-    // OrthoLH
-    // OrthoRH
-
-    var Transform = function Transform(Sb, Nb, Ns, center_world, viewport_size, denominator) {
-
-        this.Sb = Sb; // start scale denominator
-        this.Nb = Nb; //total number of objects on base map 
-        this.Ns = Ns; //total number of steps
-        // matrices
-        this.viewport_world = create();
-        this.world_viewport = create();
-        //
-        this.world_square = null;
-        this.square_viewport = null;
-        //
-        this.viewport = null;
-        // set up initial transformation
-        this.initTransform(center_world, viewport_size, denominator);
-        //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
-    };
-
-    // fixme: rename -> initTransform
-    Transform.prototype.initTransform = function initTransform (center_world, viewport_size, denominator) {
-        // compute from the center of the world, the viewport size and the scale
-        // denominator how much of the world is visible
-        var cx = center_world[0],
-            cy = center_world[1];
-        var width = viewport_size[0],
-            height = viewport_size[1];
-        var halfw = 0.5 * width,
-            halfh = 0.5 * height;
-
-        // get half visible screen size in world units,
-        // when we look at it at this map scale (1:denominator)
-        var half_visible_screen = [halfw / meter_to_pixel * denominator, halfh / meter_to_pixel * denominator];
-        var xmin = cx - half_visible_screen[0],
-            xmax = cx + half_visible_screen[0],
-            ymin = cy - half_visible_screen[1],
-            ymax = cy + half_visible_screen[1];
-        // the size of the viewport 
-        this.viewport = new Rectangle(0, 0, width, height);
-        // we arrive at what part of the world then is visible
-        // let visible_world = this.visibleWorld() //
-        var visible_world = new Rectangle(xmin, ymin, xmax, ymax);
-        // scaling/translating is then as follows:
-        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
-        var translate = [-scale[0] * cx, -scale[1] * cy];
-        // by means of which we can calculate a world -> ndc square matrix
-        var world_square = create();
-        world_square[0] = scale[0];
-        world_square[5] = scale[1];
-        world_square[12] = translate[0];
-        world_square[13] = translate[1];
-        this.world_square = world_square;
-        //console.log("INITIAL world square" + world_square);
-        // we can set up ndc square -> viewport matrix
-
-        this.square_viewport = square_viewport_matrix(this.viewport);
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        this.updateViewportTransform();
-
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
-        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
-    };
-
-    Transform.prototype.backward = function backward (vec3) {
-        var result = createvec3();
-        vec3transform(result, vec3, this.viewport_world);
-        return result
-    };
-
-    Transform.prototype.updateViewportTransform = function updateViewportTransform () {
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        _multiply(this.world_viewport, this.square_viewport, this.world_square);
-        invert(this.viewport_world, this.world_viewport);
-    };
-
-    Transform.prototype.pan = function pan (dx, dy) {
-        this.square_viewport[12] += dx;
-        this.square_viewport[13] += dy;
-
-        _multiply(this.world_viewport, this.square_viewport, this.world_square);
-        invert(this.viewport_world, this.world_viewport);
-
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
-        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
-
-        // we arrive at what part of the world then is visible
-        var visible_world = this.visibleWorld(); // new Rectangle(ll[0], ll[1], tr[0], tr[1])
-        var center = visible_world.center();
-        // scaling/translating is then as follows:
-        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
-        var translate = [-scale[0] * center[0], -scale[1] * center[1]];
-        // by means of which we can calculate a world -> ndc square matrix
-        var world_square = create();
-        world_square[0] = scale[0];
-        world_square[5] = scale[1];
-        world_square[12] = translate[0];
-        world_square[13] = translate[1];
-        this.world_square = world_square;
-        // and given the size of the viewport we can set up ndc square -> viewport matrix
-        // this.viewport = new Rectangle(0, 0, width, height)
-        this.square_viewport = square_viewport_matrix(this.viewport);
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        this.updateViewportTransform();
-    };
-
-    Transform.prototype.zoom = function zoom (factor, x, y) {
-        var tmp = create();
-        // 1. translate
-        {
-            var eye = create();
-            eye[12] = -x;
-            eye[13] = -y;
-            _multiply(tmp, eye, this.square_viewport);
-        }
-        // 2. scale
-        {
-            var eye$1 = create();
-            eye$1[0] = factor;
-            eye$1[5] = factor;
-            _multiply(tmp, eye$1, tmp);
-        }
-        // 3. translate back
-        {
-            var eye$2 = create();
-            eye$2[12] = x;
-            eye$2[13] = y;
-            _multiply(tmp, eye$2, tmp);
-        }
-        this.square_viewport = tmp;
-        _multiply(this.world_viewport, this.square_viewport, this.world_square);
-        invert(this.viewport_world, this.world_viewport);
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        // we arrive at what part of the world then is visible
-        var visible_world = this.visibleWorld(); // new Rectangle(ll[0], ll[1], tr[0], tr[1])
-        var center = visible_world.center();
-        // scaling/translating is then as follows:
-        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
-        var translate = [-scale[0] * center[0], -scale[1] * center[1]];
-        // by means of which we can calculate a world -> ndc square matrix
-        var world_square = create();
-        world_square[0] = scale[0];
-        world_square[5] = scale[1];
-        world_square[12] = translate[0];
-        world_square[13] = translate[1];
-        this.world_square = world_square;
-        // and given the size of the viewport we can set up ndc square -> viewport matrix
-        // this.viewport = new Rectangle(0, 0, width, height)
-        this.square_viewport = square_viewport_matrix(this.viewport);
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        this.updateViewportTransform();
-    };
-
-    Transform.prototype.visibleWorld = function visibleWorld () {
-        //console.log("visibleWorld in transform.js")
-        var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        // we arrive at what part of the world then is visible
-        return new Rectangle(ll[0], ll[1], tr[0], tr[1])
-    };
-
-    Transform.prototype.getCenter = function getCenter () {
-        //console.log("getCenter in transform.js")
-        var center = this.backward([
-            this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
-            this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
-        return center
-    };
-
-    Transform.prototype.getScaleDenominator = function getScaleDenominator () {
-        var viewport_in_meter = new Rectangle(0, 0,
-            this.viewport.width() / meter_to_pixel,
-            this.viewport.height() / meter_to_pixel);
-        var world_in_meter = this.visibleWorld();
-        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area());
-        return St
-    };
-
-    Transform.prototype.stepMap = function stepMap () {
-        var viewport_in_meter = new Rectangle(0, 0,
-            this.viewport.width() / meter_to_pixel,
-            this.viewport.height() / meter_to_pixel);
-        var world_in_meter = this.visibleWorld();
-
-
-        // FIXME: these 2 variables should be adjusted
-        //     based on which tGAP is used...
-        // FIXME: this step mapping should move to the data side (the tiles)
-        //     and be kept there (for every dataset visualized on the map)
-        // FIXME: should use this.getScaleDenominator()
-
-        // let Sb = 48000  // (start scale denominator)
-        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        //let Sb = 24000  // (start scale denominator)
-        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-
-
-        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()); //current scale denominator 
-        var reductionf = 1 - Math.pow(this.Sb / St, 2); // reduction in percentage
-
-        //Originally, step = this.Nb * reductionf.
-        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
-        //If the base map has 5537 features and the goal map has 734 features,
-        //then there are 4803 steps (this.Nb != this.Ns + 1).
-        //It is better to use 'this.Ns + 1' instead of this.Nb
-        var step = (this.Ns + 1) * reductionf; //step is not necessarily an integer
-        return [Math.max(0, step), St]
-    };
-
-    // FIXME: rename draw to renderFunc ?
-
-    var DrawProgram = function DrawProgram(gl, vertexShaderText, fragmentShaderText) {
-
-        var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderText);
-        var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
-
-        // Create program: attach, link, validate, detach, delete
-        var shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-        gl.linkProgram(shaderProgram);
-        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            console.error('ERROR linking program!', gl.getProgramInfoLog(shaderProgram));
-            return;
-        }
-        gl.validateProgram(shaderProgram);
-        if (!gl.getProgramParameter(shaderProgram, gl.VALIDATE_STATUS)) {
-            console.error('ERROR validating program!', gl.getProgramInfoLog(shaderProgram));
-            return;
-        }
-
-        this.shaderProgram = shaderProgram;
-        this.gl = gl;
-
-        // FIXME: when to call these detach/delete's? After succesful compilation?
-        // gl.detachShader(this.shaderProgram, vertexShader);
-        // gl.detachShader(this.shaderProgram, fragmentShader);
-        // gl.deleteShader(vertexShader);
-        // gl.deleteShader(fragmentShader);
-
-        // creates a shader of the given type, uploads the source and
-        // compiles it.
-        function loadShader(gl, type, source) {
-
-            var shader = gl.createShader(type);
-            gl.shaderSource(shader, source); // Send the source of the shader
-            gl.compileShader(shader); // Compile the shader program
-
-            // See if it compiled successfully
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('ERROR occurred while compiling the shaders: ' + gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                return null;
-            }
-
-            return shader;
-        }
-    };
-
-    DrawProgram.prototype._prepare_vertices = function _prepare_vertices (gl, shaderProgram, attribute_name, itemSize, stride, offset) {
-
-        var attrib_location = gl.getAttribLocation(shaderProgram, attribute_name);
-        gl.enableVertexAttribArray(attrib_location);
-        gl.vertexAttribPointer(
-            attrib_location,// * Attribute location
-            itemSize,       // * Number of components per attribute ????? 
-            gl.FLOAT,       // * Type of elements
-            false,          // * Is normalized?
-            stride,         // * stride 
-            offset          // * Offset from the beginning of 
-        );
-
-    };
-
-
-
-    var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
-        function LineDrawProgram(gl) {
-
-            this.colors = [[141,211,199]
-                ,[190,186,218]
-                ,[251,128,114]
-                ,[128,177,211]
-                ,[253,180,98]
-                ,[179,222,105]
-                ,[252,205,229]
-                ,[217,217,217]
-                ,[188,128,189]
-                ,[204,235,197]
-            ].map(function (x) { return [x[0]/255., x[1]/255., x[2]/255.]; });
-
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
-
-            var fragmentShaderText = "\nprecision mediump float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
-
-            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
-        }
-
-        if ( DrawProgram ) LineDrawProgram.__proto__ = DrawProgram;
-        LineDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
-        LineDrawProgram.prototype.constructor = LineDrawProgram;
-
-
-        LineDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, near_St, width_increase) {
-            var gl = this.gl;
-            var shaderProgram = this.shaderProgram;
-            var triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
-            var displacementBuffer = tile.content.displacementBuffer;
-
-            if (triangleVertexPosBufr === null) {
-                return;
-            }
-            gl.useProgram(shaderProgram);
-
-            // void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
-            // size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
-            // alpha channel, RGBA, it would be 4. If we have location data with (x,y,z) attributes, it would be 3; and if we
-            // had a fourth parameter w, (x,y,z,w), it would be 4. Texture parameters (s,t) would be 2. type is the datatype,
-            // stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
-            // interleaved arrays.
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-            this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
-            this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
-
-            // the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
-            // FIXME: MM: at which amount of dots per inch has this been calculated?
-            var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
-            // The unit of the map must be meter!!!
-            var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
-            if (width_increase > 0)
-            {
-                half_width_reality *= width_increase;
-            }
-
-            {
-                var M_location = gl.getUniformLocation(shaderProgram, 'M');
-                gl.uniformMatrix4fv(M_location, false, matrix);
-
-                var near_location = gl.getUniformLocation(shaderProgram, 'near');
-                gl.uniform1f(near_location, near_St[0]);
-
-                var half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
-                gl.uniform1f(half_width_reality_location, half_width_reality);
-                if (width_increase > 0)
-                {
-                    var c = [0.0, 0.0, 0.0]; // black
-                }
-                else
-                {
-                    // var c = this.colors[tile.id % this.colors.length];
-                    var c = [1.0, 1.0, 1.0]; // white
-                }
-                var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
-                gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
-            }
-
-            // Set clear color to white, fully opaque
-            // gl.clearColor(1., 1., 1., 1.0);
-            // gl.clearDepth(1.0); // Clear everything
-
-            // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-            // gl.clear(gl.COLOR_BUFFER_BIT)
-
-            // gl.disable(gl.BLEND);
-            gl.enable(gl.BLEND); // FIXME: needed?
-            gl.disable(gl.DEPTH_TEST);
-
-            // gl.enable(gl.CULL_FACE);
-            // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
-
-            // gl.cullFace(gl.BACK);
-            // gl.cullFace(gl.FRONT);
-            // gl.cullFace(gl.FRONT_AND_BACK);
-
-            gl.drawArrays(
-                gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
-                0,            // Specifies the starting index in the enabled arrays.
-                triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
-            );
-        };
-
-        return LineDrawProgram;
-    }(DrawProgram));
-
-
-
-    var PolygonDrawProgram = /*@__PURE__*/(function (DrawProgram) {
-        function PolygonDrawProgram(gl) {
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec4 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vertexColor;\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
-            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
-            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
-        }
-
-        if ( DrawProgram ) PolygonDrawProgram.__proto__ = DrawProgram;
-        PolygonDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
-        PolygonDrawProgram.prototype.constructor = PolygonDrawProgram;
-
-        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile) {
-            var gl = this.gl;
-            var shaderProgram = this.shaderProgram;
-            gl.useProgram(shaderProgram);
-
-            var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
-            if (triangleVertexPosBufr === null) {
-                return;
-            }
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-            this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
-            this._prepare_vertices(gl, shaderProgram, 'vertexColor', 3, 24, 12);
-
-            {
-                var M_location = gl.getUniformLocation(shaderProgram, 'M');
-                gl.uniformMatrix4fv(M_location, false, matrix);
-            }
-
-            gl.disable(gl.BLEND);
-            gl.enable(gl.DEPTH_TEST);
-            gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-        };
-
-        return PolygonDrawProgram;
-    }(DrawProgram));
-
-
-
-
-
-
-    var Renderer = function Renderer(gl, ssctree) {
-        this.gl = gl;
-        this.ssctree = ssctree;
-
-        //console.log(this.ssctree)
-        // this.map = map;
-        // this.buckets = [];
-        //this.programs = [
-        //new PolygonDrawProgram(gl),
-        //new LineDrawProgram(gl),
-        ////new ImageTileProgram(gl)
-        //]
-        // console.log(this.gl);
-        // console.log(this.buckets);
-    };
-
-    // addBucket(mesh)
-    // {
-    // console.log('making new mesh')
-    // let b = new Bucket(this.gl, mesh)
-    // this.buckets.push(b)
-    // // setTimeout(() => {
-    // // this.buckets.map(bucket => {
-    // //     bucket.destroy()
-    // // })
-    // // }, 15000)
-    // }
-
-    Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (matrix, box3d, near_St, rect) {
-        // FIXME: 
-        // should a bucket have a method to 'draw' itself?
-        // e.g. by associating multiple programs with a bucket
-        // when the bucket is constructed?
-
-        var tiles = this.ssctree.get_relevant_tiles(box3d);
-
-    //    let gl = this.gl;
-    //    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    //    gl.clearDepth(1.0); // Clear everything
-    //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-
-        if (tiles.length > 0) {
-
-            var polygon_draw_program = new PolygonDrawProgram(this.gl);
-            tiles.forEach(function (tile) {
-                polygon_draw_program.draw_tile(matrix, tile);
-            });
-
-            // FIXME: if lines have width == 0; why draw them?
-            // If we want to draw lines twice -> thick line under / small line over
-            // we need to do this twice + move the code for determining line width here...
-            var line_draw_program = new LineDrawProgram(this.gl);
-            tiles.forEach(function (tile) {
-                // FIXME: would be nice to specify width here in pixels.
-                // bottom lines (black)
-                line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                // interior (color)
-                line_draw_program.draw_tile(matrix, tile, near_St, 0);
-            });
-        }
-
-        // this.buckets.forEach(bucket => {
-        // this.programs[0].draw(matrix, bucket);
-        // })
-        // FIXME:
-        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-        // we should this.gl.clear()
-    };
-
-
-    Renderer.prototype.setViewport = function setViewport (width, height) {
-        this.gl.viewport(0, 0, width, height);
-    };
-
     var global$1 = (typeof global !== "undefined" ? global :
                 typeof self !== "undefined" ? self :
                 typeof window !== "undefined" ? window : {});
@@ -3380,6 +2834,554 @@ var varioscale = (function () {
       performance.webkitNow  ||
       function(){ return (new Date()).getTime() };
 
+    // TODO
+    // - Aspect ratio / resize of viewport --> update transform
+    // - Take into account the z-value of the slice
+    // - Remove duplication inside functions
+
+    // let = block scoped
+    // var = global / function scoped
+
+
+    var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
+
+    function square_viewport_matrix(box) {
+        // Returns transform matrix to go from normalized square to viewport
+        // FIXME: can overflow? better to first multiply with 1/2?
+        var sx = (box.xmax - box.xmin) * .5;
+        var sy = (box.ymax - box.ymin) * .5;
+        var tx = (box.xmax + box.xmin) * .5;
+        var ty = (box.ymax + box.ymin) * .5;
+        var m = create();
+        m[0] = sx;
+        m[5] = sy;
+        m[12] = tx;
+        m[13] = ty;
+        return m
+    }
+
+    // FIXME
+    //
+    // Check handedness of the 3D system and get it right + consistent!
+    // https://github.com/g-truc/glm/blob/master/glm/gtc/matrix_transform.inl
+    //
+    // OrthoLH
+    // OrthoRH
+
+    var Transform = function Transform(tree, client_rect) {
+        // matrices
+        this.tree = tree;
+        this.viewport_world = create();
+        this.world_viewport = create();
+        //
+        this.world_square = null;
+        this.square_viewport = null;
+        //
+        this.viewport = null;
+
+        console.log("tree.center2d", tree.center2d);
+        console.log("client_rect.width", client_rect.width);
+        console.log("client_rect.height", client_rect.height);
+        console.log("tree.view_scale_Sv", tree.view_scale_Sv);
+
+        // set up initial transformation
+        this.initTransform(tree.center2d, [client_rect.width, client_rect.height], tree.view_scale_Sv);
+        //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
+    };
+
+    // fixme: rename -> initTransform
+    Transform.prototype.initTransform = function initTransform (center_world, viewport_size, denominator) {
+        // compute from the center of the world, the viewport size and the scale
+        // denominator how much of the world is visible
+        var cx = center_world[0],
+            cy = center_world[1];
+
+        // get half visible screen size in world units,
+        // when we look at it at this map scale (1:denominator)
+        var half_visible_screen = [
+            0.5 * viewport_size[0] / meter_to_pixel * denominator,
+            0.5 * viewport_size[1] / meter_to_pixel * denominator
+        ];
+        var xmin = cx - half_visible_screen[0],
+            xmax = cx + half_visible_screen[0],
+            ymin = cy - half_visible_screen[1],
+            ymax = cy + half_visible_screen[1];
+        // the size of the viewport 
+        this.viewport = new Rectangle(0, 0, viewport_size[0], viewport_size[1]);
+        // we arrive at what part of the world then is visible
+        // let visible_world = this.visibleWorld() //
+        var visible_world = new Rectangle(xmin, ymin, xmax, ymax);
+        // scaling/translating is then as follows:
+        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
+        var translate = [-scale[0] * cx, -scale[1] * cy];
+        // by means of which we can calculate a world -> ndc square matrix
+        var world_square = create();
+        world_square[0] = scale[0];
+        world_square[5] = scale[1];
+        world_square[12] = translate[0];
+        world_square[13] = translate[1];
+        this.world_square = world_square;
+        //console.log("INITIAL world square" + world_square);
+        // we can set up ndc square -> viewport matrix
+
+        this.square_viewport = square_viewport_matrix(this.viewport);
+        // and going from one to the other is then the concatenation of the 2 (and its inverse)
+        this.updateViewportTransform();
+
+        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
+        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
+        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
+        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
+    };
+
+    Transform.prototype.backward = function backward (vec3) {
+        var result = createvec3();
+        vec3transform(result, vec3, this.viewport_world);
+        return result
+    };
+
+    Transform.prototype.updateViewportTransform = function updateViewportTransform () {
+        // and going from one to the other is then the concatenation of the 2 (and its inverse)
+        _multiply(this.world_viewport, this.square_viewport, this.world_square);
+        invert(this.viewport_world, this.world_viewport);
+    };
+
+    Transform.prototype.pan = function pan (dx, dy) {
+        this.square_viewport[12] += dx;
+        this.square_viewport[13] += dy;
+
+        _multiply(this.world_viewport, this.square_viewport, this.world_square);
+        invert(this.viewport_world, this.world_viewport);
+
+        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
+        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
+        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
+        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
+
+        // we arrive at what part of the world then is visible
+        var visible_world = this.visibleWorld(); // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        var center = visible_world.center();
+        // scaling/translating is then as follows:
+        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
+        var translate = [-scale[0] * center[0], -scale[1] * center[1]];
+        // by means of which we can calculate a world -> ndc square matrix
+        var world_square = create();
+        world_square[0] = scale[0];
+        world_square[5] = scale[1];
+        world_square[12] = translate[0];
+        world_square[13] = translate[1];
+        this.world_square = world_square;
+        // and given the size of the viewport we can set up ndc square -> viewport matrix
+        // this.viewport = new Rectangle(0, 0, width, height)
+        this.square_viewport = square_viewport_matrix(this.viewport);
+        // and going from one to the other is then the concatenation of the 2 (and its inverse)
+        this.updateViewportTransform();
+    };
+
+    Transform.prototype.zoom = function zoom (factor, x, y) {
+        var tmp = create();
+        // 1. translate
+        {
+            var eye = create();
+            eye[12] = -x;
+            eye[13] = -y;
+            _multiply(tmp, eye, this.square_viewport);
+        }
+        // 2. scale
+        {
+            var eye$1 = create();
+            eye$1[0] = factor;
+            eye$1[5] = factor;
+            _multiply(tmp, eye$1, tmp);
+        }
+        // 3. translate back
+        {
+            var eye$2 = create();
+            eye$2[12] = x;
+            eye$2[13] = y;
+            _multiply(tmp, eye$2, tmp);
+        }
+        this.square_viewport = tmp;
+        _multiply(this.world_viewport, this.square_viewport, this.world_square);
+        invert(this.viewport_world, this.world_viewport);
+        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
+        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
+        // we arrive at what part of the world then is visible
+        var visible_world = this.visibleWorld(); // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        var center = visible_world.center();
+        // scaling/translating is then as follows:
+        var scale = [2. / visible_world.width(), 2. / visible_world.height()];
+        var translate = [-scale[0] * center[0], -scale[1] * center[1]];
+        // by means of which we can calculate a world -> ndc square matrix
+        var world_square = create();
+        world_square[0] = scale[0];
+        world_square[5] = scale[1];
+        world_square[12] = translate[0];
+        world_square[13] = translate[1];
+        this.world_square = world_square;
+        // and given the size of the viewport we can set up ndc square -> viewport matrix
+        // this.viewport = new Rectangle(0, 0, width, height)
+        this.square_viewport = square_viewport_matrix(this.viewport);
+        // and going from one to the other is then the concatenation of the 2 (and its inverse)
+        this.updateViewportTransform();
+    };
+
+    Transform.prototype.visibleWorld = function visibleWorld () {
+        //console.log("visibleWorld in transform.js")
+        var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
+        var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
+        // we arrive at what part of the world then is visible
+        return new Rectangle(ll[0], ll[1], tr[0], tr[1])
+    };
+
+    Transform.prototype.getCenter = function getCenter () {
+        //console.log("getCenter in transform.js")
+        var center = this.backward([
+            this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
+            this.viewport.ymin + (this.viewport.ymax - this.viewport.ymin) * 0.5, 0.0]);
+        return center
+    };
+
+    Transform.prototype.getScaleDenominator = function getScaleDenominator () {
+        var viewport_in_meter = new Rectangle(0, 0,
+            this.viewport.width() / meter_to_pixel,
+            this.viewport.height() / meter_to_pixel);
+        var world_in_meter = this.visibleWorld();
+        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area());
+        return St
+    };
+
+    Transform.prototype.stepMap = function stepMap () {
+        var viewport_in_meter = new Rectangle(0, 0,
+            this.viewport.width() / meter_to_pixel,
+            this.viewport.height() / meter_to_pixel);
+        var world_in_meter = this.visibleWorld();
+
+
+        // FIXME: these 2 variables should be adjusted
+        //     based on which tGAP is used...
+        // FIXME: this step mapping should move to the data side (the tiles)
+        //     and be kept there (for every dataset visualized on the map)
+        // FIXME: should use this.getScaleDenominator()
+
+        // let Sb = 48000  // (start scale denominator)
+        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
+
+        //let Sb = 24000  // (start scale denominator)
+        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
+
+
+
+        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()); //current scale denominator 
+        var reductionf = 1 - Math.pow(this.tree.start_scale_Sb / St, 2); // reduction in percentage
+
+        //Originally, step = this.Nb * reductionf.
+        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
+        //If the base map has 5537 features and the goal map has 734 features,
+        //then there are 4803 steps (this.Nb != this.Ns + 1).
+        //It is better to use 'this.Ns + 1' instead of this.Nb
+        var step = (this.tree.no_of_steps_Ns + 1) * reductionf; //step is not necessarily an integer
+        return [Math.max(0, step), St]
+    };
+
+    // FIXME: rename draw to renderFunc ?
+
+    var DrawProgram = function DrawProgram(gl, vertexShaderText, fragmentShaderText) {
+
+        var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderText);
+        var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
+
+        // Create program: attach, link, validate, detach, delete
+        var shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            console.error('ERROR linking program!', gl.getProgramInfoLog(shaderProgram));
+            return;
+        }
+        gl.validateProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.VALIDATE_STATUS)) {
+            console.error('ERROR validating program!', gl.getProgramInfoLog(shaderProgram));
+            return;
+        }
+
+        this.shaderProgram = shaderProgram;
+        this.gl = gl;
+
+        // FIXME: when to call these detach/delete's? After succesful compilation?
+        // gl.detachShader(this.shaderProgram, vertexShader);
+        // gl.detachShader(this.shaderProgram, fragmentShader);
+        // gl.deleteShader(vertexShader);
+        // gl.deleteShader(fragmentShader);
+
+        // creates a shader of the given type, uploads the source and
+        // compiles it.
+        function loadShader(gl, type, source) {
+
+            var shader = gl.createShader(type);
+            gl.shaderSource(shader, source); // Send the source of the shader
+            gl.compileShader(shader); // Compile the shader program
+
+            // See if it compiled successfully
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('ERROR occurred while compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+    };
+
+    DrawProgram.prototype._prepare_vertices = function _prepare_vertices (gl, shaderProgram, attribute_name, itemSize, stride, offset) {
+
+        var attrib_location = gl.getAttribLocation(shaderProgram, attribute_name);
+        gl.enableVertexAttribArray(attrib_location);
+        gl.vertexAttribPointer(
+            attrib_location,// * Attribute location
+            itemSize,       // * Number of components per attribute ????? 
+            gl.FLOAT,       // * Type of elements
+            false,          // * Is normalized?
+            stride,         // * stride 
+            offset          // * Offset from the beginning of 
+        );
+
+    };
+
+
+
+    var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
+        function LineDrawProgram(gl) {
+
+            this.colors = [[141,211,199]
+                ,[190,186,218]
+                ,[251,128,114]
+                ,[128,177,211]
+                ,[253,180,98]
+                ,[179,222,105]
+                ,[252,205,229]
+                ,[217,217,217]
+                ,[188,128,189]
+                ,[204,235,197]
+            ].map(function (x) { return [x[0]/255., x[1]/255., x[2]/255.]; });
+
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
+
+            var fragmentShaderText = "\nprecision mediump float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
+
+            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
+        }
+
+        if ( DrawProgram ) LineDrawProgram.__proto__ = DrawProgram;
+        LineDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
+        LineDrawProgram.prototype.constructor = LineDrawProgram;
+
+
+        LineDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, near_St, width_increase) {
+            var gl = this.gl;
+            var shaderProgram = this.shaderProgram;
+            var triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
+            var displacementBuffer = tile.content.displacementBuffer;
+
+            if (triangleVertexPosBufr === null) {
+                return;
+            }
+            gl.useProgram(shaderProgram);
+
+            // void vertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
+            // size is the number of components per attribute. For example, with RGB colors, it would be 3; and with an
+            // alpha channel, RGBA, it would be 4. If we have location data with (x,y,z) attributes, it would be 3; and if we
+            // had a fourth parameter w, (x,y,z,w), it would be 4. Texture parameters (s,t) would be 2. type is the datatype,
+            // stride and offset can be set to the default of 0 for now and will be reexamined in Chapter 9 when we discuss
+            // interleaved arrays.
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+            this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
+            this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
+
+            // the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
+            // FIXME: MM: at which amount of dots per inch has this been calculated?
+            var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
+            // The unit of the map must be meter!!!
+            var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
+            if (width_increase > 0)
+            {
+                half_width_reality *= width_increase;
+            }
+
+            {
+                var M_location = gl.getUniformLocation(shaderProgram, 'M');
+                gl.uniformMatrix4fv(M_location, false, matrix);
+
+                var near_location = gl.getUniformLocation(shaderProgram, 'near');
+                gl.uniform1f(near_location, near_St[0]);
+
+                var half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
+                gl.uniform1f(half_width_reality_location, half_width_reality);
+                if (width_increase > 0)
+                {
+                    var c = [0.0, 0.0, 0.0]; // black
+                }
+                else
+                {
+                    // var c = this.colors[tile.id % this.colors.length];
+                    var c = [1.0, 1.0, 1.0]; // white
+                }
+                var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
+                gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
+            }
+
+            // Set clear color to white, fully opaque
+            // gl.clearColor(1., 1., 1., 1.0);
+            // gl.clearDepth(1.0); // Clear everything
+
+            // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+            // gl.clear(gl.COLOR_BUFFER_BIT)
+
+            // gl.disable(gl.BLEND);
+            gl.enable(gl.BLEND); // FIXME: needed?
+            gl.disable(gl.DEPTH_TEST);
+
+            // gl.enable(gl.CULL_FACE);
+            // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+            // gl.cullFace(gl.BACK);
+            // gl.cullFace(gl.FRONT);
+            // gl.cullFace(gl.FRONT_AND_BACK);
+
+            gl.drawArrays(
+                gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
+                0,            // Specifies the starting index in the enabled arrays.
+                triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
+            );
+        };
+
+        return LineDrawProgram;
+    }(DrawProgram));
+
+
+
+    var PolygonDrawProgram = /*@__PURE__*/(function (DrawProgram) {
+        function PolygonDrawProgram(gl) {
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec4 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vertexColor;\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
+            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
+            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
+        }
+
+        if ( DrawProgram ) PolygonDrawProgram.__proto__ = DrawProgram;
+        PolygonDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
+        PolygonDrawProgram.prototype.constructor = PolygonDrawProgram;
+
+        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile) {
+            var gl = this.gl;
+            var shaderProgram = this.shaderProgram;
+            gl.useProgram(shaderProgram);
+
+            var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
+            if (triangleVertexPosBufr === null) {
+                return;
+            }
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+            this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
+            this._prepare_vertices(gl, shaderProgram, 'vertexColor', 3, 24, 12);
+
+            {
+                var M_location = gl.getUniformLocation(shaderProgram, 'M');
+                gl.uniformMatrix4fv(M_location, false, matrix);
+            }
+
+            gl.disable(gl.BLEND);
+            gl.enable(gl.DEPTH_TEST);
+            gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+        };
+
+        return PolygonDrawProgram;
+    }(DrawProgram));
+
+
+
+
+
+
+    var Renderer = function Renderer(gl, ssctree) {
+        this.gl = gl;
+        this.ssctree = ssctree;
+
+        //console.log(this.ssctree)
+        // this.map = map;
+        // this.buckets = [];
+        //this.programs = [
+        //new PolygonDrawProgram(gl),
+        //new LineDrawProgram(gl),
+        ////new ImageTileProgram(gl)
+        //]
+        // console.log(this.gl);
+        // console.log(this.buckets);
+    };
+
+    // addBucket(mesh)
+    // {
+    // console.log('making new mesh')
+    // let b = new Bucket(this.gl, mesh)
+    // this.buckets.push(b)
+    // // setTimeout(() => {
+    // // this.buckets.map(bucket => {
+    // //     bucket.destroy()
+    // // })
+    // // }, 15000)
+    // }
+
+    Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (matrix, box3d, near_St, rect) {
+        // FIXME: 
+        // should a bucket have a method to 'draw' itself?
+        // e.g. by associating multiple programs with a bucket
+        // when the bucket is constructed?
+
+        var tiles = this.ssctree.get_relevant_tiles(box3d);
+
+    //    let gl = this.gl;
+    //    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    //    gl.clearDepth(1.0); // Clear everything
+    //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+
+        if (tiles.length > 0) {
+
+            var polygon_draw_program = new PolygonDrawProgram(this.gl);
+            tiles.forEach(function (tile) {
+                polygon_draw_program.draw_tile(matrix, tile);
+            });
+
+            // FIXME: if lines have width == 0; why draw them?
+            // If we want to draw lines twice -> thick line under / small line over
+            // we need to do this twice + move the code for determining line width here...
+            var line_draw_program = new LineDrawProgram(this.gl);
+            tiles.forEach(function (tile) {
+                // FIXME: would be nice to specify width here in pixels.
+                // bottom lines (black)
+                line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                // interior (color)
+                line_draw_program.draw_tile(matrix, tile, near_St, 0);
+            });
+        }
+
+        // this.buckets.forEach(bucket => {
+        // this.programs[0].draw(matrix, bucket);
+        // })
+        // FIXME:
+        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+        // we should this.gl.clear()
+    };
+
+
+    Renderer.prototype.setViewport = function setViewport (width, height) {
+        this.gl.viewport(0, 0, width, height);
+    };
+
     var SSCTree = function SSCTree(msgbus) {
         this.msgbus = msgbus;
         this.tree = null;
@@ -3998,20 +4000,30 @@ var varioscale = (function () {
         this.msgbus.subscribe('data.tree.loaded', function (topic, message, sender) {
             var tree = this$1.ssctree.tree;
             //console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
+            //this._transform = new Transform(
+            //tree.start_scale_Sb,    //scale denominator of base map (according to dataset)
+            //tree.no_of_objects_Nb,  //number of objects on base map (according to dataset)
+            //tree.no_of_steps_Ns,    //number of steps of the SSCTree (according to dataset) 
+            //tree.center2d,          //center of the map extent (according to dataset)
+            //[rect.width, rect.height],
+            //tree.view_scale_Sv      //scale denominator of initial view (according to users' preference)
+            //)
+
             this$1._transform = new Transform(
-                tree.start_scale_Sb,    //scale denominator of base map (according to dataset)
-                tree.no_of_objects_Nb,  //number of objects on base map (according to dataset)
-                tree.no_of_steps_Ns,    //number of steps of the SSCTree (according to dataset) 
-                tree.center2d,          //center of the map extent (according to dataset)
-                [rect.width, rect.height],
-                tree.view_scale_Sv      //scale denominator of initial view (according to users' preference)
+                tree,
+                rect
             );
 
-            document.getElementById("demo_info").textContent = "Vario-scale demo: "
-                + tree.dataset_nm + ", " + tree.algorithm + ", " + tree.parameter;
-            //document.getElementById("dataset_nm").textContent = tree.dataset_nm + ","
-            //document.getElementById("algorithm").textContent = tree.algorithm + ","
-            //document.getElementById("parameter").textContent = tree.parameter + ","
+            var textContent = "Vario-scale demo: " + tree.dataset_nm;
+            if (tree.algorithm != "") {
+                textContent += ", " + tree.algorithm;
+            }
+            if (tree.parameter != "") {
+                textContent += ", " + tree.parameter;
+            }
+
+            document.getElementById("demo_info").textContent = textContent;
+
 
             var near_St = this$1.getTransform().stepMap();
             this$1._prepare_active_tiles(near_St[0]);
@@ -4038,10 +4050,10 @@ var varioscale = (function () {
 
         //this.abortAndRender()
 
-            
+
         dragHandler(this);  // attach mouse handlers
         // moveHandler(this)
-        scrollHandler(this);        
+        scrollHandler(this);
         touchPinchHandler(this); // attach touch handlers
         touchDragHandler(this);
 
@@ -4053,18 +4065,15 @@ var varioscale = (function () {
 
     };
 
-    Map.prototype.getCanvasContainer = function getCanvasContainer ()
-    {
+    Map.prototype.getCanvasContainer = function getCanvasContainer () {
         return this._container;
     };
 
-    Map.prototype.getTransform = function getTransform ()
-    {
+    Map.prototype.getTransform = function getTransform () {
         return this._transform;
     };
 
-    Map.prototype.render = function render ()
-    {
+    Map.prototype.render = function render () {
         var near_St = this.getTransform().stepMap();
         this.msgbus.publish('map.scale', near_St[1]);
 
@@ -4084,14 +4093,12 @@ var varioscale = (function () {
         return [matrix, box3d]
     };
 
-    Map.prototype.doEaseNone = function doEaseNone (start, end)
-    {
+    Map.prototype.doEaseNone = function doEaseNone (start, end) {
             var this$1 = this;
 
         var interpolate = (function (k) {
             var m = new Float32Array(16);
-            for (var i = 0; i < 16; i++) 
-            {
+            for (var i = 0; i < 16; i++) {
                 var delta = start[i] + k * (end[i] - start[i]);
                 m[i] = delta;
             }
@@ -4099,22 +4106,18 @@ var varioscale = (function () {
             this$1.getTransform().world_square = m;
             this$1.getTransform().updateViewportTransform();
             this$1.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this$1._abort = null;
             }
         });
         return interpolate;
     };
 
-    Map.prototype.doEaseInOutSine = function doEaseInOutSine (start, end)
-    {
-        function interpolate(k)
-        {
+    Map.prototype.doEaseInOutSine = function doEaseInOutSine (start, end) {
+        function interpolate(k) {
             var m = new Float32Array(16);
             var D = Math.cos(Math.PI * k) - 1;
-            for (var i = 0; i < 16; i++) 
-            {
+            for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
                 var delta = -c * 0.5 * D + start[i];
                 m[i] = delta;
@@ -4123,23 +4126,20 @@ var varioscale = (function () {
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform();
             this.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this._abort = null;
             }
         }
         return interpolate;
     };
 
-    Map.prototype.doEaseOutSine = function doEaseOutSine (start, end)
-    {
+    Map.prototype.doEaseOutSine = function doEaseOutSine (start, end) {
             var this$1 = this;
 
         var interpolate = function (k) {
             var m = new Float32Array(16);
             var D = (Math.sin(k * (Math.PI * 0.5)));
-            for (var i = 0; i < 16; i++) 
-            {
+            for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
                 var delta = c * D + start[i];
                 m[i] = delta;
@@ -4148,23 +4148,19 @@ var varioscale = (function () {
             this$1.getTransform().world_square = m;
             this$1.getTransform().updateViewportTransform();
             this$1.render();
-            if (k === 1)
-            {
+            if (k === 1) {
                 this$1._abort = null;
             }
         };
         return interpolate;
     };
 
-    Map.prototype.doEaseOutQuint = function doEaseOutQuint (start, end)
-    {
-        function interpolate(k)
-        {
+    Map.prototype.doEaseOutQuint = function doEaseOutQuint (start, end) {
+        function interpolate(k) {
             var t = k - 1;
             var t5p1 = Math.pow(t, 5) + 1;
             var m = new Float32Array(16);
-            for (var i = 0; i < 16; i++) 
-            {
+            for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
                 var delta = c * t5p1 + start[i];
                 m[i] = delta;
@@ -4173,16 +4169,14 @@ var varioscale = (function () {
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform();
             this.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this._abort = null;
             }
         }
         return interpolate;
     };
 
-    Map.prototype.animateZoom = function animateZoom (x, y, factor)
-    {
+    Map.prototype.animateZoom = function animateZoom (x, y, factor) {
         var start = this.getTransform().world_square;
         this.getTransform().zoom(factor, x, this.rect.height - y);
         var end = this.getTransform().world_square;
@@ -4190,8 +4184,7 @@ var varioscale = (function () {
         return interpolate;
     };
 
-    Map.prototype.animatePan = function animatePan (dx, dy)
-    {
+    Map.prototype.animatePan = function animatePan (dx, dy) {
         var start = this.getTransform().world_square;
         this.getTransform().pan(dx, -dy);
         var end = this.getTransform().world_square;
@@ -4199,29 +4192,24 @@ var varioscale = (function () {
         return interpolate;
     };
 
-    Map.prototype.panBy = function panBy (dx, dy)
-    {
+    Map.prototype.panBy = function panBy (dx, dy) {
         //console.log("_abort in map.js:", this._abort)
-        if (this._abort !== null)
-        {
+        if (this._abort !== null) {
             this._abort();
         }
         this.getTransform().pan(dx, -dy);
         this.render();
     };
 
-    Map.prototype.zoom = function zoom (x, y, factor)
-    {
+    Map.prototype.zoom = function zoom (x, y, factor) {
         this.getTransform().zoom(factor, x, this.rect.height - y);
         this.render();
     };
 
-    Map.prototype.abortAndRender = function abortAndRender ()
-    {
+    Map.prototype.abortAndRender = function abortAndRender () {
         // aborts running animation
         // and renders the map based on the current transform
-        if (this._abort !== null)
-        {
+        if (this._abort !== null) {
             this._abort();
             this._abort = null;
         }
@@ -4229,40 +4217,33 @@ var varioscale = (function () {
         this.render();
     };
 
-    Map.prototype.zoomInAnimated = function zoomInAnimated (x, y, step)
-    {
-        this.zoomAnimated(x, y,  1.0 + step);
+    Map.prototype.zoomInAnimated = function zoomInAnimated (x, y, step) {
+        this.zoomAnimated(x, y, 1.0 + step);
     };
 
-    Map.prototype.zoomOutAnimated = function zoomOutAnimated (x, y, step)
-    {
+    Map.prototype.zoomOutAnimated = function zoomOutAnimated (x, y, step) {
         this.zoomAnimated(x, y, 1.0 / (1.0 + step));
     };
 
-    Map.prototype.zoomAnimated = function zoomAnimated (x, y, factor)
-    {
-        if (this._abort !== null)
-        {
+    Map.prototype.zoomAnimated = function zoomAnimated (x, y, factor) {
+        if (this._abort !== null) {
             this._abort();
         }
-        var interpolator = this.animateZoom(x, y, factor); 
+        var interpolator = this.animateZoom(x, y, factor);
         var duration = parseFloat(document.getElementById('duration').value);
         this._abort = timed(interpolator, duration, this);
     };
 
-    Map.prototype.panAnimated = function panAnimated (dx, dy)
-    {
-        if (this._abort !== null)
-        {
+    Map.prototype.panAnimated = function panAnimated (dx, dy) {
+        if (this._abort !== null) {
             this._abort();
         }
         var duration = parseFloat(document.getElementById('panduration').value);
-        var interpolator = this.animatePan(dx, dy); 
+        var interpolator = this.animatePan(dx, dy);
         this._abort = timed(interpolator, duration, this);
     };
 
-    Map.prototype.resize = function resize (newWidth, newHeight)
-    {
+    Map.prototype.resize = function resize (newWidth, newHeight) {
         //console.log("resize");
         var tr = this.getTransform();
         var center = tr.getCenter();

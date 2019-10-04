@@ -1,5 +1,6 @@
 import { create, createvec3, vec3transform, multiply, invert } from './mat4';
 import Rectangle from './rect';
+import { log } from 'util';
 
 // TODO
 // - Aspect ratio / resize of viewport --> update transform
@@ -52,12 +53,9 @@ function square_viewport_matrix(box) {
 // OrthoRH
 
 class Transform {
-    constructor(Sb, Nb, Ns, center_world, viewport_size, denominator) {
-
-        this.Sb = Sb; // start scale denominator
-        this.Nb = Nb; //total number of objects on base map 
-        this.Ns = Ns; //total number of steps
+    constructor(tree, client_rect) {
         // matrices
+        this.tree = tree
         this.viewport_world = create();
         this.world_viewport = create();
         //
@@ -65,8 +63,9 @@ class Transform {
         this.square_viewport = null;
         //
         this.viewport = null;
+
         // set up initial transformation
-        this.initTransform(center_world, viewport_size, denominator)
+        this.initTransform(tree.center2d, [client_rect.width, client_rect.height], tree.view_scale_Sv)
         //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
     }
 
@@ -76,20 +75,19 @@ class Transform {
         // denominator how much of the world is visible
         let cx = center_world[0],
             cy = center_world[1]
-        let width = viewport_size[0],
-            height = viewport_size[1]
-        let halfw = 0.5 * width,
-            halfh = 0.5 * height
 
         // get half visible screen size in world units,
         // when we look at it at this map scale (1:denominator)
-        let half_visible_screen = [halfw / meter_to_pixel * denominator, halfh / meter_to_pixel * denominator]
+        let half_visible_screen = [
+            0.5 * viewport_size[0] / meter_to_pixel * denominator,
+            0.5 * viewport_size[1] / meter_to_pixel * denominator
+        ]
         let xmin = cx - half_visible_screen[0],
             xmax = cx + half_visible_screen[0],
             ymin = cy - half_visible_screen[1],
             ymax = cy + half_visible_screen[1]
         // the size of the viewport 
-        this.viewport = new Rectangle(0, 0, width, height)
+        this.viewport = new Rectangle(0, 0, viewport_size[0], viewport_size[1])
         // we arrive at what part of the world then is visible
         // let visible_world = this.visibleWorld() //
         let visible_world = new Rectangle(xmin, ymin, xmax, ymax)
@@ -255,14 +253,14 @@ class Transform {
 
 
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
-        let reductionf = 1 - Math.pow(this.Sb / St, 2) // reduction in percentage
+        let reductionf = 1 - Math.pow(this.tree.start_scale_Sb / St, 2) // reduction in percentage
 
         //Originally, step = this.Nb * reductionf.
         //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
         //If the base map has 5537 features and the goal map has 734 features,
         //then there are 4803 steps (this.Nb != this.Ns + 1).
         //It is better to use 'this.Ns + 1' instead of this.Nb
-        let step = (this.Ns + 1) * reductionf //step is not necessarily an integer
+        let step = (this.tree.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
         return [Math.max(0, step), St]
     }
 

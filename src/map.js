@@ -18,8 +18,7 @@ import { SSCTree } from './tiles';
 
 import { MessageBusConnector } from './pubsub'
 
-class Map 
-{
+class Map {
     constructor(container) {
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
@@ -48,17 +47,30 @@ class Map
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
             var tree = this.ssctree.tree;
             //console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
+            //this._transform = new Transform(
+            //    tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
+            //    tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
+            //    tree.no_of_steps_Ns,        //number of steps of the SSCTree (according to dataset) 
+            //    tree.center2d,              //center of the map extent (according to dataset)
+            //    [rect.width, rect.height],
+            //    tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
+            //)
+
             this._transform = new Transform(
-                tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
-                tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
-                tree.no_of_steps_Ns,        //number of steps of the SSCTree (according to dataset) 
-                tree.center2d,              //center of the map extent (according to dataset)
-                [rect.width, rect.height],
-                tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
+                tree,
+                rect
             )
 
-            document.getElementById("demo_info").textContent = "Vario-scale demo: "
-                + tree.dataset_nm + ", " + tree.algorithm + ", " + tree.parameter
+            var textContent = "Vario-scale demo: " + tree.dataset_nm
+            if (tree.algorithm != "") {
+                textContent += ", " + tree.algorithm
+            }
+            if (tree.parameter != "") {
+                textContent += ", " + tree.parameter
+            }
+
+            document.getElementById("demo_info").textContent = textContent
+
 
             const near_St = this.getTransform().stepMap()
             this._prepare_active_tiles(near_St[0])
@@ -85,10 +97,10 @@ class Map
 
         //this.abortAndRender()
 
-        
+
         dragHandler(this)  // attach mouse handlers
         // moveHandler(this)
-        scrollHandler(this)        
+        scrollHandler(this)
         touchPinchHandler(this) // attach touch handlers
         touchDragHandler(this)
 
@@ -100,18 +112,15 @@ class Map
 
     }
 
-    getCanvasContainer()
-    {
+    getCanvasContainer() {
         return this._container;
     }
 
-    getTransform()
-    {
+    getTransform() {
         return this._transform;
     }
 
-    render()
-    {
+    render() {
         const near_St = this.getTransform().stepMap()
         this.msgbus.publish('map.scale', near_St[1])
 
@@ -131,13 +140,10 @@ class Map
         return [matrix, box3d]
     }
 
-    doEaseNone(start, end)
-    {
-        let interpolate = ((k) =>
-        {
+    doEaseNone(start, end) {
+        let interpolate = ((k) => {
             var m = new Float32Array(16);
-            for (let i = 0; i < 16; i++) 
-            {
+            for (let i = 0; i < 16; i++) {
                 let delta = start[i] + k * (end[i] - start[i]);
                 m[i] = delta;
             }
@@ -145,22 +151,18 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this._abort = null
             }
         })
         return interpolate;
     }
 
-    doEaseInOutSine(start, end)
-    {
-        function interpolate(k)
-        {
+    doEaseInOutSine(start, end) {
+        function interpolate(k) {
             var m = new Float32Array(16);
             let D = Math.cos(Math.PI * k) - 1
-            for (let i = 0; i < 16; i++) 
-            {
+            for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
                 let delta = -c * 0.5 * D + start[i];
                 m[i] = delta;
@@ -169,22 +171,18 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this._abort = null
             }
         }
         return interpolate;
     }
 
-    doEaseOutSine(start, end)
-    {
-        let interpolate = (k) =>
-        {
+    doEaseOutSine(start, end) {
+        let interpolate = (k) => {
             var m = new Float32Array(16);
             let D = (Math.sin(k * (Math.PI * 0.5)));
-            for (let i = 0; i < 16; i++) 
-            {
+            for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
                 let delta = c * D + start[i];
                 m[i] = delta;
@@ -193,23 +191,19 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
-            if (k === 1)
-            {
+            if (k === 1) {
                 this._abort = null
             }
         }
         return interpolate;
     }
 
-    doEaseOutQuint(start, end)
-    {
-        function interpolate(k)
-        {
+    doEaseOutQuint(start, end) {
+        function interpolate(k) {
             let t = k - 1
             let t5p1 = Math.pow(t, 5) + 1
             var m = new Float32Array(16);
-            for (let i = 0; i < 16; i++) 
-            {
+            for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
                 let delta = c * t5p1 + start[i];
                 m[i] = delta;
@@ -218,16 +212,14 @@ class Map
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
             this.render();
-            if (k == 1)
-            {
+            if (k == 1) {
                 this._abort = null
             }
         }
         return interpolate;
     }
 
-    animateZoom(x, y, factor)
-    {
+    animateZoom(x, y, factor) {
         const start = this.getTransform().world_square;
         this.getTransform().zoom(factor, x, this.rect.height - y);
         const end = this.getTransform().world_square;
@@ -235,8 +227,7 @@ class Map
         return interpolate;
     }
 
-    animatePan(dx, dy)
-    {
+    animatePan(dx, dy) {
         const start = this.getTransform().world_square;
         this.getTransform().pan(dx, -dy);
         const end = this.getTransform().world_square;
@@ -244,29 +235,24 @@ class Map
         return interpolate;
     }
 
-    panBy(dx, dy)
-    {
+    panBy(dx, dy) {
         //console.log("_abort in map.js:", this._abort)
-        if (this._abort !== null)
-        {
+        if (this._abort !== null) {
             this._abort();
         }
         this.getTransform().pan(dx, -dy);
         this.render();
     }
 
-    zoom(x, y, factor)
-    {
+    zoom(x, y, factor) {
         this.getTransform().zoom(factor, x, this.rect.height - y);
         this.render();
     }
 
-    abortAndRender()
-    {
+    abortAndRender() {
         // aborts running animation
         // and renders the map based on the current transform
-        if (this._abort !== null)
-        {
+        if (this._abort !== null) {
             this._abort();
             this._abort = null;
         }
@@ -274,40 +260,33 @@ class Map
         this.render();
     }
 
-    zoomInAnimated(x, y, step)
-    {
-        this.zoomAnimated(x, y,  1.0 + step)
+    zoomInAnimated(x, y, step) {
+        this.zoomAnimated(x, y, 1.0 + step)
     }
 
-    zoomOutAnimated(x, y, step)
-    {
+    zoomOutAnimated(x, y, step) {
         this.zoomAnimated(x, y, 1.0 / (1.0 + step))
     }
 
-    zoomAnimated(x, y, factor)
-    {
-        if (this._abort !== null)
-        {
+    zoomAnimated(x, y, factor) {
+        if (this._abort !== null) {
             this._abort();
         }
-        var interpolator = this.animateZoom(x, y, factor); 
+        var interpolator = this.animateZoom(x, y, factor);
         var duration = parseFloat(document.getElementById('duration').value);
         this._abort = timed(interpolator, duration, this);
     }
 
-    panAnimated(dx, dy)
-    {
-        if (this._abort !== null)
-        {
+    panAnimated(dx, dy) {
+        if (this._abort !== null) {
             this._abort();
         }
         var duration = parseFloat(document.getElementById('panduration').value);
-        var interpolator = this.animatePan(dx, dy); 
+        var interpolator = this.animatePan(dx, dy);
         this._abort = timed(interpolator, duration, this);
     }
 
-    resize(newWidth, newHeight)
-    {
+    resize(newWidth, newHeight) {
         //console.log("resize");
         let tr = this.getTransform();
         let center = tr.getCenter();
