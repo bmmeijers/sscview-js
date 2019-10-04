@@ -1,5 +1,6 @@
 import { now } from "./animate"
 import Transform from './transform';
+import { log } from "util";
 
 export class SSCTree {
     constructor(msgbus) {
@@ -17,8 +18,8 @@ export class SSCTree {
         //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
         let data_folder = 'data/';
 //        let jsonfile = 'nodes.json';
-        let jsonfile = 'tree_buchholz.json';
-        //let jsonfile = 'tree.json';
+        //let jsonfile = 'tree_buchholz.json';
+        let jsonfile = 'tree.json';
 
         fetch(data_folder + jsonfile)
             .then(r => {

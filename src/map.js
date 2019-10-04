@@ -57,6 +57,9 @@ class Map
                 tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
             )
 
+            document.getElementById("demo_info").textContent = "Vario-scale demo: "
+                + tree.dataset_nm + ", " + tree.algorithm + ", " + tree.parameter
+
             const near_St = this.getTransform().stepMap()
             this._prepare_active_tiles(near_St[0])
         })

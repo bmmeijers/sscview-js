@@ -1,5 +1,8 @@
 {
   "id": 0,
+  "dataset_nm": "Test",
+  "algorithm": "Manual",
+  "parameter": "300",
   "start_scale_Sb": 50000,
   "no_of_objects_Nb": 3,
   "no_of_steps_Ns": 2,
