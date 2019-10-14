@@ -1,6 +1,6 @@
 import { now } from "./animate"
-import Transform from './transform';
-import { log } from "util";
+//import Transform from './transform';
+//import { log } from "util";
 
 export class SSCTree {
     constructor(msgbus) {
@@ -207,9 +207,9 @@ class TileContent {
                 point_records.push([pt.x, pt.y, pt.z, step_high[0]]); //pt.z is step_low
             }
 
-            for (var j = 0; j < point_records.length - 1; j++) {
-                var start = point_records[j];    //start point of a line segment
-                var end = point_records[j + 1];  //end point of the line segment
+            for (var k = 0; k < point_records.length - 1; k++) {
+                var start = point_records[k];    //start point of a line segment
+                var end = point_records[k + 1];  //end point of the line segment
                 var start_xy = start.slice(0, 2);
                 var end_xy = end.slice(0, 2);
                 var v = make_vector_start_end(start_xy, end_xy);
@@ -246,8 +246,8 @@ class TileContent {
                 }
             }
             else {
-                for (var i = 0; i < a.length; i++) {
-                    result_values.push(a[i] - b);
+                for (var j = 0; j < a.length; j++) {
+                    result_values.push(a[j] - b);
                 }
             }
 
@@ -266,8 +266,8 @@ class TileContent {
                 }
             }
             else {
-                for (var i = 0; i < a.length; i++) {
-                    result_values.push(a[i] + b);
+                for (var j = 0; j < a.length; j++) {
+                    result_values.push(a[j] + b);
                 }
             }
 
@@ -287,8 +287,8 @@ class TileContent {
                 }
             }
             else {
-                for (var i = 0; i < a.length; i++) {
-                    result_values.push(a[i] * b);
+                for (var j = 0; j < a.length; j++) {
+                    result_values.push(a[j] * b);
                 }
             }
 
@@ -307,8 +307,8 @@ class TileContent {
                 }
             }
             else {
-                for (var i = 0; i < a.length; i++) {
-                    result_values.push(a[i] / b);
+                for (var j = 0; j < a.length; j++) {
+                    result_values.push(a[j] / b);
                 }
             }
 

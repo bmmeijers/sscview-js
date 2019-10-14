@@ -24,10 +24,15 @@ if (isProduction) {
     plugins.push(uglify());
 }
 
-var dist_folder = 'dist_test';
+//var dist_folder = 'dist_test';
 //var dist_folder = 'dist_buchholz_greedy';
 //var dist_folder = 'dist_buchholz_astar';
+//var dist_folder = 'dist_buchholz_greedy_parallel_2';
 //var dist_folder = 'dist_buchholz_greedy_parallel_10';
+//var dist_folder = 'dist_buchholz_greedy_parallel_50';
+var dist_folder = 'dist_buchholz_greedy_parallel_250';
+
+
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
 
 module.exports = {

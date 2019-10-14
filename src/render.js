@@ -166,14 +166,11 @@ void main()
 
             let half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
             gl.uniform1f(half_width_reality_location, half_width_reality);
-            if (width_increase > 0)
-            {
-                var c = [0.0, 0.0, 0.0]; // black
-            }
-            else
+            var c = [0.0, 0.0, 0.0]; // black
+            if (width_increase <= 0)
             {
                 // var c = this.colors[tile.id % this.colors.length];
-                var c = [1.0, 1.0, 1.0]; // white
+                c = [1.0, 1.0, 1.0]; // white
             }
             var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
             gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);

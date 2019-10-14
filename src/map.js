@@ -56,20 +56,17 @@ class Map {
             //    tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
             //)
 
-            this._transform = new Transform(
-                tree,
-                rect
-            )
+            this._transform = new Transform(tree, rect)
 
-            var textContent = "Vario-scale demo: " + tree.dataset_nm
+            var textContent2 = "Vario-scale demo: " + tree.dataset_nm
             if (tree.algorithm != "") {
-                textContent += ", " + tree.algorithm
+                textContent2 += ", " + tree.algorithm
             }
             if (tree.parameter != "") {
-                textContent += ", " + tree.parameter
+                textContent2 += ", " + tree.parameter
             }
 
-            document.getElementById("demo_info").textContent = textContent
+            document.getElementById("demo_info").textContent = textContent2
 
 
             const near_St = this.getTransform().stepMap()
