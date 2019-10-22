@@ -1,6 +1,6 @@
 import { create, createvec3, vec3transform, multiply, invert } from './mat4';
 import Rectangle from './rect';
-import { log } from 'util';
+//import { log } from 'util';
 
 // TODO
 // - Aspect ratio / resize of viewport --> update transform
@@ -13,20 +13,20 @@ import { log } from 'util';
 
 var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
-function world_square_matrix(box, ar) {
-    // Returns transform matrix to go from world to normalized square
-    // FIXME: aspect ratio - is NOT taken into account ??? !!!
-    let sx = 2. / ((box.xmax - box.xmin) * ar)
-    let sy = 2. / (box.ymax - box.ymin)
-    let tx = -(box.xmax + box.xmin) / (box.xmax - box.xmin)
-    let ty = -(box.ymax + box.ymin) / (box.ymax - box.ymin)
-    let m = create()
-    m[0] = sx
-    m[5] = sy
-    m[12] = tx
-    m[13] = ty
-    return m
-}
+//function world_square_matrix(box, ar) {
+//    // Returns transform matrix to go from world to normalized square
+//    // FIXME: aspect ratio - is NOT taken into account ??? !!!
+//    let sx = 2. / ((box.xmax - box.xmin) * ar)
+//    let sy = 2. / (box.ymax - box.ymin)
+//    let tx = -(box.xmax + box.xmin) / (box.xmax - box.xmin)
+//    let ty = -(box.ymax + box.ymin) / (box.ymax - box.ymin)
+//    let m = create()
+//    m[0] = sx
+//    m[5] = sy
+//    m[12] = tx
+//    m[13] = ty
+//    return m
+//}
 
 
 function square_viewport_matrix(box) {
