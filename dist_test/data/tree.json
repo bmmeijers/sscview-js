@@ -1,12 +1,21 @@
 {
+    "metadata": {
+        "dataset_nm": "Test",
+        "dataset_nm_comment": "The name of top10nl, buchholz, or some other datasets",
+        "algorithm": "Manual",
+        "algorithm_comment": "Greedy, Astar, or some other algorithms",
+        "parameter": "300",
+        "parameter_comment": "some parameters used in the chosen algorithm",
+        "start_scale_Sb": 50000,
+        "start_scale_Sb_comment": "scale denominator of base map (according to dataset)",
+        "no_of_objects_Nb": 3,
+        "no_of_objects_Nb_comment": "number of objects on base map (according to dataset)",
+        "no_of_steps_Ns": 2,
+        "no_of_steps_comment": "number of steps of the SSCTree (according to dataset)",
+        "view_scale_Sv": 50000,
+        "view_scale_Sv_comment": "scale denominator of initial view (according to users' preference)"
+    },
     "id": 0,
-    "dataset_nm": "Test",
-    "algorithm": "Manual",
-    "parameter": "300",
-    "start_scale_Sb": 50000,
-    "no_of_objects_Nb": 3,
-    "no_of_steps_Ns": 2,
-    "view_scale_Sv": 50000,
     "box": [ 3542312.75, 5895329.47, 0.0, 3568456.31, 5920162.15, 4803.0 ],
     "children": [],
     "dataelements": [

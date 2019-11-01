@@ -12,6 +12,10 @@ import Transform from './transform';
 import { timed } from './animate';
 import { Renderer } from "./render";
 
+
+import Rectangle from './rect';
+var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
 import { SSCTree } from './tiles';
@@ -46,30 +50,20 @@ class Map {
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
             var tree = this.ssctree.tree;
-            //console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
-            //this._transform = new Transform(
-            //    tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
-            //    tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
-            //    tree.no_of_steps_Ns,        //number of steps of the SSCTree (according to dataset) 
-            //    tree.center2d,              //center of the map extent (according to dataset)
-            //    [rect.width, rect.height],
-            //    tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
-            //)
-
-            this._transform = new Transform(tree, rect)
+            this._transform = new Transform(rect, tree.center2d, tree.metadata.view_scale_Sv)
 
             var textContent2 = "Vario-scale demo: " + tree.dataset_nm
-            if (tree.algorithm != "") {
-                textContent2 += ", " + tree.algorithm
+            if (tree.metadata.algorithm != "") {
+                textContent2 += ", " + tree.metadata.algorithm
             }
-            if (tree.parameter != "") {
-                textContent2 += ", " + tree.parameter
+            if (tree.metadata.parameter != "") {
+                textContent2 += ", " + tree.metadata.parameter
             }
 
             document.getElementById("demo_info").textContent = textContent2
 
 
-            const near_St = this.getTransform().stepMap()
+            const near_St = this.stepMap(this._transform.viewport)
             this._prepare_active_tiles(near_St[0])
         })
 
@@ -118,7 +112,7 @@ class Map {
     }
 
     render() {
-        const near_St = this.getTransform().stepMap()
+        const near_St = this.stepMap(this._transform.viewport)
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
@@ -130,7 +124,7 @@ class Map {
         const far = -1
         matrix[10] = -2.0 / (near - far)
         matrix[14] = (near + far) / (near - far)
-        const box2d = this.getTransform().visibleWorld()
+        const box2d = this.getTransform().getvisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
         this.ssctree.fetch_tiles(box3d, gl)
@@ -293,6 +287,40 @@ class Map {
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight)
 
+    }
+
+
+    stepMap(viewport) {
+        let viewport_in_meter = new Rectangle(0, 0,
+            viewport.width() / meter_to_pixel,
+            viewport.height() / meter_to_pixel)
+        let world_in_meter = this.getTransform().getvisibleWorld()
+
+
+        // FIXME: these 2 variables should be adjusted
+        //         based on which tGAP is used...
+        // FIXME: this step mapping should move to the data side (the tiles)
+        //         and be kept there (for every dataset visualized on the map)
+        // FIXME: should use this.getScaleDenominator()
+
+        // let Sb = 48000  // (start scale denominator)
+        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
+
+        //let Sb = 24000  // (start scale denominator)
+        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
+
+
+
+        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
+        let reductionf = 1 - Math.pow(this.ssctree.tree.metadata.start_scale_Sb / St, 2) // reduction in percentage
+
+        //Originally, step = this.Nb * reductionf.
+        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
+        //If the base map has 5537 features and the goal map has 734 features,
+        //then there are 4803 steps (this.Nb != this.Ns + 1).
+        //It is better to use 'this.Ns + 1' instead of this.Nb
+        let step = (this.ssctree.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
+        return [Math.max(0, step), St]
     }
 }
 

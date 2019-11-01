@@ -1,5 +1,8 @@
 import { create, createvec3, vec3transform, multiply, invert } from './mat4';
 import Rectangle from './rect';
+var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
+
 //import { log } from 'util';
 
 // TODO
@@ -11,7 +14,7 @@ import Rectangle from './rect';
 // var = global / function scoped
 
 
-var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
 
 //function world_square_matrix(box, ar) {
 //    // Returns transform matrix to go from world to normalized square
@@ -53,9 +56,8 @@ function square_viewport_matrix(box) {
 // OrthoRH
 
 class Transform {
-    constructor(tree, client_rect) {
-        // matrices
-        this.tree = tree
+    constructor(client_rect, center2d, view_scale_Sv) {
+
         this.viewport_world = create();
         this.world_viewport = create();
         //
@@ -65,7 +67,7 @@ class Transform {
         this.viewport = null;
 
         // set up initial transformation
-        this.initTransform(tree.center2d, [client_rect.width, client_rect.height], tree.view_scale_Sv)
+        this.initTransform(center2d, [client_rect.width, client_rect.height], view_scale_Sv)
         //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
     }
 
@@ -139,7 +141,7 @@ class Transform {
         //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
 
         // we arrive at what part of the world then is visible
-        let visible_world = this.visibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        let visible_world = this.getvisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
@@ -187,7 +189,7 @@ class Transform {
         // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
         // we arrive at what part of the world then is visible
-        let visible_world = this.visibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        let visible_world = this.getvisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
@@ -206,7 +208,7 @@ class Transform {
         this.updateViewportTransform()
     }
 
-    visibleWorld() {
+    getvisibleWorld() {
         //console.log("visibleWorld in transform.js")
         var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
@@ -226,43 +228,12 @@ class Transform {
         let viewport_in_meter = new Rectangle(0, 0,
             this.viewport.width() / meter_to_pixel,
             this.viewport.height() / meter_to_pixel)
-        let world_in_meter = this.visibleWorld()
+        let world_in_meter = this.getvisibleWorld()
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
         return St
     }
 
-    stepMap() {
-        let viewport_in_meter = new Rectangle(0, 0,
-            this.viewport.width() / meter_to_pixel,
-            this.viewport.height() / meter_to_pixel)
-        let world_in_meter = this.visibleWorld()
 
-
-        // FIXME: these 2 variables should be adjusted
-        //         based on which tGAP is used...
-        // FIXME: this step mapping should move to the data side (the tiles)
-        //         and be kept there (for every dataset visualized on the map)
-        // FIXME: should use this.getScaleDenominator()
-
-        // let Sb = 48000  // (start scale denominator)
-        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        //let Sb = 24000  // (start scale denominator)
-        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-
-
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
-        let reductionf = 1 - Math.pow(this.tree.start_scale_Sb / St, 2) // reduction in percentage
-
-        //Originally, step = this.Nb * reductionf.
-        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
-        //If the base map has 5537 features and the goal map has 734 features,
-        //then there are 4803 steps (this.Nb != this.Ns + 1).
-        //It is better to use 'this.Ns + 1' instead of this.Nb
-        let step = (this.tree.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
-        return [Math.max(0, step), St]
-    }
 
 }
 
