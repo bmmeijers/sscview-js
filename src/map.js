@@ -13,8 +13,7 @@ import { timed } from './animate';
 import { Renderer } from "./render";
 
 
-import Rectangle from './rect';
-var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
@@ -63,7 +62,7 @@ class Map {
             document.getElementById("demo_info").textContent = textContent2
 
 
-            const near_St = this.stepMap(this._transform.viewport)
+            const near_St = this.ssctree.stepMap(this._transform)
             this._prepare_active_tiles(near_St[0])
         })
 
@@ -112,7 +111,7 @@ class Map {
     }
 
     render() {
-        const near_St = this.stepMap(this._transform.viewport)
+        const near_St = this.ssctree.stepMap(this._transform)
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
@@ -289,39 +288,7 @@ class Map {
 
     }
 
-
-    stepMap(viewport) {
-        let viewport_in_meter = new Rectangle(0, 0,
-            viewport.width() / meter_to_pixel,
-            viewport.height() / meter_to_pixel)
-        let world_in_meter = this.getTransform().getvisibleWorld()
-
-
-        // FIXME: these 2 variables should be adjusted
-        //         based on which tGAP is used...
-        // FIXME: this step mapping should move to the data side (the tiles)
-        //         and be kept there (for every dataset visualized on the map)
-        // FIXME: should use this.getScaleDenominator()
-
-        // let Sb = 48000  // (start scale denominator)
-        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        //let Sb = 24000  // (start scale denominator)
-        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-
-
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
-        let reductionf = 1 - Math.pow(this.ssctree.tree.metadata.start_scale_Sb / St, 2) // reduction in percentage
-
-        //Originally, step = this.Nb * reductionf.
-        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
-        //If the base map has 5537 features and the goal map has 734 features,
-        //then there are 4803 steps (this.Nb != this.Ns + 1).
-        //It is better to use 'this.Ns + 1' instead of this.Nb
-        let step = (this.ssctree.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
-        return [Math.max(0, step), St]
-    }
+    
 }
 
 export default Map

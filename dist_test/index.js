@@ -1382,13 +1382,7 @@ var varioscale = (function () {
         this.gl.viewport(0, 0, width, height);
     };
 
-    //import Transform from './transform';
-    //import { log } from "util";
-
-    //import Rectangle from './rect';
-    //var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
-
-
+    var meter_to_pixel$1 = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
 
 
@@ -1468,6 +1462,43 @@ var varioscale = (function () {
                 elem.last_touched = _now();
                 return elem
             })
+    };
+
+
+
+
+    SSCTree.prototype.stepMap = function stepMap (transform) {
+
+        var viewport_in_meter = new Rectangle(0, 0,
+            transform.viewport.width() / meter_to_pixel$1,
+            transform.viewport.height() / meter_to_pixel$1);
+        var world_in_meter = transform.getvisibleWorld();
+
+
+        // FIXME: these 2 variables should be adjusted
+        //     based on which tGAP is used...
+        // FIXME: this step mapping should move to the data side (the tiles)
+        //     and be kept there (for every dataset visualized on the map)
+        // FIXME: should use this.getScaleDenominator()
+
+        // let Sb = 48000  // (start scale denominator)
+        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
+
+        //let Sb = 24000  // (start scale denominator)
+        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
+
+
+
+        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()); //current scale denominator 
+        var reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2); // reduction in percentage
+
+        //Originally, step = this.Nb * reductionf.
+        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
+        //If the base map has 5537 features and the goal map has 734 features,
+        //then there are 4803 steps (this.Nb != this.Ns + 1).
+        //It is better to use 'this.Ns + 1' instead of this.Nb
+        var step = (this.tree.metadata.no_of_steps_Ns + 1) * reductionf; //step is not necessarily an integer
+        return [Math.max(0, step), St]
     };
 
 
@@ -2074,8 +2105,6 @@ var varioscale = (function () {
         return instance.subscribe(topic, func)
     };
 
-    var meter_to_pixel$1 = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
-
     var Map = function Map(container) {
         var this$1 = this;
 
@@ -2118,7 +2147,7 @@ var varioscale = (function () {
             document.getElementById("demo_info").textContent = textContent2;
 
 
-            var near_St = this$1.stepMap(this$1._transform.viewport);
+            var near_St = this$1.ssctree.stepMap(this$1._transform);
             this$1._prepare_active_tiles(near_St[0]);
         });
 
@@ -2167,7 +2196,7 @@ var varioscale = (function () {
     };
 
     Map.prototype.render = function render () {
-        var near_St = this.stepMap(this._transform.viewport);
+        var near_St = this.ssctree.stepMap(this._transform);
         this.msgbus.publish('map.scale', near_St[1]);
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0]);
@@ -2346,40 +2375,6 @@ var varioscale = (function () {
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight);
 
-    };
-
-
-    Map.prototype.stepMap = function stepMap (viewport) {
-        var viewport_in_meter = new Rectangle(0, 0,
-            viewport.width() / meter_to_pixel$1,
-            viewport.height() / meter_to_pixel$1);
-        var world_in_meter = this.getTransform().getvisibleWorld();
-
-
-        // FIXME: these 2 variables should be adjusted
-        //     based on which tGAP is used...
-        // FIXME: this step mapping should move to the data side (the tiles)
-        //     and be kept there (for every dataset visualized on the map)
-        // FIXME: should use this.getScaleDenominator()
-
-        // let Sb = 48000  // (start scale denominator)
-        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        //let Sb = 24000  // (start scale denominator)
-        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-
-
-        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()); //current scale denominator 
-        var reductionf = 1 - Math.pow(this.ssctree.tree.metadata.start_scale_Sb / St, 2); // reduction in percentage
-
-        //Originally, step = this.Nb * reductionf.
-        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
-        //If the base map has 5537 features and the goal map has 734 features,
-        //then there are 4803 steps (this.Nb != this.Ns + 1).
-        //It is better to use 'this.Ns + 1' instead of this.Nb
-        var step = (this.ssctree.tree.metadata.no_of_steps_Ns + 1) * reductionf; //step is not necessarily an integer
-        return [Math.max(0, step), St]
     };
 
     // import  Rectangle from "./rect"
