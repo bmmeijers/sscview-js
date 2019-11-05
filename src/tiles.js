@@ -9,10 +9,11 @@ var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
 
 export class SSCTree {
-    constructor(msgbus) {
+    constructor(msgbus, dataset_location) {
         this.msgbus = msgbus
         this.tree = null
         this.retrieved = {}
+        this.dataset_location = dataset_location
     }
 
     load() {
@@ -22,12 +23,12 @@ export class SSCTree {
         // fetch('nl/tree_max9_fanout10_9.json')
 
         //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
-        let data_folder = 'data/';
+        //let data_folder = 'data/';
 //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
-        let jsonfile = 'tree.json';
-
-        fetch(data_folder + jsonfile)
+        //let jsonfile = 'tree.json';
+        let dataset_location = this.dataset_location
+        fetch(dataset_location.folder_nm + '/' + dataset_location.tree_nm)
             .then(r => {
                 return r.json()
             })
@@ -39,7 +40,7 @@ export class SSCTree {
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
-                    element.url = data_folder + element.info
+                    element.url = dataset_location.folder_nm + '/' + element.info
                 })
             })
             .then(() => {

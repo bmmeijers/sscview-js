@@ -22,7 +22,14 @@ import { SSCTree } from './tiles';
 import { MessageBusConnector } from './pubsub'
 
 class Map {
-    constructor(container) {
+    constructor(map_settings) {
+        this.map_settings = map_settings
+        this.current_scale_den = map_settings.initial_scale_den
+
+        let box3d = map_settings.box3d;
+        let center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
+
+        let container = map_settings['canvas_nms'][0]
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
         }
@@ -36,10 +43,11 @@ class Map {
         const rect = this.getCanvasContainer().getBoundingClientRect();
         this.rect = rect;
         this._abort = null
+        this._transform = new Transform(rect, center2d, this.current_scale_den)
 
         // data loader
         this.msgbus = new MessageBusConnector()
-        this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
+        this.msgbus.subscribe('data.tile.loaded', () => {
             //console.log('1 subscribe data.tile.loaded')
             if (this._abort === null) {
                 //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
@@ -47,11 +55,10 @@ class Map {
             }
         })
 
-        this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
-            var tree = this.ssctree.tree;
-            this._transform = new Transform(rect, tree.center2d, tree.metadata.view_scale_Sv)
+        this.msgbus.subscribe('data.tree.loaded', () => {
+            var tree = this.ssctree.tree;            
 
-            var textContent2 = "Vario-scale demo: " + tree.dataset_nm
+            var textContent2 = "Vario-scale demo: " + tree.metadata.dataset_nm
             if (tree.metadata.algorithm != "") {
                 textContent2 += ", " + tree.metadata.algorithm
             }
@@ -66,8 +73,9 @@ class Map {
             this._prepare_active_tiles(near_St[0])
         })
 
-        this.msgbus.subscribe('map.scale', (topic, message, sender) => {
-            //console.log('message:', message)
+        this.msgbus.subscribe('map.scale', (topic, message) => {
+
+            this.current_scale_den = message
             const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             // console.log(`scale changed to: 1 : ${scale}`)
 
@@ -75,15 +83,19 @@ class Map {
             el.textContent = " 1:" + scale;
         })
 
-        this.ssctree = new SSCTree(this.msgbus)
+
+    }
+
+
+    loadTrees() {
+
+        this.ssctree = new SSCTree(this.msgbus, this.map_settings.dataset_locations[0])
         this.ssctree.load()
-
-
 
         this.renderer = new Renderer(
             this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
             this.ssctree);
-        this.renderer.setViewport(rect.width, rect.height)
+        this.renderer.setViewport(this.rect.width, this.rect.height)
 
         //this.abortAndRender()
 
@@ -99,6 +111,8 @@ class Map {
         // window.setInterval(() => {
         //     const box2d = this.getTransform().visibleWorld()
         //     this.evictor.evict([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]]); this.render() }, 15000)
+
+
 
     }
 
