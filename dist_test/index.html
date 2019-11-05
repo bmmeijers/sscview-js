@@ -285,15 +285,20 @@
             canvas.height = window.innerHeight - vGap;
 
 
-            map_settings = {                
-                'dataset_nm': 'Test',
-                'initial_scale_den': 50000,
-                'box3d': [3542312.75, 5895329.47, 0.0, 3568456.31, 5920162.15, 4803.0],
-                'canvas_nms': [canvas_nm],
-                'dataset_locations': [{ 'folder_nm': 'data', 'tree_nm':'tree.json'}],
+            var map_settings = {                
+                'initialization': {                    
+                    'scale_den': 50000,
+                    'center2d': [3555384.53, 5907745.81],
+                    'navigationBar_title': 'Test, Manual',
+                },
+                'canvas_nm': canvas_nm,
+                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'tree.json'}],
                 'interaction_defaults': []
             }
             
+
+            document.getElementById("demo_info").textContent =
+                "Vario-scale demo: " + map_settings.initialization.navigationBar_title
 
             // Make a new map instance
             var map = new varioscale.Map(map_settings);
