@@ -5,8 +5,8 @@ const nodeResolve = require('rollup-plugin-node-resolve');  // https://github.co
 const uglify = require('rollup-plugin-uglify');             // https://github.com/TrySound/rollup-plugin-uglify
 //import { inherits } from 'util';
 //import builtins from 'rollup-plugin-node-builtins';
-const builtins = require('rollup-plugin-node-builtins');
-const globals = require('rollup-plugin-node-globals');
+//const builtins = require('rollup-plugin-node-builtins');
+//const globals = require('rollup-plugin-node-globals');
 
 
 const isProduction = (process.env.NODE_ENV === 'production');
@@ -16,21 +16,21 @@ const plugins = [
     commonjs({ include: 'node_modules/**' }),
     eslint(),
     buble(),
-    builtins(),
-    globals(),
+    //builtins(),
+    //globals(),
 ];
 
 if (isProduction) {
     plugins.push(uglify());
 }
 
-//var dist_folder = 'dist_test';
+var dist_folder = 'dist_test';
 //var dist_folder = 'dist_buchholz_greedy';
 //var dist_folder = 'dist_buchholz_astar';
 //var dist_folder = 'dist_buchholz_greedy_parallel_2';
 //var dist_folder = 'dist_buchholz_greedy_parallel_10';
 //var dist_folder = 'dist_buchholz_greedy_parallel_50';
-var dist_folder = 'dist_buchholz_greedy_parallel_250';
+//var dist_folder = 'dist_buchholz_greedy_parallel_250';
 
 
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';

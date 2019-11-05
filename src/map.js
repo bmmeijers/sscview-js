@@ -12,6 +12,9 @@ import Transform from './transform';
 import { timed } from './animate';
 import { Renderer } from "./render";
 
+
+
+
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
 import { SSCTree } from './tiles';
@@ -46,30 +49,20 @@ class Map {
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
             var tree = this.ssctree.tree;
-            //console.log("tree.view_scale_Sv in this.msgbus.subscribe:", tree.view_scale_Sv);
-            //this._transform = new Transform(
-            //    tree.start_scale_Sb,        //scale denominator of base map (according to dataset)
-            //    tree.no_of_objects_Nb,      //number of objects on base map (according to dataset)
-            //    tree.no_of_steps_Ns,        //number of steps of the SSCTree (according to dataset) 
-            //    tree.center2d,              //center of the map extent (according to dataset)
-            //    [rect.width, rect.height],
-            //    tree.view_scale_Sv          //scale denominator of initial view (according to users' preference)
-            //)
-
-            this._transform = new Transform(tree, rect)
+            this._transform = new Transform(rect, tree.center2d, tree.metadata.view_scale_Sv)
 
             var textContent2 = "Vario-scale demo: " + tree.dataset_nm
-            if (tree.algorithm != "") {
-                textContent2 += ", " + tree.algorithm
+            if (tree.metadata.algorithm != "") {
+                textContent2 += ", " + tree.metadata.algorithm
             }
-            if (tree.parameter != "") {
-                textContent2 += ", " + tree.parameter
+            if (tree.metadata.parameter != "") {
+                textContent2 += ", " + tree.metadata.parameter
             }
 
             document.getElementById("demo_info").textContent = textContent2
 
 
-            const near_St = this.getTransform().stepMap()
+            const near_St = this.ssctree.stepMap(this._transform)
             this._prepare_active_tiles(near_St[0])
         })
 
@@ -118,7 +111,7 @@ class Map {
     }
 
     render() {
-        const near_St = this.getTransform().stepMap()
+        const near_St = this.ssctree.stepMap(this._transform)
         this.msgbus.publish('map.scale', near_St[1])
 
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
@@ -130,7 +123,7 @@ class Map {
         const far = -1
         matrix[10] = -2.0 / (near - far)
         matrix[14] = (near + far) / (near - far)
-        const box2d = this.getTransform().visibleWorld()
+        const box2d = this.getTransform().getvisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
         this.ssctree.fetch_tiles(box3d, gl)
@@ -294,6 +287,8 @@ class Map {
         this.renderer.setViewport(newWidth, newHeight)
 
     }
+
+    
 }
 
 export default Map

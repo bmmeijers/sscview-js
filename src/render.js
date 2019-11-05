@@ -71,18 +71,6 @@ class DrawProgram {
 class LineDrawProgram extends DrawProgram {
     constructor(gl) {
 
-        this.colors = [[141,211,199]
-            ,[190,186,218]
-            ,[251,128,114]
-            ,[128,177,211]
-            ,[253,180,98]
-            ,[179,222,105]
-            ,[252,205,229]
-            ,[217,217,217]
-            ,[188,128,189]
-            ,[204,235,197]
-        ].map(x => { return [x[0]/255., x[1]/255., x[2]/255.]; });
-
         let vertexShaderText = `
 precision highp float;
 
@@ -120,6 +108,18 @@ void main()
 `;
 
         super(gl, vertexShaderText, fragmentShaderText)
+
+        this.colors = [[141, 211, 199]
+            , [190, 186, 218]
+            , [251, 128, 114]
+            , [128, 177, 211]
+            , [253, 180, 98]
+            , [179, 222, 105]
+            , [252, 205, 229]
+            , [217, 217, 217]
+            , [188, 128, 189]
+            , [204, 235, 197]
+        ].map(x => { return [x[0] / 255., x[1] / 255., x[2] / 255.]; });
     }
 
 
@@ -291,7 +291,7 @@ export class Renderer {
     //     // }, 15000)
     // }
 
-    render_relevant_tiles(matrix, box3d, near_St, rect) {
+    render_relevant_tiles(matrix, box3d, near_St) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket

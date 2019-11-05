@@ -2,6 +2,12 @@ import { now } from "./animate"
 //import Transform from './transform';
 //import { log } from "util";
 
+import Rectangle from './rect';
+var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+
+
+
+
 export class SSCTree {
     constructor(msgbus) {
         this.msgbus = msgbus
@@ -75,6 +81,44 @@ export class SSCTree {
                 return elem
             })
     }
+
+
+
+
+    stepMap(transform) {
+
+        let viewport_in_meter = new Rectangle(0, 0,
+            transform.viewport.width() / meter_to_pixel,
+            transform.viewport.height() / meter_to_pixel)
+        let world_in_meter = transform.getvisibleWorld()
+
+
+        // FIXME: these 2 variables should be adjusted
+        //         based on which tGAP is used...
+        // FIXME: this step mapping should move to the data side (the tiles)
+        //         and be kept there (for every dataset visualized on the map)
+        // FIXME: should use this.getScaleDenominator()
+
+        // let Sb = 48000  // (start scale denominator)
+        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
+
+        //let Sb = 24000  // (start scale denominator)
+        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
+
+
+
+        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator 
+        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2) // reduction in percentage
+
+        //Originally, step = this.Nb * reductionf.
+        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
+        //If the base map has 5537 features and the goal map has 734 features,
+        //then there are 4803 steps (this.Nb != this.Ns + 1).
+        //It is better to use 'this.Ns + 1' instead of this.Nb
+        let step = (this.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
+        return [Math.max(0, step), St]
+    }
+
 
 }
 
@@ -358,84 +402,84 @@ class TileContent {
         }
 
 
-        function dist(start, end) {
-            /*Distance between two positons*/
-            return norm(make_vector_start_end(start, end));
-        }
+        //function dist(start, end) {
+        //    /*Distance between two positons*/
+        //    return norm(make_vector_start_end(start, end));
+        //}
 
 
-        function unit(v) {
-            /*Returns the unit vector in the direction of v.*/
-            return div(v, norm(v));
-        }
+        //function unit(v) {
+        //    /*Returns the unit vector in the direction of v.*/
+        //    return div(v, norm(v));
+        //}
 
 
-        function cross(a, b) {
-            /*Cross product between a 3-vector or a 2-vector*/
-            if (a.length != b.length) {
-                throw "Vector dimensions should be equal";
-            }
-            if (a.length == 3) {
-                return (
-                    a[1] * b[2] - a[2] * b[1],
-                    a[2] * b[0] - a[0] * b[2],
-                    a[0] * b[1] - a[1] * b[0]);
-            }
-            else if (a.length == 2) {
-                return a[0] * b[1] - a[1] * b[0];
-            }
-            else {
-                throw 'Vectors must be 2D or 3D';
-            }
-        }
+        //function cross(a, b) {
+        //    /*Cross product between a 3-vector or a 2-vector*/
+        //    if (a.length != b.length) {
+        //        throw "Vector dimensions should be equal";
+        //    }
+        //    if (a.length == 3) {
+        //        return (
+        //            a[1] * b[2] - a[2] * b[1],
+        //            a[2] * b[0] - a[0] * b[2],
+        //            a[0] * b[1] - a[1] * b[0]);
+        //    }
+        //    else if (a.length == 2) {
+        //        return a[0] * b[1] - a[1] * b[0];
+        //    }
+        //    else {
+        //        throw 'Vectors must be 2D or 3D';
+        //    }
+        //}
 
-        function angle(v1, v2) {
-            /*angle between 2 vectors*/
-            return Math.acos(dot(v1, v2) / (norm(v1) * norm(v2)));
-        }
+        //function angle(v1, v2) {
+        //    /*angle between 2 vectors*/
+        //    return Math.acos(dot(v1, v2) / (norm(v1) * norm(v2)));
+        //}
 
-        function angle_unit(v1, v2) {
-            /*angle between 2 *unit* vectors*/
-            let d = dot(v1, v2)
-            if (d > 1.0 || d < -1.0) {
-                console.log("dot not in [-1, 1] -- clamp");
-            }
-            d = Math.max(-1.0, Math.min(1.0, d));
-            return Math.acos(d);
-        }
+        //function angle_unit(v1, v2) {
+        //    /*angle between 2 *unit* vectors*/
+        //    let d = dot(v1, v2)
+        //    if (d > 1.0 || d < -1.0) {
+        //        console.log("dot not in [-1, 1] -- clamp");
+        //    }
+        //    d = Math.max(-1.0, Math.min(1.0, d));
+        //    return Math.acos(d);
+        //}
 
-        function near_zero(val) {
-            if (Math.abs(val) <= Math.pow(0.1, 8)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
+        //function near_zero(val) {
+        //    if (Math.abs(val) <= Math.pow(0.1, 8)) {
+        //        return true;
+        //    }
+        //    else {
+        //        return false;
+        //    }
+        //}
 
-        function bisector(u1, u2) {
-            /*Based on two unit vectors perpendicular to the wavefront,
-            get the bisector
+        //function bisector(u1, u2) {
+        //    /*Based on two unit vectors perpendicular to the wavefront,
+        //    get the bisector
             
-            The magnitude of the bisector vector represents the speed
-                in which a vertex has to move to keep up(stay at the intersection of)
-            the 2 wavefront edges
-            */
-            let direction = add(u1, u2);
+        //    The magnitude of the bisector vector represents the speed
+        //        in which a vertex has to move to keep up(stay at the intersection of)
+        //    the 2 wavefront edges
+        //    */
+        //    let direction = add(u1, u2);
 
-            var max_value = 0;
-            for (var i = 0; i < direction.length; i++) {
-                max_value = Math.max(max_value, Math.abs(direction[i]));
-            }
+        //    var max_value = 0;
+        //    for (var i = 0; i < direction.length; i++) {
+        //        max_value = Math.max(max_value, Math.abs(direction[i]));
+        //    }
 
-            if (near_zero(max_value)) {
-                return (0, 0);
-            }
-            let alpha = 0.5 * Math.PI + 0.5 * angle_unit(u1, u2);
-            let magnitude = Math.sin(alpha); //if u1 and u2 are unit vectors, then magnitude = sqrt(2) / 2
-            var bisector_result = div(unit(direction), magnitude);
-            return bisector_result;
-        }
+        //    if (near_zero(max_value)) {
+        //        return (0, 0);
+        //    }
+        //    let alpha = 0.5 * Math.PI + 0.5 * angle_unit(u1, u2);
+        //    let magnitude = Math.sin(alpha); //if u1 and u2 are unit vectors, then magnitude = sqrt(2) / 2
+        //    var bisector_result = div(unit(direction), magnitude);
+        //    return bisector_result;
+        //}
 
 
         function rotate90ccw(v) {
@@ -458,7 +502,6 @@ class TileContent {
 
     //#endregion
     }
-
 
 }
 
@@ -512,18 +555,18 @@ function obtain_dataelements(root) {
     return result
 }
 
-function overlaps2d(one, other) {
-    // Separating axes theorem
-    // xmin=[0][0]
-    // xmax=[1][0]
-    // ymin=[0][1]
-    // ymax=[1][1]
-    // If one of the following is true then there can be no overlap
-    return !(one[1][0] < other[0][0] ||
-        one[0][0] > other[1][0] ||
-        one[1][1] < other[0][1] ||
-        one[0][1] > other[1][1])
-}
+//function overlaps2d(one, other) {
+//    // Separating axes theorem
+//    // xmin=[0][0]
+//    // xmax=[1][0]
+//    // ymin=[0][1]
+//    // ymax=[1][1]
+//    // If one of the following is true then there can be no overlap
+//    return !(one[1][0] < other[0][0] ||
+//        one[0][0] > other[1][0] ||
+//        one[1][1] < other[0][1] ||
+//        one[0][1] > other[1][1])
+//}
 
 
 export function overlaps3d(one, other) {
