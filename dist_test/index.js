@@ -1387,10 +1387,11 @@ var varioscale = (function () {
 
 
 
-    var SSCTree = function SSCTree(msgbus) {
+    var SSCTree = function SSCTree(msgbus, dataset_location) {
         this.msgbus = msgbus;
         this.tree = null;
         this.retrieved = {};
+        this.dataset_location = dataset_location;
     };
 
     SSCTree.prototype.load = function load () {
@@ -1402,12 +1403,12 @@ var varioscale = (function () {
         // fetch('nl/tree_max9_fanout10_9.json')
 
         //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
-        var data_folder = 'data/';
+        //let data_folder = 'data/';
     //    let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
-        var jsonfile = 'tree.json';
-
-        fetch(data_folder + jsonfile)
+        //let jsonfile = 'tree.json';
+        var dataset_location = this.dataset_location;
+        fetch(dataset_location.folder_nm + '/' + dataset_location.tree_nm)
             .then(function (r) {
                 return r.json()
             })
@@ -1419,7 +1420,7 @@ var varioscale = (function () {
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = data_folder + element.info;
+                    element.url = dataset_location.folder_nm + '/' + element.info;
                 });
             })
             .then(function () {
@@ -2105,9 +2106,16 @@ var varioscale = (function () {
         return instance.subscribe(topic, func)
     };
 
-    var Map = function Map(container) {
+    var Map = function Map(map_settings) {
         var this$1 = this;
 
+        this.map_settings = map_settings;
+        this.current_scale_den = map_settings.initial_scale_den;
+
+        var box3d = map_settings.box3d;
+        var center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2];
+
+        var container = map_settings['canvas_nms'][0];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
         }
@@ -2121,10 +2129,11 @@ var varioscale = (function () {
         var rect = this.getCanvasContainer().getBoundingClientRect();
         this.rect = rect;
         this._abort = null;
+        this._transform = new Transform(rect, center2d, this.current_scale_den);
 
         // data loader
         this.msgbus = new MessageBusConnector();
-        this.msgbus.subscribe('data.tile.loaded', function (topic, message, sender) {
+        this.msgbus.subscribe('data.tile.loaded', function () {
             //console.log('1 subscribe data.tile.loaded')
             if (this$1._abort === null) {
                 //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
@@ -2132,11 +2141,10 @@ var varioscale = (function () {
             }
         });
 
-        this.msgbus.subscribe('data.tree.loaded', function (topic, message, sender) {
-            var tree = this$1.ssctree.tree;
-            this$1._transform = new Transform(rect, tree.center2d, tree.metadata.view_scale_Sv);
+        this.msgbus.subscribe('data.tree.loaded', function () {
+            var tree = this$1.ssctree.tree;            
 
-            var textContent2 = "Vario-scale demo: " + tree.dataset_nm;
+            var textContent2 = "Vario-scale demo: " + tree.metadata.dataset_nm;
             if (tree.metadata.algorithm != "") {
                 textContent2 += ", " + tree.metadata.algorithm;
             }
@@ -2151,8 +2159,9 @@ var varioscale = (function () {
             this$1._prepare_active_tiles(near_St[0]);
         });
 
-        this.msgbus.subscribe('map.scale', function (topic, message, sender) {
-            //console.log('message:', message)
+        this.msgbus.subscribe('map.scale', function (topic, message) {
+
+            this$1.current_scale_den = message;
             var scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
             // console.log(`scale changed to: 1 : ${scale}`)
 
@@ -2160,15 +2169,19 @@ var varioscale = (function () {
             el.textContent = " 1:" + scale;
         });
 
-        this.ssctree = new SSCTree(this.msgbus);
+
+    };
+
+
+    Map.prototype.loadTrees = function loadTrees () {
+
+        this.ssctree = new SSCTree(this.msgbus, this.map_settings.dataset_locations[0]);
         this.ssctree.load();
-
-
 
         this.renderer = new Renderer(
             this._container.getContext('experimental-webgl', { alpha: false, antialias: true }),
             this.ssctree);
-        this.renderer.setViewport(rect.width, rect.height);
+        this.renderer.setViewport(this.rect.width, this.rect.height);
 
         //this.abortAndRender()
 
@@ -2184,6 +2197,8 @@ var varioscale = (function () {
         // window.setInterval(() => {
         // const box2d = this.getTransform().visibleWorld()
         // this.evictor.evict([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]]); this.render() }, 15000)
+
+
 
     };
 

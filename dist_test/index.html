@@ -275,7 +275,8 @@
 
             // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
             let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
-            let canvas = document.getElementById("canvas" + map_nm);
+            let canvas_nm = 'canvas'
+            let canvas = document.getElementById(canvas_nm);
             var gl = canvas.getContext("webgl", { antialias: true }) ||
                      canvas.getContext("experimental-webgl", { antialias: true });
             let hGap = 0;
@@ -283,14 +284,26 @@
             canvas.width = window.innerWidth - hGap;
             canvas.height = window.innerHeight - vGap;
 
+
+            map_settings = {                
+                'dataset_nm': 'Test',
+                'initial_scale_den': 50000,
+                'box3d': [3542312.75, 5895329.47, 0.0, 3568456.31, 5920162.15, 4803.0],
+                'canvas_nms': [canvas_nm],
+                'dataset_locations': [{ 'folder_nm': 'data', 'tree_nm':'tree.json'}],
+                'interaction_defaults': []
+            }
+            
+
             // Make a new map instance
-            var map = new varioscale.Map('canvas' + map_nm);
+            var map = new varioscale.Map(map_settings);
+            map.loadTrees()
             window.map = map;
 
             // Resize the canvas to span complete screen, when the screen is resized
             // (note, this does include device rotation on mobile)
             var resize = function () {
-                let canvas = document.getElementById("canvas" + map_nm);
+                let canvas = document.getElementById(canvas_nm);
                 var gl = canvas.getContext("webgl", { antialias: true }) ||
                          canvas.getContext("experimental-webgl", { antialias: true });
                 let newWidth = window.innerWidth - hGap;
