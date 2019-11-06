@@ -24,12 +24,9 @@ import { MessageBusConnector } from './pubsub'
 class Map {
     constructor(map_settings) {
         this.map_settings = map_settings
-        this.current_scale_den = map_settings.initial_scale_den
-
-        let box3d = map_settings.box3d;
-        let center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-
-        let container = map_settings['canvas_nms'][0]
+        this.current_scale_den = map_settings.initialization.scale_den
+        
+        let container = map_settings['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
         }
@@ -43,11 +40,11 @@ class Map {
         const rect = this.getCanvasContainer().getBoundingClientRect();
         this.rect = rect;
         this._abort = null
-        this._transform = new Transform(rect, center2d, this.current_scale_den)
+        this._transform = new Transform(rect, map_settings.initialization.center2d, this.current_scale_den)
 
         // data loader
         this.msgbus = new MessageBusConnector()
-        this.msgbus.subscribe('data.tile.loaded', () => {
+        this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
             //console.log('1 subscribe data.tile.loaded')
             if (this._abort === null) {
                 //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
@@ -55,25 +52,13 @@ class Map {
             }
         })
 
-        this.msgbus.subscribe('data.tree.loaded', () => {
-            var tree = this.ssctree.tree;            
-
-            var textContent2 = "Vario-scale demo: " + tree.metadata.dataset_nm
-            if (tree.metadata.algorithm != "") {
-                textContent2 += ", " + tree.metadata.algorithm
-            }
-            if (tree.metadata.parameter != "") {
-                textContent2 += ", " + tree.metadata.parameter
-            }
-
-            document.getElementById("demo_info").textContent = textContent2
-
+        this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
 
             const near_St = this.ssctree.stepMap(this._transform)
             this._prepare_active_tiles(near_St[0])
         })
 
-        this.msgbus.subscribe('map.scale', (topic, message) => {
+        this.msgbus.subscribe('map.scale', (topic, message, sender) => {
 
             this.current_scale_den = message
             const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
@@ -89,7 +74,7 @@ class Map {
 
     loadTrees() {
 
-        this.ssctree = new SSCTree(this.msgbus, this.map_settings.dataset_locations[0])
+        this.ssctree = new SSCTree(this.msgbus, this.map_settings.datasets[0])
         this.ssctree.load()
 
         this.renderer = new Renderer(

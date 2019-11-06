@@ -106,10 +106,9 @@ export function scrollHandler (map) {
         //r has size 800 x 760 because of the bar (with height 39.92) at the top
         //r.left = 0 and r.top = 39.92
         const r = _canvas.getBoundingClientRect();
-        //const x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is 0
-        //const y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is 0
-        const x = evt.clientX - r.left;
-        const y = evt.clientY - r.top;
+        const x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is often 0
+        const y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is often 0
+
         switch(direction) 
         {
             case 1:

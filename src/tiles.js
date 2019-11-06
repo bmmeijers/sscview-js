@@ -9,11 +9,11 @@ var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
 
 export class SSCTree {
-    constructor(msgbus, dataset_location) {
+    constructor(msgbus, dataset) {
         this.msgbus = msgbus
         this.tree = null
         this.retrieved = {}
-        this.dataset_location = dataset_location
+        this.dataset = dataset
     }
 
     load() {
@@ -27,20 +27,20 @@ export class SSCTree {
 //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        let dataset_location = this.dataset_location
-        fetch(dataset_location.folder_nm + '/' + dataset_location.tree_nm)
+        let dataset = this.dataset
+        fetch(dataset.folder_nm + '/' + dataset.tree_nm)
             .then(r => {
                 return r.json()
             })
             .then(tree => {
                 this.tree = tree;
-                let box3d = tree.box;
-                tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
+                //let box3d = tree.box;
+                //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                 let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
-                    element.url = dataset_location.folder_nm + '/' + element.info
+                    element.url = dataset.folder_nm + '/' + element.info
                 })
             })
             .then(() => {

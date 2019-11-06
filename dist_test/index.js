@@ -346,10 +346,9 @@ var varioscale = (function () {
             //r has size 800 x 760 because of the bar (with height 39.92) at the top
             //r.left = 0 and r.top = 39.92
             var r = _canvas.getBoundingClientRect();
-            //const x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is 0
-            //const y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is 0
-            var x = evt.clientX - r.left;
-            var y = evt.clientY - r.top;
+            var x = evt.clientX - r.left - _canvas.clientLeft;  //_canvas.clientLeft is often 0
+            var y = evt.clientY - r.top - _canvas.clientTop;  //_canvas.clientTop is often 0
+
             switch(direction) 
             {
                 case 1:
@@ -1387,11 +1386,11 @@ var varioscale = (function () {
 
 
 
-    var SSCTree = function SSCTree(msgbus, dataset_location) {
+    var SSCTree = function SSCTree(msgbus, dataset) {
         this.msgbus = msgbus;
         this.tree = null;
         this.retrieved = {};
-        this.dataset_location = dataset_location;
+        this.dataset = dataset;
     };
 
     SSCTree.prototype.load = function load () {
@@ -1407,20 +1406,20 @@ var varioscale = (function () {
     //    let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        var dataset_location = this.dataset_location;
-        fetch(dataset_location.folder_nm + '/' + dataset_location.tree_nm)
+        var dataset = this.dataset;
+        fetch(dataset.folder_nm + '/' + dataset.tree_nm)
             .then(function (r) {
                 return r.json()
             })
             .then(function (tree) {
                 this$1.tree = tree;
-                var box3d = tree.box;
-                tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2];
+                //let box3d = tree.box;
+                //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                 var dataelements = obtain_dataelements(this$1.tree);  //dataelements recorded in .json file
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = dataset_location.folder_nm + '/' + element.info;
+                    element.url = dataset.folder_nm + '/' + element.info;
                 });
             })
             .then(function () {
@@ -2110,12 +2109,9 @@ var varioscale = (function () {
         var this$1 = this;
 
         this.map_settings = map_settings;
-        this.current_scale_den = map_settings.initial_scale_den;
-
-        var box3d = map_settings.box3d;
-        var center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2];
-
-        var container = map_settings['canvas_nms'][0];
+        this.current_scale_den = map_settings.initialization.scale_den;
+            
+        var container = map_settings['canvas_nm'];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
         }
@@ -2129,11 +2125,11 @@ var varioscale = (function () {
         var rect = this.getCanvasContainer().getBoundingClientRect();
         this.rect = rect;
         this._abort = null;
-        this._transform = new Transform(rect, center2d, this.current_scale_den);
+        this._transform = new Transform(rect, map_settings.initialization.center2d, this.current_scale_den);
 
         // data loader
         this.msgbus = new MessageBusConnector();
-        this.msgbus.subscribe('data.tile.loaded', function () {
+        this.msgbus.subscribe('data.tile.loaded', function (topic, message, sender) {
             //console.log('1 subscribe data.tile.loaded')
             if (this$1._abort === null) {
                 //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
@@ -2141,25 +2137,13 @@ var varioscale = (function () {
             }
         });
 
-        this.msgbus.subscribe('data.tree.loaded', function () {
-            var tree = this$1.ssctree.tree;            
-
-            var textContent2 = "Vario-scale demo: " + tree.metadata.dataset_nm;
-            if (tree.metadata.algorithm != "") {
-                textContent2 += ", " + tree.metadata.algorithm;
-            }
-            if (tree.metadata.parameter != "") {
-                textContent2 += ", " + tree.metadata.parameter;
-            }
-
-            document.getElementById("demo_info").textContent = textContent2;
-
+        this.msgbus.subscribe('data.tree.loaded', function (topic, message, sender) {
 
             var near_St = this$1.ssctree.stepMap(this$1._transform);
             this$1._prepare_active_tiles(near_St[0]);
         });
 
-        this.msgbus.subscribe('map.scale', function (topic, message) {
+        this.msgbus.subscribe('map.scale', function (topic, message, sender) {
 
             this$1.current_scale_den = message;
             var scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -2175,7 +2159,7 @@ var varioscale = (function () {
 
     Map.prototype.loadTrees = function loadTrees () {
 
-        this.ssctree = new SSCTree(this.msgbus, this.map_settings.dataset_locations[0]);
+        this.ssctree = new SSCTree(this.msgbus, this.map_settings.datasets[0]);
         this.ssctree.load();
 
         this.renderer = new Renderer(
