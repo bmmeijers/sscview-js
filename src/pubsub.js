@@ -51,10 +51,10 @@ class MessageBus {
         if (sender === null) {
             sender = 0
         }
-        if (!this._topics[topic]) {
+        let subscribers = this._topics[topic];
+        if (!subscribers) {
             return false;
         }
-        let subscribers = this._topics[topic];
         subscribers.forEach(subscriberFn => {
             setTimeout(subscriberFn(topic, message, sender), 0)
         });

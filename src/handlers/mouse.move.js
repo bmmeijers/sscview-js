@@ -32,7 +32,7 @@ export function moveHandler (map) {
         var x = evt.clientX - r.left - _canvas.clientLeft;
         var y = evt.clientY - r.top - _canvas.clientTop;
         const transformed = _map.getTransform().backward([x, r.height-y, 0]);
-        let scale = _map.getTransform().stepMap()[1]
+        let scale = _map.getTransform().getScaleDenominator();
         displayCoordinates(transformed, scale);
     }
 
@@ -45,7 +45,9 @@ export function moveHandler (map) {
 
     function displayCoordinates(coords, scale)
     {
+        console.log(coords[0].toFixed(1) + ", " + coords[1].toFixed(1) + " 1:" + scale.toFixed(0))
         // -- modify the DOM
+        /*
         var list = document.getElementById("mouse-move-output");
         var li = document.createElement('li');
         var val = document.createTextNode(coords[0].toFixed(1) + ", " + coords[1].toFixed(1) + " 1:" + scale.toFixed(0));
@@ -58,6 +60,7 @@ export function moveHandler (map) {
         {
             list.appendChild(li);
         }
+        */
         // end modify
     }
 }

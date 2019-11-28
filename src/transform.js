@@ -68,7 +68,7 @@ class Transform {
 
         // set up initial transformation
         this.initTransform(center2d, [client_rect.width, client_rect.height], view_scale_Sv)
-        //console.log("Set up transform: " + center_world + " 1:" + denominator + " vs 1:" + this.getScaleDenominator())
+        console.log("Set up transform: " + center2d + " 1:" + view_scale_Sv + " vs 1:" + this.getScaleDenominator())
     }
 
     // fixme: rename -> initTransform

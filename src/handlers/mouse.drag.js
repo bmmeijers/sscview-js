@@ -122,7 +122,9 @@ export function dragHandler(map) {
         // var ty = Math.max(Math.min((vy * 0.5) * (duration / 1000), max_distance), -max_distance)
         // map.panAnimated(tx, ty);
 
-        var duration = parseFloat(document.getElementById('panduration').value);
+        // FIXME: settings
+        let duration = parseFloat(map._interaction_settings.pan_duration);
+        // var duration = 1000; // parseFloat(document.getElementById('panduration').value);
         let tx = (vx * 0.5) * (duration / 1000);
         let ty = (vy * 0.5) * (duration / 1000);
         _trace = null;

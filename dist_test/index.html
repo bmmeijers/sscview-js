@@ -285,25 +285,56 @@
             canvas.height = window.innerHeight - vGap;
 
 
+//            var map_settings = {                
+//                'initialization': {                    
+//                    'scale_den': 500000,
+//                    'center2d': [3555384.53, 5907745.81],
+//                    'navigationBar_title': 'Test, Manual',
+//                },
+//                'canvas_nm': canvas_nm,
+//                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
+//                'interaction_defaults': []
+//            }
+
+            // See:
+            // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
+            // for available tile maps
             var map_settings = {                
                 'initialization': {                    
-                    'scale_den': 50000,
-                    'center2d': [3555384.53, 5907745.81],
-                    'navigationBar_title': 'Test, Manual',
+                    'scale_den': 250000,
+                    'center2d': [150000, 400000],
+                    'navigationBar_title': 'Top10NL raster tiles (10 levels)',
                 },
                 'canvas_nm': canvas_nm,
-                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'tree.json'}],
+                'datasets': [{'tree_root_file_nm': 'tree.json',
+                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+                              'tile_root_href': '/data/tiles-nl/',
+                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                              //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                            }],
                 'interaction_defaults': []
             }
-            
 
             document.getElementById("demo_info").textContent =
                 "Vario-scale demo: " + map_settings.initialization.navigationBar_title
 
             // Make a new map instance
             var map = new varioscale.Map(map_settings);
-            map.loadTrees()
+            map.loadTree();
+
             window.map = map;
+
+            let subscribe_scale = (map) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe('map.scale', (topic, message, sender) => {
+                    if (sender !== map.msgbus.id) return;
+                    const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+                    let el = document.getElementById("scale-denominator");
+                    el.textContent = " 1:" + scale;
+                });
+            }
+            subscribe_scale(map);
+
 
             // Resize the canvas to span complete screen, when the screen is resized
             // (note, this does include device rotation on mobile)

@@ -65,8 +65,10 @@ export function scrollHandler (map) {
             const delta = now - prev[0]
             _trace.push(direction);
 
-            var radios = document.getElementsByName('speed');
+            // FIXME: SETTINGS: var radios = document.getElementsByName('speed');
             let factor = 1
+            // FIXME: SETTINGS: 
+            /*
             for (var i = 0, length = radios.length; i < length; i++) {
                 if (radios[i].checked) {
                     // do whatever you want with the checked radio
@@ -75,6 +77,7 @@ export function scrollHandler (map) {
                     break;
                 }
             }
+            */
 
 
             // make larger zoom steps if mousewheel went faster

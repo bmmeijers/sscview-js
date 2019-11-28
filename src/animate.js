@@ -62,7 +62,7 @@ export function timed(fn, dur, ctx) {
         }
         now = _now();
 
-        if (now >= start + dur) {
+        if (now >= (start + dur)) {
             fn.call(ctx, 1);
         } else {
             let k = (now - start) / dur
