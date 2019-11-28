@@ -68,6 +68,86 @@ class DrawProgram {
 
 
 
+
+class ImageTileDrawProgram extends DrawProgram 
+{
+    constructor(gl)
+    {
+        let vertexShaderText = `
+            precision highp float;
+
+            attribute vec3 vertexPosition_modelspace;
+            attribute vec2 aTextureCoord;
+
+            uniform mat4 M;
+
+            varying highp vec2 vTextureCoord;
+
+            void main()
+            {
+              gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
+              vTextureCoord = aTextureCoord;
+            }
+        `
+
+        let fragmentShaderText = `
+            precision highp float;
+
+            varying highp vec2 vTextureCoord;
+
+            uniform sampler2D uSampler;
+            
+            void main()
+            {
+              gl_FragColor = texture2D(uSampler, vTextureCoord);
+            }
+        `
+
+        super(gl, vertexShaderText, fragmentShaderText)
+    }
+
+//    draw(matrix, tilecontent)
+    draw_tile(matrix, tile) {
+        if (tile.content.buffer === null)
+        {
+            return;
+        }
+
+        let gl = this.gl;
+        gl.useProgram(this.shaderProgram);
+        gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.buffer);
+
+        // FIXME: better to store with bucket how the layout of the mesh is?
+        const positionAttrib = gl.getAttribLocation(this.shaderProgram, 'vertexPosition_modelspace');
+        // gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
+        gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(positionAttrib);
+
+        {
+            let M = gl.getUniformLocation(this.shaderProgram, 'M');
+            gl.uniformMatrix4fv(M, false, matrix);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.textureCoordBuffer)
+        const textureAttrib = gl.getAttribLocation(this.shaderProgram, 'aTextureCoord');
+        gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(textureAttrib);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tile.content.texture);
+
+        const uSampler = gl.getUniformLocation(this.shaderProgram, 'uSampler');
+        gl.uniform1i(uSampler, 0);
+
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
+        gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
+    }
+}
+
+
+
+
 class LineDrawProgram extends DrawProgram {
     constructor(gl) {
 
@@ -123,7 +203,7 @@ void main()
     }
 
 
-    draw_tile(matrix, tile, near_St, width_increase) {
+    draw_tile(matrix, tile, near_St, boundary_width_screen) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         let triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
@@ -149,13 +229,16 @@ void main()
 
         // the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
         // FIXME: MM: at which amount of dots per inch has this been calculated?
-        var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
+
+         // FIXME: settings/view
+//        let boundary_width_screen = 0.2;
+        //var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
         // The unit of the map must be meter!!!
         var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
-        if (width_increase > 0)
-        {
-            half_width_reality *= width_increase;
-        }
+//        if (width_increase > 0)
+//        {
+//            half_width_reality *= width_increase;
+//        }
 
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
@@ -167,11 +250,11 @@ void main()
             let half_width_reality_location = gl.getUniformLocation(shaderProgram, 'half_width_reality');
             gl.uniform1f(half_width_reality_location, half_width_reality);
             var c = [0.0, 0.0, 0.0]; // black
-            if (width_increase <= 0)
-            {
-                // var c = this.colors[tile.id % this.colors.length];
-                c = [1.0, 1.0, 1.0]; // white
-            }
+//            if (width_increase <= 0)
+//            {
+//                // var c = this.colors[tile.id % this.colors.length];
+//                c = [1.0, 1.0, 1.0]; // white
+//            }
             var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
             gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
         }
@@ -258,25 +341,18 @@ void main()
 }
 
 
-
-
-
-
 export class Renderer {
     constructor(gl, ssctree) {
         this.gl = gl
         this.ssctree = ssctree
+        this.settings = { boundary_width: 0.2 }
 
-        //console.log(this.ssctree)
-        // this.map = map;
-        // this.buckets = [];
-        //this.programs = [
-        //    new PolygonDrawProgram(gl),
-        //    new LineDrawProgram(gl),
-        //    //new ImageTileProgram(gl)
-        //]
-        // console.log(this.gl);
-        // console.log(this.buckets);
+        // construct programs once, at init time
+        this.programs = [
+            new PolygonDrawProgram(this.gl),
+            new LineDrawProgram(this.gl),
+            new ImageTileDrawProgram(gl)
+        ];
     }
 
     // addBucket(mesh)
@@ -298,29 +374,42 @@ export class Renderer {
         // when the bucket is constructed?
 
         var tiles = this.ssctree.get_relevant_tiles(box3d)
+//            .filter(tile => {return tile.hasOwnProperty('content') && tile.content !== null})
 
 //        let gl = this.gl;
 //        gl.clearColor(1.0, 1.0, 1.0, 1.0);
 //        gl.clearDepth(1.0); // Clear everything
 //        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
 
+        this._clear();
         if (tiles.length > 0) {
 
-            var polygon_draw_program = new PolygonDrawProgram(this.gl);
-            tiles.forEach(tile => {
+            var polygon_draw_program = this.programs[0];
+            tiles
+//            .filter(tile => {tile.}) // FIXME tile should only have polygon data
+            .forEach(tile => {
                 polygon_draw_program.draw_tile(matrix, tile);
             })
+
+            var image_tile_draw_program = this.programs[2];
+            tiles
+            .filter(tile => {return tile.texture !== null}) // FIXME tile should have image data
+            .forEach(tile => {
+                image_tile_draw_program.draw_tile(matrix, tile);
+            })
+
 
             // FIXME: if lines have width == 0; why draw them?
             // If we want to draw lines twice -> thick line under / small line over
             // we need to do this twice + move the code for determining line width here...
-            var line_draw_program = new LineDrawProgram(this.gl);
-            tiles.forEach(tile => {
+            var line_draw_program = this.programs[1];
+            tiles
+            .forEach(tile => {
                 // FIXME: would be nice to specify width here in pixels.
                 // bottom lines (black)
                 // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
                 // interior (color)
-                // line_draw_program.draw_tile(matrix, tile, near_St, 0);
+                line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
             })
         }
 
@@ -332,6 +421,14 @@ export class Renderer {
         // we should this.gl.clear()
     }
 
+    _clear()
+    {
+        let gl = this.gl;
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.clearDepth(1.0); // Clear everything
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  // Clear the color buffer with specified clear color
+
+    }
 
     setViewport(width, height) {
         this.gl.viewport(0, 0, width, height);
