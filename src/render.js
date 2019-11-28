@@ -320,7 +320,7 @@ export class Renderer {
                 // bottom lines (black)
                 // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
                 // interior (color)
-                line_draw_program.draw_tile(matrix, tile, near_St, 0);
+                // line_draw_program.draw_tile(matrix, tile, near_St, 0);
             })
         }
 
