@@ -14,7 +14,7 @@ import { Renderer } from "./render";
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
-import { SSCTree } from './tiles';
+import { SSCTree, Evictor } from './tiles';
 
 import { MessageBusConnector } from './pubsub'
 
@@ -58,26 +58,8 @@ class Map {
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
-
             const near_St = this.ssctree.stepMap(this._transform)
             this._prepare_active_tiles(near_St[0])
-        })
-
-        this.msgbus.subscribe('map.scale', (topic, message, sender) => {
-
-            // console.log(sender === this.msgbus.id);
-            // console.log(message);
-
-            if (sender === this.msgbus.id) return;
-
-//            const scale = (Math.round(message / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-//            console.log(`scale changed to: 1 : ${scale}`)
-
-            //  FIXME: settings/view
-            /*
-            let el = document.getElementById("scale-denominator");
-            el.textContent = " 1:" + scale;
-            */
         })
 
         this.msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
@@ -106,22 +88,39 @@ class Map {
         // data load
         this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
         this.renderer = new Renderer(
-            this._container.getContext('webgl', { alpha: true, antialias: true }) || this._container.getContext('experimental-webgl', { alpha: true, antialias: true }),
+            this._container.getContext('webgl', { alpha: true, antialias: true })
+            // || this._container.getContext('experimental-webgl', { alpha: true, antialias: true })
+            ,
             this.ssctree);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height)
 
         dragHandler(this)  // attach mouse handlers
-//        moveHandler(this)
         scrollHandler(this)
+//        moveHandler(this)
         touchPinchHandler(this) // attach touch handlers
         touchDragHandler(this)
 
-        // this.evictor = new Evictor(this.ssctree,
-        //                             this._container.getContext('webgl', { alpha: false, antialias: true }))
-        // window.setInterval(() => {
-        //     const box2d = this.getTransform().visibleWorld()
-        //     this.evictor.evict([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]]); this.render() }, 15000)
+
+        { 
+            let near_St = this.ssctree.stepMap(this.getTransform())
+            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), near_St[1]]) 
+        };
+
+        this.evictor = new Evictor(this.ssctree,
+                                   this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true }))
+        // every 30 seconds release resources
+        window.setInterval(
+            () => {
+                const near_St = this.ssctree.stepMap(this.getTransform())
+                const near = near_St[0]
+                const box2d = this.getTransform().getVisibleWorld()
+                const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+                this.evictor.evict(box3d)
+                this.render()
+            },
+            30000
+        )
 
     }
 
@@ -138,24 +137,20 @@ class Map {
     }
 
     render() {
-        const near_St = this.ssctree.stepMap(this._transform)
-//        this.msgbus.publish('map.scale', )
-
-//        if (this._should_broadcast_move) 
-        { this.msgbus.publish('map.scale', [this._transform.getCenter(), near_St[1]]) };
-
+        const near_St = this.ssctree.stepMap(this.getTransform())
         var matrix_box3d = this._prepare_active_tiles(near_St[0])
+        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), near_St[1]])
         this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], near_St);
     }
 
     _prepare_active_tiles(near) {
         let matrix = this.getTransform().world_square
-        const far = -1
+        const far = -0.5
         matrix[10] = -2.0 / (near - far)
         matrix[14] = (near + far) / (near - far)
-        const box2d = this.getTransform().getvisibleWorld()
+        const box2d = this.getTransform().getVisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-        let gl = this._container.getContext('webgl', { alpha: true, antialias: true }) || this._container.getContext('experimental-webgl', { alpha: true, antialias: true });
+        let gl = this._container.getContext('webgl', { alpha: true, antialias: true }); // || this._container.getContext('experimental-webgl', { alpha: true, antialias: true });
 //        let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
         this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
@@ -259,7 +254,7 @@ class Map {
     jumpTo(x, y, scale) {
         let center_world = [x, y];
         let r = this.getCanvasContainer();
-        let viewport_size = [r.width, r.height]; // FIXME hard coded size!
+        let viewport_size = [r.width, r.height];
         let denominator = scale;
         this._transform.initTransform(center_world, viewport_size, denominator);
         this.abortAndRender();
@@ -325,10 +320,8 @@ class Map {
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight)
-
     }
 
-    
 }
 
 export default Map

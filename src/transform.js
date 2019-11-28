@@ -68,7 +68,7 @@ class Transform {
 
         // set up initial transformation
         this.initTransform(center2d, [client_rect.width, client_rect.height], view_scale_Sv)
-        console.log("Set up transform: " + center2d + " 1:" + view_scale_Sv + " vs 1:" + this.getScaleDenominator())
+//        console.log("Set up transform: " + center2d + " 1:" + view_scale_Sv + " vs 1:" + this.getScaleDenominator())
     }
 
     // fixme: rename -> initTransform
@@ -91,7 +91,7 @@ class Transform {
         // the size of the viewport 
         this.viewport = new Rectangle(0, 0, viewport_size[0], viewport_size[1])
         // we arrive at what part of the world then is visible
-        // let visible_world = this.visibleWorld() //
+        // let visible_world = this.getVisibleWorld() //
         let visible_world = new Rectangle(xmin, ymin, xmax, ymax)
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
@@ -141,7 +141,7 @@ class Transform {
         //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
 
         // we arrive at what part of the world then is visible
-        let visible_world = this.getvisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        let visible_world = this.getVisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
@@ -189,7 +189,7 @@ class Transform {
         // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
         // we arrive at what part of the world then is visible
-        let visible_world = this.getvisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
+        let visible_world = this.getVisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
@@ -208,7 +208,7 @@ class Transform {
         this.updateViewportTransform()
     }
 
-    getvisibleWorld() {
+    getVisibleWorld() {
         //console.log("visibleWorld in transform.js")
         var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
@@ -228,7 +228,7 @@ class Transform {
         let viewport_in_meter = new Rectangle(0, 0,
             this.viewport.width() / meter_to_pixel,
             this.viewport.height() / meter_to_pixel)
-        let world_in_meter = this.getvisibleWorld()
+        let world_in_meter = this.getVisibleWorld()
         let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
         return St
     }

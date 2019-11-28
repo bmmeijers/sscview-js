@@ -63,7 +63,6 @@ export class SSCTree {
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                 let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
-                    console.log(this.settings.tile_root_href + element.info)
                     element.content = null
                     element.last_touched = null
                     element.url = this.settings.tile_root_href + element.info
@@ -73,7 +72,6 @@ export class SSCTree {
             .then(() => {
                 // Notify via PubSub that tree has loaded 
                 // (this re-renders the map if not already rendering)
-                console.log('tree loaded')
                 this.msgbus.publish('data.tree.loaded', 'tree.ready')
             })
             .catch(err => {
@@ -82,7 +80,6 @@ export class SSCTree {
     }
 
     load_subtree(node) {
-        console.log('loading subtree '+ node.uri);
         fetch(this.settings.tree_root_href + node.uri)
             .then(r => {
                 return r.json()
@@ -92,7 +89,6 @@ export class SSCTree {
                 node.children = j.children;
                 let dataelements = obtain_dataelements(node)  //dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
-                    console.log(this.settings.tile_root_href + element.info)
                     element.content = null
                     element.last_touched = null
                     element.url = this.settings.tile_root_href + element.info
@@ -145,10 +141,10 @@ export class SSCTree {
         // schedule tiles for retrieval
         to_retrieve.map(elem => {
             let content = new TileContent(this.msgbus, this.settings.texture_root_href)
-            console.log('elem.url == ' + elem.url)
             content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
             elem.content = content
             elem.loaded = true
+            elem.last_touched = now()
             // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
             // FIXME: put this in the tile itself, instead of in extra object 'this.retrieved'
         })
@@ -160,16 +156,10 @@ export class SSCTree {
 
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
         return overlapped_dataelements
-//            .filter(elem => {
-//                // those tiles that are loaded and overlap the screen
-//                // elem.content may have been assigned in function set_active_tiles
-////                return elem.hasOwnProperty('content') === true && elem.content !== null && 
-//                return overlaps3d(box3d, elem.box)
-//            })
-//            .map(elem => { // set for each tile to be rendered the last accessed time
-//                elem.last_touched = now();
-//                return elem
-//            })
+            .map(elem => { // set for each tile to be rendered the last accessed time
+                elem.last_touched = now();
+                return elem
+            })
     }
 
     // FIXME: why not pass in St (current scale denominator, instead of transform class)
@@ -293,7 +283,7 @@ function obtain_dataelements(root) {
         }
         if (node.hasOwnProperty('dataelements') === true)
         {
-            // add data elements to result list, if box overlaps
+            // add data elements to result list
             node.dataelements.forEach(element => {
                 result.push(element)
             });
@@ -302,19 +292,20 @@ function obtain_dataelements(root) {
     return result
 }
 
-//function overlaps2d(one, other) {
-//    // Separating axes theorem
-//    // xmin=[0][0]
-//    // xmax=[1][0]
-//    // ymin=[0][1]
-//    // ymax=[1][1]
-//    // If one of the following is true then there can be no overlap
-//    return !(one[1][0] < other[0][0] ||
-//        one[0][0] > other[1][0] ||
-//        one[1][1] < other[0][1] ||
-//        one[0][1] > other[1][1])
-//}
-
+/*
+function overlaps2d(one, other) {
+    // Separating axes theorem
+    // xmin=[0][0]
+    // xmax=[1][0]
+    // ymin=[0][1]
+    // ymax=[1][1]
+    // If one of the following is true then there can be no overlap
+    return !(one[1][0] < other[0][0] ||
+        one[0][0] > other[1][0] ||
+        one[1][1] < other[0][1] ||
+        one[0][1] > other[1][1])
+}
+*/
 
 export function overlaps3d(one, other) {
     // Separating axes theorem, nD
@@ -937,65 +928,84 @@ class TileContent {
     }
 
     destroy(gl) {
-        console.error("destroy() not implemented");
-//        gl.deleteBuffer(this.buffer);
-//        gl.deleteBuffer(this.textureCoordBuffer);
-//        gl.deleteTexture(this.texture);
+        // clear buffers / textures
+        let buffers = [this.buffer, this.textureCoordBuffer, this.line_triangleVertexPosBufr, this.displacementBuffer, this.polygon_triangleVertexPosBufr]
+        buffers.forEach(
+            buffer =>
+            {
+                if (buffer !== null)
+                {
+                    gl.deleteBuffer(buffer)
+                    buffer = null
+                }
+            }
+        )
+        let textures = [this.texture]
+        textures.forEach(
+            texture => 
+            {
+                gl.deleteTexture(texture)
+                texture = null
+            }
+        )
 
-//        this.buffer = null;
-//        this.textureCoordBuffer = null;
-//        this.texture = null;
     }
 
 }
 
 
-//
-// Releasing resources by means of an evictor... 
-// should implement
-// a strategy to evict the resources
-//
-//export class Evictor
-//{
-//    constructor(tileset, gl)
-//    {
-//        this.tileset = tileset
-//        this.gl = gl
-//    }
 
-//    evict(box)
-//    {
-//        console.log('evict called')
-//        let gl = this.gl
-//        let to_evict = []
-//        if (this.tileset.tileset === null) { return; }
-//        this.tileset.tileset.forEach(tile =>
-//        {
-//            // remove tiles that were rendered more than 3 seconds ago
-//            // and that are currently not on the screen
-//            if (tile.last_touched !== null && (tile.last_touched + 3000) < now() && !overlaps2d(box, tile.box))
-//            {
-//                to_evict.push(tile)
-//            }
-//        })
-//        console.log(to_evict)
-//        to_evict.forEach(tile => {
-//            this.tileset.retrieved[tile.url] = false
-//            tile.content.destroy(gl)
-//            tile.content = null
-//            tile.last_touched = null
-//        })
-//        // when we have removed tiles, let's clear the screen
-//        if (to_evict.length > 0 )
-//        {
-//            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-//        }
-//    }
-//}
+export class Evictor {
+    constructor(ssctree, gl)
+    {
+        this.ssctree = ssctree
+        this.gl = gl
+    }
 
-
-
-
+    /*
+    // Releasing resources by means of an evictor... 
+    // the evict method implements a strategy to decide which resources to evict
+    //
+    // Aspects to consider:
+    // - tile size
+    // - when was it last used
+    // - how far is it away from the center of the map
+    // - is it currently displayed
+    // - ... ?
+    */
+    evict(box3d)
+    {
+        let gl = this.gl
+        let to_evict = []
+        if (this.ssctree.tree === null) { return; }
+        let dataelements = obtain_dataelements(this.ssctree.tree).filter(elem => { return elem.loaded })
+        console.log('number of loaded tiles: ' + dataelements.length)
+        dataelements.forEach(
+            tile =>
+            {
+                // remove tiles that were rendered more than 3 seconds ago
+                // and that are currently not on the screen
+                if (tile.last_touched !== null && (tile.last_touched + 3000) < now() 
+                    && !overlaps3d(box3d, tile.box))
+                {
+                    to_evict.push(tile)
+                }
+            }
+        )
+        console.log('number of tiles for which memory will be released: ' + to_evict.length)
+        to_evict.forEach(tile => {
+            tile.content.destroy(gl)
+            tile.content = null
+            tile.last_touched = null
+            tile.loaded = false
+        })
+        // when we have removed tiles, let's clear the screen
+        if (to_evict.length > 0 )
+        {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        }
+    }
+}
 
 export default SSCTree
 

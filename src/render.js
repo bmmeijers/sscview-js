@@ -393,10 +393,15 @@ export class Renderer {
 
             var image_tile_draw_program = this.programs[2];
             tiles
-            .filter(tile => {return tile.texture !== null}) // FIXME tile should have image data
-            .forEach(tile => {
-                image_tile_draw_program.draw_tile(matrix, tile);
-            })
+                .filter(
+                    // tile should have image data
+                    tile => {
+                        return tile.texture !== null
+                    }
+                ) 
+                .forEach(tile => {
+                    image_tile_draw_program.draw_tile(matrix, tile);
+                })
 
 
             // FIXME: if lines have width == 0; why draw them?

@@ -12,7 +12,7 @@
     <script type="text/javascript" src="index.js?id=5"></script>
 
     <!-- see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error# -->
-    <link rel="shortcut icon" href="#" /> 
+    <link rel="shortcut icon" href="#"> 
     
     <style type="text/css">
                 #canvas {
@@ -181,7 +181,9 @@
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
             <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+
             <div class="w3-container w3-padding">
+
                 <div class="setting">
                     <fieldset>
                         <legend> zoom factor </legend>
@@ -202,17 +204,13 @@
                     <fieldset>
                         <legend> zoom animation (short-long)</legend>
                         <div class="w3-padding">
-                            short
-                            <input type="range" value="1000" min="1" max="2000" id="duration" style="margin: 0 16px 0 16px;">
-                            long
+                            short (0s)<input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                     <fieldset>
                         <legend> pan animation (short-long)</legend>
                         <div class="w3-padding">
-                            short
-                            <input type="range" value="1000" step="10" min="0" max="5000" id="panduration" style="margin: 0 16px 0 16px;">
-                            long
+                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                 </div>
@@ -223,18 +221,22 @@
                 <div class="setting">
                     <fieldset>
                         <legend> boundary width</legend>
-                        <div class="w3-padding">
-                            width value (mm): <span id="width_value_box"></span>
+                        <div>
+                            line-width value (mm): <span id="width-value"></span>
                         </div>
-                        <div class="w3-padding">
-                            narrow
-                            <input type="range" value="0.1" step="0.025" min="0" max="5" id="boundary_width_slider" style="margin: 0 16px 0 16px;">
-                            wide
+                        <div>
+                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
                         </div>
                     </fieldset>
                 </div>
             </div>
 
+<!--
+    zoom factor
+    <div>
+        small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
+    </div>
+-->
 
             <footer class="w3-container w3-light-grey w3-padding">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
@@ -309,8 +311,8 @@
                 'datasets': [{'tree_root_file_nm': 'tree.json',
                               'tree_root_href': '/data/tree-nl/',    // with trailing slash!
                               'tile_root_href': '/data/tiles-nl/',
-                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
-                              //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                              // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
                             }],
                 'interaction_defaults': []
             }
@@ -383,15 +385,47 @@
                 map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
             });
 
-            // when we sliding the slider to tune the boundary width of the map,
-            // the map will react in real time
-            var slider_boundarywidth = document.getElementById("boundary_width_slider")
-            var box_widthvalue = document.getElementById("width_value_box")
-            box_widthvalue.innerHTML = slider_boundarywidth.value; // display the initial value
-            slider_boundarywidth.addEventListener('input', function () {
-                box_widthvalue.innerHTML = slider_boundarywidth.value;
-                map.abortAndRender();
-            });
+
+
+        /* -- start slider -- */
+        let init_boundary_width_slider = () => {
+            let msgbus = new varioscale.MessageBusConnector();
+            msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
+                let el = document.getElementById("width-value");
+                el.innerHTML = message;
+            } );
+            let slider = document.getElementById("boundary-width");
+            slider.addEventListener('input',
+                () => {
+                    msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+                }
+            );
+            msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+        };
+        init_boundary_width_slider();
+        /* -- end of slider -- */
+
+
+
+        /* -- start slider -- */
+        let init_slider = (name) => {
+            let msgbus = new varioscale.MessageBusConnector();
+            let slider = document.getElementById(name);
+            slider.addEventListener('input',
+                () => {
+                    msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                    // map.abortAndRender();
+                }
+            );
+            msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+        }
+        //init_slider("zoom-factor");
+        init_slider("pan-animation");
+        init_slider("zoom-animation");
+        /* -- end of slider -- */
+
+
+
 
             /* opening and closing the settings modal dialog */
             // FIXME: repetition of names and ids here is cumbersome
@@ -418,16 +452,6 @@
             document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
         });
     </script>
-
-    <!--    var toggleMenu = function () {-->
-    <!--        var x = document.getElementById("menu");-->
-    <!--        if (x.className.indexOf("w3-show") == -1) {-->
-    <!--            x.className += " w3-show";-->
-    <!--        } else { -->
-    <!--            x.className = x.className.replace(" w3-show", "");-->
-    <!--        }-->
-    <!--    };-->
-    <!--    document.getElementById("openMenuButton").addEventListener('click', toggleMenu);-->
 
 </body>
 </html>

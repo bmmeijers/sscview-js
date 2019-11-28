@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<link rel="shortcut icon" href="#">
+
+<script src="index.js"></script>
+
+<style>
+#map1
+{
+    background-color:#fff!important;
+    background: white;
+    color: white;
+    /*position: absolute;*/
+    z-index: 1;
+}
+#map2
+{
+    background:red;
+}
+/* styles for the swiper element / gutter */
+.compare { /*gutter*/
+        background-color: white;
+        position:absolute;
+        width: 3px;
+        height: 640px;
+        z-index: 1;
+ }
+.compare .compare-swiper { /* swiper handle */
+        background-color: #3887be;
+        box-shadow: inset 0 0 0 3px #fff;
+        display:inline-block;
+        border-radius:50%;
+        /* border-radius:50%; */ /* handle: circle or square */
+        position:absolute;
+        width:60px;
+        height:60px;
+        top:50%;
+        left:-30px;
+        margin:-30px 1px 0;
+        color: #fff;
+        cursor:ew-resize;
+        z-index: 1;
+        background-image:url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgICB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiAgIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiICAgd2lkdGg9IjYwIiAgIGhlaWdodD0iNjAiICAgdmVyc2lvbj0iMS4xIiAgIHZpZXdCb3g9IjAgMCA2MCA2MCIgICBpZD0ic3ZnNTQzNCIgICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkxK2RldmVsK29zeG1lbnUgcjEyOTExIiAgIHNvZGlwb2RpOmRvY25hbWU9Imwtci5zdmciPiAgPG1ldGFkYXRhICAgICBpZD0ibWV0YWRhdGE1NDQ0Ij4gICAgPHJkZjpSREY+ICAgICAgPGNjOldvcmsgICAgICAgICByZGY6YWJvdXQ9IiI+ICAgICAgICA8ZGM6Zm9ybWF0PmltYWdlL3N2Zyt4bWw8L2RjOmZvcm1hdD4gICAgICAgIDxkYzp0eXBlICAgICAgICAgICByZGY6cmVzb3VyY2U9Imh0dHA6Ly9wdXJsLm9yZy9kYy9kY21pdHlwZS9TdGlsbEltYWdlIiAvPiAgICAgICAgPGRjOnRpdGxlPjwvZGM6dGl0bGU+ICAgICAgPC9jYzpXb3JrPiAgICA8L3JkZjpSREY+ICA8L21ldGFkYXRhPiAgPGRlZnMgICAgIGlkPSJkZWZzNTQ0MiIgLz4gIDxzb2RpcG9kaTpuYW1lZHZpZXcgICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIgICAgIGJvcmRlcmNvbG9yPSIjNjY2NjY2IiAgICAgYm9yZGVyb3BhY2l0eT0iMSIgICAgIG9iamVjdHRvbGVyYW5jZT0iMTAiICAgICBncmlkdG9sZXJhbmNlPSIxMCIgICAgIGd1aWRldG9sZXJhbmNlPSIxMCIgICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIgICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMTI4NiIgICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9Ijc1MSIgICAgIGlkPSJuYW1lZHZpZXc1NDQwIiAgICAgc2hvd2dyaWQ9InRydWUiICAgICBpbmtzY2FwZTp6b29tPSI0IiAgICAgaW5rc2NhcGU6Y3g9IjI1Ljg4OTgzMSIgICAgIGlua3NjYXBlOmN5PSIzNC4zODE4MzMiICAgICBpbmtzY2FwZTp3aW5kb3cteD0iMCIgICAgIGlua3NjYXBlOndpbmRvdy15PSIyMyIgICAgIGlua3NjYXBlOndpbmRvdy1tYXhpbWl6ZWQ9IjAiICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmc1NDM0IiAgICAgaW5rc2NhcGU6b2JqZWN0LW5vZGVzPSJ0cnVlIiAgICAgaW5rc2NhcGU6c25hcC1zbW9vdGgtbm9kZXM9InRydWUiPiAgICA8aW5rc2NhcGU6Z3JpZCAgICAgICB0eXBlPSJ4eWdyaWQiICAgICAgIGlkPSJncmlkNTk4OSIgLz4gIDwvc29kaXBvZGk6bmFtZWR2aWV3PiAgPHBhdGggICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOjFweDtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2Utb3BhY2l0eToxIiAgICAgZD0iTSAyNSAyNCBMIDE2IDMwIEwgMjUgMzYgTCAyNSAyNCB6IE0gMzUgMjQgTCAzNSAzNiBMIDQ0IDMwIEwgMzUgMjQgeiAiICAgICBpZD0icGF0aDU5OTUiIC8+PC9zdmc+);
+}
+</style>
+
+<script>
+
+function setPosition(x) {
+    let pos = 'translate(' + x + 'px, 0)';
+    // set translate for swiping element: gutter + handle
+    document.getElementById('swiper').style.transform = pos;
+    document.getElementById('swiper').style.WebkitTransform = pos;
+    // clip both 'map' divs
+    var clip ='rect(0, ' + x + 'px, ' + '640' + 'px, 0)';
+    document.getElementById('first').style.clip = clip;
+    var clip = 'rect(0, 999em, ' + '640' + 'px,' + x + 'px)';
+    document.getElementById('second').style.clip = clip;
+}
+function getX(e)
+{
+    // fixme: also handle touch events
+    // var e = e.touches ? e.touches[0] : e;
+    // fixme: handle initial position 
+    // (e.g. at center, instead of completely at left)
+    let x = e.clientX; 
+    if (x < 0) x = 0;
+    // fixme: hardcoded width
+    if (x > 1024) x = 1024;
+    return x;
+}
+function onMove(e)
+{
+    setPosition(getX(e));
+}
+function onMouseUp(e)
+{
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onMouseUp);
+}
+function onDown(e)
+{
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onMouseUp);
+}
+
+window.addEventListener('DOMContentLoaded', 
+
+    () => {
+
+        /* -- start slider -- */
+        let init_boundary_width_slider = () => {
+            let msgbus = new varioscale.MessageBusConnector();
+            msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
+                let el = document.getElementById("width-value");
+                el.innerHTML = message;
+            } );
+            let slider = document.getElementById("boundary-width");
+            slider.addEventListener('input',
+                () => {
+                    msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+                }
+            );
+            msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+        };
+        init_boundary_width_slider();
+        /* -- end of slider -- */
+
+        /* -- start slider -- */
+        let init_slider = (name) => {
+            let msgbus = new varioscale.MessageBusConnector();
+            let slider = document.getElementById(name);
+            slider.addEventListener('input',
+                () => {
+                    msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                    // map.abortAndRender();
+                }
+            );
+            msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+        }
+        //init_slider("zoom-factor");
+        init_slider("pan-animation");
+        init_slider("zoom-animation");
+        /* -- end of slider -- */
+
+        let map1 = new varioscale.Map(
+            {
+                'initialization': {
+                    'scale_den': 250000,
+                    'center2d': [150000, 400000],
+                    'navigationBar_title': 'Top10NL raster tiles (10 levels)',
+                },
+                'canvas_nm': "map1",
+                'datasets': [{'tree_root_file_nm': 'tree.json',
+                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+                              'tile_root_href': '/data/tiles-nl/',
+                              // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                            }],
+                'interaction_defaults': []
+            }
+        );
+        map1.loadTree();
+
+
+
+
+        let map2 = new varioscale.Map(
+/*            {
+                'initialization': {                    
+                    'scale_den': 50000,
+                    'center2d': [3555384.53, 5907745.81],
+                    'navigationBar_title': 'Test, Manual',
+                },
+                'canvas_nm': "map2",
+                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'http://varioscale.bk.tudelft.nl/gpudemo/2019/11/ncg/parallel_250/data', 'tree_nm':'tree.json'}],
+                'interaction_defaults': []
+            }*/
+            {
+                'initialization': {
+                    'scale_den': 250000,
+                    'center2d': [150000, 400000],
+                    'navigationBar_title': 'Top10NL raster tiles (10 levels)',
+                },
+                'canvas_nm': "map2",
+                'datasets': [{'tree_root_file_nm': 'tree.json',
+                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+                              'tile_root_href': '/data/tiles-nl/',
+                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                              //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                            }],
+                'interaction_defaults': []
+            }
+        );
+        map2.loadTree();
+
+        function sync_movement(maps)
+        {
+            var _subscription = null;
+            let handle = (topic, message, sender) => {
+                subscribe_off()
+                maps.forEach((map, index) => { 
+                    if (sender !== map.msgbus.id) {
+                        map.jumpTo(message[0][0], message[0][1], message[1]);
+                    }
+                });
+                subscribe_on();
+            }
+
+            subscribe_on = () => {
+                let msgbus = new varioscale.MessageBusConnector();
+                _subscription = msgbus.subscribe('map.scale', handle);
+            }
+
+            subscribe_off = () =>
+            {
+                _subscription.remove()
+            }
+
+             subscribe_on();
+
+        };
+        sync_movement([map1, map2]);
+
+        let subscribe_scale = (map) => {
+            let msgbus = new varioscale.MessageBusConnector();
+            msgbus.subscribe('map.scale', (topic, message, sender) => {
+                if (sender !== map.msgbus.id) return;
+                const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+                let el = document.getElementById("scale-denominator");
+                el.textContent = " 1:" + scale;
+            });
+        }
+        subscribe_scale(map1);
+
+
+        document.getElementById('swiper-handle').addEventListener('mousedown', onDown);
+    }
+
+);
+</script>
+</head>
+
+<body>
+
+
+
+
+    <div>
+        line-width value (mm): <span id="width-value"></span>
+    </div>
+    <div>
+        narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+    </div>
+<!--
+    zoom factor
+    <div>
+        small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
+    </div>
+-->
+    zoom animation
+    <div>
+        short <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long
+    </div>
+
+    pan animation factor
+    <div>
+        short <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long
+    </div>
+
+    <div>Scale: <span id="scale-denominator"></span></div>
+
+
+    <div id='first' class='map' style="background: darkgreen; width: 1024px; height: 640px; position: absolute;">
+        <canvas id="map1" width="1024" height="640" style="width:1024px; height: 640px; background-color: white;"></canvas>
+    </div>
+
+    <div id='second' class='map' style="background-color: darkblue; width: 1024px; height: 640px; position: absolute;">
+        <canvas id="map2" width="1024" height="640" style="width:1024px; height: 640px; background-color: red;"></canvas>
+    </div>
+
+    <div id="swiper" class="compare">
+        <div id="swiper-handle" class="compare-swiper">
+        </div>
+    </div>
+
+</body>
+
+</html>
