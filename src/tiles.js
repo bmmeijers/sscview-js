@@ -10,8 +10,10 @@ import { now } from "./animate"
 // [x] Remove retrieved property on SSCTree 
 // [x] Unify ImageTileContent and TileContent into one class
 // [x] Make Renderer play nicely with the modifications
-// [ ] Resurrect Evictor, with default strategy of removing old stuff
-// [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), while not overloading the server
+// [x] Resurrect Evictor, with default strategy of removing old stuff
+// [ ] Make use of worker to retrieve ImageTiles
+// [ ] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
+// [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), while not overloading the server (queueing requests / abortcontroller.signal)
 
 
 function center2d(box3d)
@@ -35,11 +37,45 @@ function distance2d(target, against)
     return Math.sqrt(dx2 + dy2)
 }
 
+
+class WorkerHelper {
+    constructor() {
+        this.tasks = {}
+        this.worker = new Worker('worker.js')
+        this.worker.onmessage = (evt) => { this.receive(evt)}
+    }
+
+    send(data, callback) 
+    {
+        // use a random id
+        const id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
+        this.tasks[id] = callback
+        this.worker.postMessage({id: id, msg: data})
+    }
+
+    receive(evt) 
+    {
+        const id = evt.data.id;
+        const msg = evt.data.msg
+        this.tasks[id](msg) // execute the callback that was registered while sending
+        delete this.tasks[id]
+    }
+}
+
+
 export class SSCTree {
     constructor(msgbus, settings) {
         this.msgbus = msgbus
         this.tree = null
         this.settings = settings
+        // pool of workers
+        let pool_size = window.navigator.hardwareConcurrency || 2;
+        this.worker_helpers = []
+        for (let i = 0; i< pool_size+1; i++) {
+            this.worker_helpers.push(new WorkerHelper())
+        }
+        console.log(pool_size + ' workers made')
+        this.helper_idx_current = -1
     }
 
     load() {
@@ -53,6 +89,7 @@ export class SSCTree {
 //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
+        console.log('fetching root' + this.settings.tree_root_href + this.settings.tree_root_file_nm)
         fetch(this.settings.tree_root_href + this.settings.tree_root_file_nm)
             .then(r => {
                 return r.json()
@@ -80,7 +117,8 @@ export class SSCTree {
     }
 
     load_subtree(node) {
-        fetch(this.settings.tree_root_href + node.uri)
+        console.log(this.settings.tree_root_href + node.href)
+        fetch(this.settings.tree_root_href + node.href)
             .then(r => {
                 return r.json()
             })
@@ -140,13 +178,13 @@ export class SSCTree {
 
         // schedule tiles for retrieval
         to_retrieve.map(elem => {
-            let content = new TileContent(this.msgbus, this.settings.texture_root_href)
+            this.helper_idx_current = (this.helper_idx_current + 1) % this.worker_helpers.length
+            let content = new TileContent(this.msgbus, this.settings.texture_root_href, this.worker_helpers[this.helper_idx_current])
             content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
             elem.content = content
             elem.loaded = true
             elem.last_touched = now()
             // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
-            // FIXME: put this in the tile itself, instead of in extra object 'this.retrieved'
         })
 
     }
@@ -254,9 +292,9 @@ function obtain_overlapped_subtrees(node, box3d) {
                 {
                     stack.push(child)
                 }
-                else if (child.hasOwnProperty('uri') && !child.hasOwnProperty('loaded') && overlaps3d(child.box, box3d)) {
-                    child.loaded = true;
+                else if (child.hasOwnProperty('href') && !child.hasOwnProperty('loaded') && overlaps3d(child.box, box3d)) {
                     result.push(child)
+                    child.loaded = true;
                 }
             });
         }
@@ -324,6 +362,8 @@ export function overlaps3d(one, other) {
 function generate_class_color_dt() {
 
     var class_color_dt = {
+
+        // atkis
         2101: { r: 239, g: 200, b: 200 },
         2112: { r: 255, g: 174, b: 185 },
         2114: { r: 204, g: 204, b: 204 },
@@ -344,6 +384,42 @@ function generate_class_color_dt() {
         4109: { r: 207, g: 236, b: 168 },
         4111: { r: 190, g: 239, b: 255 },
         5112: { r: 181, g: 208, b: 208 },
+
+        // top10nl
+        10310: { r: 230, g: 0, b: 0 },
+        10311: { r: 230, g: 0, b: 0 },
+        10410: { r: 255, g: 150, b: 0 },
+        10411: { r: 255, g: 150, b: 0 },
+        10510: { r: 255, g: 255, b: 0 },
+        10600: { r: 255, g: 255, b: 255 },
+        10700: { r: 255, g: 255, b: 255 },
+        10710: { r: 255, g: 255, b: 255 },
+        10720: { r: 179, g: 179, b: 179 },
+        10730: { r: 156, g: 156, b: 156 },
+        10740: { r: 255, g: 211, b: 127 },
+        10741: { r: 255, g: 211, b: 127 },
+        10750: { r: 255, g: 167, b: 127 },
+        10760: { r: 255, g: 167, b: 127 },
+        10780: { r: 255, g: 255, b: 255 },
+        12400: { r: 190, g: 232, b: 255 },
+        12500: { r: 190, g: 232, b: 255 },
+        13000: { r: 0, g: 0, b: 0 },
+        14010: { r: 255, g: 255, b: 222 },
+        14030: { r: 156, g: 156, b: 156 },
+        14040: { r: 201, g: 235, b: 112 },
+        14050: { r: 255, g: 255, b: 190 },
+        14060: { r: 140, g: 168, b: 0 },
+        14080: { r: 140, g: 168, b: 0 },
+        14090: { r: 140, g: 168, b: 0 },
+        14100: { r: 204, g: 204, b: 204 },
+        14120: { r: 255, g: 255, b: 222 },
+        14130: { r: 201, g: 235, b: 112 },
+        14140: { r: 252, g: 179, b: 251 },
+        14160: { r: 255, g: 255, b: 255 },
+        14162: { r: 255, g: 255, b: 255 },
+        14170: { r: 201, g: 235, b: 112 },
+        14180: { r: 255, g: 255, b: 255 },
+
     };
 
     for (var key in class_color_dt) {
@@ -370,8 +446,9 @@ let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
 // This makes TileContent quite big class -> split in subclasses?
 
 class TileContent {
-    constructor(msgbus, texture_root_href) {
+    constructor(msgbus, texture_root_href, worker_helper) {
         this.msgbus = msgbus
+        this.worker_helper = worker_helper
 
         // image tiles
         this.texture_root_href = texture_root_href;
@@ -380,9 +457,11 @@ class TileContent {
         this.textureCoordBuffer = null;
 
         // ssc tiles
+        this.polygon_triangleVertexPosBufr = null;
         this.line_triangleVertexPosBufr = null;
         this.displacementBuffer = null;
-        this.polygon_triangleVertexPosBufr = null;
+
+
     }
 
     load(url, gl) {
@@ -400,18 +479,93 @@ class TileContent {
         }
     }
 
-    load_ssc_tile(url, gl) {
-        fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
-            .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            
-            .then(data_text => {
-                var data_from_text = this._obtain_data_from_text(data_text, gl, this.class_color_dt);
-                this.line_triangleVertexPosBufr = data_from_text[0];
-                this.displacementBuffer = data_from_text[1];
-                this.polygon_triangleVertexPosBufr = data_from_text[2];
+    load_ssc_tile(url, gl)
+    {
+        this.worker_helper.send(
+            url, 
+            (data) => {
+
+                // upload received data to GPU
+
+                // polygons
+                let triangles = new Float32Array(data[0])
+                this.polygon_triangleVertexPosBufr = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.polygon_triangleVertexPosBufr);
+                gl.bufferData(gl.ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
+                this.polygon_triangleVertexPosBufr.itemSize = 3;
+                this.polygon_triangleVertexPosBufr.numItems = triangles.length / 6; 
+
+                // lines
+                let line_triangles = new Float32Array(data[1])
+                this.line_triangleVertexPosBufr = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.line_triangleVertexPosBufr);
+                gl.bufferData(gl.ARRAY_BUFFER, line_triangles, gl.STATIC_DRAW);
+                this.line_triangleVertexPosBufr.itemSize = 4;
+                this.line_triangleVertexPosBufr.numItems = line_triangles.length / 4; 
+
+                let line_displacements = new Float32Array(data[2])
+                this.displacementBuffer = gl.createBuffer()
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.displacementBuffer)
+                gl.bufferData(gl.ARRAY_BUFFER, line_displacements, gl.STATIC_DRAW)
+                this.displacementBuffer.itemSize = 2   //each item has only x and y
+                this.displacementBuffer.numItems = line_displacements.length / 2
+
+                // notify we are ready
                 this.msgbus.publish('data.tile.loaded', 'tile.ready')
-            })
-            .catch(err => { console.error(err) });
+            }
+        )
     }
+
+        // FIXME: here we cannot just make a new handler for the worker 
+        // (as this then does forget which tile we were working with)
+        // we should somehow communicate back to which tile the data belongs!
+
+//        this.worker.onmessage = (evt) => {
+//            let data_from_text = this._obtain_data_from_text(evt.data, gl);
+
+//            this.line_triangleVertexPosBufr = data_from_text[0];
+//            this.displacementBuffer = data_from_text[1];
+//            this.polygon_triangleVertexPosBufr = data_from_text[2];
+
+//            console.log(this.polygon_triangleVertexPosBufr.numItems + " " + url)
+//            this.msgbus.publish('data.tile.loaded', 'tile.ready')
+//            this.worker.terminate()
+//        }
+
+
+//        worker.postMessage(url)
+//        worker.onMessage = (evt) => {}
+
+//var myWorker = new Worker("worker.js"); <-- should come from a pool of workers ???
+//        console.log('start worker')
+//        myWorker.onmessage = function (evt) 
+//        {
+//            console.log('Message received from worker');
+//            let vertices = new Float32Array(evt.data);
+//            // bind buffer
+//            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+//            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+//            // remember size
+//            buffer.itemSize = 3;
+//            buffer.numItems = (vertices.length)/6 - 1;
+//            // we do not keep the worker alive
+//            map.panBy(0,0);
+//            myWorker.terminate()
+//            // inside the worker we have implemented: close();
+//        };
+
+//        fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
+//            .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            
+//            .then(data_text => {
+//                var data_from_text = this._obtain_data_from_text(data_text, gl);
+//                this.line_triangleVertexPosBufr = data_from_text[0];
+//                this.displacementBuffer = data_from_text[1];
+//                this.polygon_triangleVertexPosBufr = data_from_text[2];
+//console.log(this.polygon_triangleVertexPosBufr.numItems + " " + url)
+//                this.msgbus.publish('data.tile.loaded', 'tile.ready')
+//            })
+//            .catch(err => { console.error(err) });
+//    }
 
     _obtain_data_from_text(data_text, gl) {
         //data_text is the content of an .obj file
@@ -876,7 +1030,7 @@ class TileContent {
         // could also be: response.points.flat(1); ???
         this._upload_image_tile_mesh(gl, new Float32Array(result))
 
-        /*
+        /* // using image object to retrieve the texture
         let image = new Image()
         image.crossOrigin = ""
         image.src = this.texture_root_href + response.texture_href
@@ -895,10 +1049,12 @@ class TileContent {
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                 }
+                this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
             }
         )
         */
 
+        // using createImageBitmap and fetch to retrieve the texture
         fetch(this.texture_root_href + response.texture_href, {mode: 'cors'})
             .then((response) => {
                 if (!response.ok) {

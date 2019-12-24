@@ -2,41 +2,42 @@
 // mit license
 
 // Lookup Table
-let byteToHex = [];
+//let byteToHex = [];
 
-for (let i = 0; i < 256; ++i) {
-    byteToHex[i] = (i + 0x100).toString(16).substr(1);
-}
+//for (let i = 0; i < 256; ++i) {
+//    byteToHex[i] = (i + 0x100).toString(16).substr(1);
+//}
 
-function bytesToUuid(buf, offset) {
-    let i = offset || 0;
-    let bth = byteToHex;
-    // join used to fix memory issue caused by concatenation: 
-    // https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
-    return ([bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]]]).join('');
-}
+//function bytesToUuid(buf, offset) {
+//    let i = offset || 0;
+//    let bth = byteToHex;
+//    // join used to fix memory issue caused by concatenation: 
+//    // https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
+//    return ([bth[buf[i++]], bth[buf[i++]],
+//    bth[buf[i++]], bth[buf[i++]], '-',
+//    bth[buf[i++]], bth[buf[i++]], '-',
+//    bth[buf[i++]], bth[buf[i++]], '-',
+//    bth[buf[i++]], bth[buf[i++]], '-',
+//    bth[buf[i++]], bth[buf[i++]],
+//    bth[buf[i++]], bth[buf[i++]],
+//    bth[buf[i++]], bth[buf[i++]]]).join('');
+//}
 
-function mathRNG() {
-    let rnds = new Array(16);
-    for (let i = 0, r; i < 16; i++) {
-        if ((i & 0x03) === 0) {
-            r = Math.random() * 0x100000000;
-        }
-        rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-    return rnds;
-}
+//function mathRNG() {
+//    let rnds = new Array(16);
+//    for (let i = 0, r; i < 16; i++) {
+//        if ((i & 0x03) === 0) {
+//            r = Math.random() * 0x100000000;
+//        }
+//        rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+//    }
+//    return rnds;
+//}
 
 function getUuid() {
-    let x = mathRNG();
-    return bytesToUuid(x);
+//    let x = mathRNG();
+//    return bytesToUuid(x);
+    return Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
 }
 // end: from https://github.com/kelektiv/node-uuid
 

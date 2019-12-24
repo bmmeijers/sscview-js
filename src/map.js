@@ -35,8 +35,8 @@ class Map {
 //        this._should_broadcast_move = true;
 
         this._abort = null
-        this._transform = new Transform(this.getCanvasContainer().getBoundingClientRect(),
-                                        map_settings.initialization.center2d,
+        this._transform = new Transform(map_settings.initialization.center2d,
+                                        [this.getCanvasContainer().width, this.getCanvasContainer().height],
                                         map_settings.initialization.scale_den)
 
         /* settings for zooming and panning */
@@ -87,11 +87,7 @@ class Map {
 
         // data load
         this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
-        this.renderer = new Renderer(
-            this._container.getContext('webgl', { alpha: true, antialias: true })
-            // || this._container.getContext('experimental-webgl', { alpha: true, antialias: true })
-            ,
-            this.ssctree);
+        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height)
 
@@ -108,7 +104,7 @@ class Map {
         };
 
         this.evictor = new Evictor(this.ssctree,
-                                   this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true }))
+                                   this.getWebGLContext())
         // every 30 seconds release resources
         window.setInterval(
             () => {
@@ -119,7 +115,7 @@ class Map {
                 this.evictor.evict(box3d)
                 this.render()
             },
-            30000
+            60 * 1000 * 2.5 // every X mins (expressed in millisec)
         )
 
     }
@@ -130,6 +126,10 @@ class Map {
 
     getCanvasContainer() {
         return this._container;
+    }
+
+    getWebGLContext() {
+        return this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true })
     }
 
     getTransform() {
@@ -150,8 +150,7 @@ class Map {
         matrix[14] = (near + far) / (near - far)
         const box2d = this.getTransform().getVisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-        let gl = this._container.getContext('webgl', { alpha: true, antialias: true }); // || this._container.getContext('experimental-webgl', { alpha: true, antialias: true });
-//        let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
+        let gl = this.getWebGLContext();
         this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     }

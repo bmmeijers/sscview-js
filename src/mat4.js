@@ -543,3 +543,219 @@ export function ortho(out, left, right, bottom, top, near, far) {
     return out;
 }
 
+
+///**
+
+// * Generates a perspective projection matrix with the given bounds.
+
+// * Passing null/undefined/no value for far will generate infinite projection matrix.
+
+// *
+
+// * @param {mat4} out mat4 frustum matrix will be written into
+
+// * @param {number} fovy Vertical field of view in radians
+
+// * @param {number} aspect Aspect ratio. typically viewport width/height
+
+// * @param {number} near Near bound of the frustum
+
+// * @param {number} far Far bound of the frustum, can be null or Infinity
+
+// * @returns {mat4} out
+
+// */
+
+//export function perspective(out, fovy, aspect, near, far) {
+
+//  let f = 1.0 / Math.tan(fovy / 2), nf;
+
+//  out[0] = f / aspect;
+
+//  out[1] = 0;
+
+//  out[2] = 0;
+
+//  out[3] = 0;
+
+//  out[4] = 0;
+
+//  out[5] = f;
+
+//  out[6] = 0;
+
+//  out[7] = 0;
+
+//  out[8] = 0;
+
+//  out[9] = 0;
+
+//  out[11] = -1;
+
+//  out[12] = 0;
+
+//  out[13] = 0;
+
+//  out[15] = 0;
+
+//  if (far != null && far !== Infinity) {
+
+//    nf = 1 / (near - far);
+
+//    out[10] = (far + near) * nf;
+
+//    out[14] = (2 * far * near) * nf;
+
+//  } else {
+
+//    out[10] = -1;
+
+//    out[14] = -2 * near;
+
+//  }
+
+//  return out;
+
+//}
+
+///**
+
+// * Generates a perspective projection matrix with the given field of view.
+
+// * This is primarily useful for generating projection matrices to be used
+
+// * with the still experiemental WebVR API.
+
+// *
+
+// * @param {mat4} out mat4 frustum matrix will be written into
+
+// * @param {Object} fov Object containing the following values: upDegrees, downDegrees, leftDegrees, rightDegrees
+
+// * @param {number} near Near bound of the frustum
+
+// * @param {number} far Far bound of the frustum
+
+// * @returns {mat4} out
+
+// */
+
+//export function perspectiveFromFieldOfView(out, fov, near, far) {
+
+//  let upTan = Math.tan(fov.upDegrees * Math.PI/180.0);
+
+//  let downTan = Math.tan(fov.downDegrees * Math.PI/180.0);
+
+//  let leftTan = Math.tan(fov.leftDegrees * Math.PI/180.0);
+
+//  let rightTan = Math.tan(fov.rightDegrees * Math.PI/180.0);
+
+//  let xScale = 2.0 / (leftTan + rightTan);
+
+//  let yScale = 2.0 / (upTan + downTan);
+
+//  out[0] = xScale;
+
+//  out[1] = 0.0;
+
+//  out[2] = 0.0;
+
+//  out[3] = 0.0;
+
+//  out[4] = 0.0;
+
+//  out[5] = yScale;
+
+//  out[6] = 0.0;
+
+//  out[7] = 0.0;
+
+//  out[8] = -((leftTan - rightTan) * xScale * 0.5);
+
+//  out[9] = ((upTan - downTan) * yScale * 0.5);
+
+//  out[10] = far / (near - far);
+
+//  out[11] = -1.0;
+
+//  out[12] = 0.0;
+
+//  out[13] = 0.0;
+
+//  out[14] = (far * near) / (near - far);
+
+//  out[15] = 0.0;
+
+//  return out;
+
+//}
+
+///**
+
+// * Generates a orthogonal projection matrix with the given bounds
+
+// *
+
+// * @param {mat4} out mat4 frustum matrix will be written into
+
+// * @param {number} left Left bound of the frustum
+
+// * @param {number} right Right bound of the frustum
+
+// * @param {number} bottom Bottom bound of the frustum
+
+// * @param {number} top Top bound of the frustum
+
+// * @param {number} near Near bound of the frustum
+
+// * @param {number} far Far bound of the frustum
+
+// * @returns {mat4} out
+
+// */
+
+//export function ortho(out, left, right, bottom, top, near, far) {
+
+//  let lr = 1 / (left - right);
+
+//  let bt = 1 / (bottom - top);
+
+//  let nf = 1 / (near - far);
+
+//  out[0] = -2 * lr;
+
+//  out[1] = 0;
+
+//  out[2] = 0;
+
+//  out[3] = 0;
+
+//  out[4] = 0;
+
+//  out[5] = -2 * bt;
+
+//  out[6] = 0;
+
+//  out[7] = 0;
+
+//  out[8] = 0;
+
+//  out[9] = 0;
+
+//  out[10] = 2 * nf;
+
+//  out[11] = 0;
+
+//  out[12] = (left + right) * lr;
+
+//  out[13] = (top + bottom) * bt;
+
+//  out[14] = (far + near) * nf;
+
+//  out[15] = 1;
+
+//  return out;
+
+//}
+
+

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="w3.css">
 
     <script type="text/javascript" src="index.js?id=5"></script>
+    <link rel="prefetch" href="worker.js">
 
     <!-- see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error# -->
     <link rel="shortcut icon" href="#"> 
@@ -298,21 +299,47 @@
 //                'interaction_defaults': []
 //            }
 
-            // See:
-            // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
-            // for available tile maps
+
             var map_settings = {                
                 'initialization': {                    
-                    'scale_den': 250000,
-                    'center2d': [150000, 400000],
-                    'navigationBar_title': 'Top10NL raster tiles (10 levels)',
+                    'scale_den': 12500,
+// BOX(204914.35 514637.283,270231.624 580203.629)
+
+                    'center2d': [233520.3,556776.9],
+                                //[204914 + (270231 - 204914) * 0.5,
+                                // 514637 + (580203 - 514637) * 0.5],
+                    'navigationBar_title': 'Top10NL Drenthe chunked',
                 },
                 'canvas_nm': canvas_nm,
-                'datasets': [{'tree_root_file_nm': 'tree.json',
-                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
-                              'tile_root_href': '/data/tiles-nl/',
+                'datasets': [{
+//                              'tree_root_file_nm': 'tree.json',
+//                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+//                              'tile_root_href': '/data/tiles-nl/',
+
+//                              'tree_root_file_nm': 'tree.json',
+//                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
+//                              'tile_root_href': '/data/9x9-quad/',
+
+//                              'tree_root_file_nm': 'tree.json',
+//                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
+//                              'tile_root_href': '/data/9x9-quad-lines-lean/',
+
+                              'tree_root_file_nm': 'tree.json',
+                              'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
+                              'tile_root_href': '/data/drenthe-quad-larger/',
+
+
+//                              'tree_root_file_nm': 'top10nl_9x9.json',
+//                              'tree_root_href': '/data/',    // with trailing slash!
+//                              'tile_root_href': '/data/',
+                              /*
+                              // See:
+                              // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
+                              // for available tile maps
+                              */
                               // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
-                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/' 
+                              // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
                             }],
                 'interaction_defaults': []
             }

@@ -139,7 +139,10 @@ class ImageTileDrawProgram extends DrawProgram
         const uSampler = gl.getUniformLocation(this.shaderProgram, 'uSampler');
         gl.uniform1i(uSampler, 0);
 
-        gl.disable(gl.BLEND);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+//        gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
         gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
     }
@@ -316,15 +319,15 @@ void main()
     }
 
     draw_tile(matrix, tile) {
-        let gl = this.gl;
-        let shaderProgram = this.shaderProgram;
-        gl.useProgram(shaderProgram);
-
-        var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
+        // guard: if no data in the tile, we will skip rendering
+        let triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {
             return;
         }
-
+        // render
+        let gl = this.gl;
+        let shaderProgram = this.shaderProgram;
+        gl.useProgram(shaderProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
         this._prepare_vertices(gl, shaderProgram, 'vertexColor', 3, 24, 12);
@@ -333,7 +336,6 @@ void main()
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M_location, false, matrix);
         }
-
         gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);

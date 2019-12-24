@@ -35,15 +35,26 @@ var dist_folder = 'dist_test';
 
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
 
-module.exports = {
-    input: 'src/index.js',
-    output: {
-        file: dist_folder + '/index.js',
-        moduleName: 'varioscale',
-        name: 'varioscale',
-        format: 'iife'
+export default [
+    {
+        input: 'src/index.js',
+        output: {
+            file: dist_folder + '/index.js',
+            name: 'varioscale',
+            format: 'umd'
+        },
+        treeshake: true,
+        sourcemap: dist_folder + '/index.js.map',
+        plugins,
     },
-    sourcemap: dist_folder + '/index.js.map',
-    plugins,
-};
-
+    {
+        input: 'src/worker.js',
+        output: {
+            file: dist_folder + '/worker.js',
+            name: 'varioscale',
+            format: 'iife'
+        },
+        sourcemap: dist_folder + '/worker.js.map',
+        plugins,
+    }
+]

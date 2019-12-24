@@ -55,8 +55,9 @@ function square_viewport_matrix(box) {
 // OrthoLH
 // OrthoRH
 
+
 class Transform {
-    constructor(client_rect, center2d, view_scale_Sv) {
+    constructor(center_world, viewport_size, denominator) {
 
         this.viewport_world = create();
         this.world_viewport = create();
@@ -67,8 +68,7 @@ class Transform {
         this.viewport = null;
 
         // set up initial transformation
-        this.initTransform(center2d, [client_rect.width, client_rect.height], view_scale_Sv)
-//        console.log("Set up transform: " + center2d + " 1:" + view_scale_Sv + " vs 1:" + this.getScaleDenominator())
+        this.initTransform(center_world, viewport_size, denominator)
     }
 
     // fixme: rename -> initTransform
@@ -110,6 +110,8 @@ class Transform {
         // and going from one to the other is then the concatenation of the 2 (and its inverse)
         this.updateViewportTransform()
 
+        console.log(denominator)
+        console.log(this.getScaleDenominator())
         // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
         // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
         //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
@@ -124,6 +126,9 @@ class Transform {
 
     updateViewportTransform() {
         // and going from one to the other is then the concatenation of the 2 (and its inverse)
+//        console.log('square_viewport', this.square_viewport)
+//        console.log('world_square', this.world_square)
+
         multiply(this.world_viewport, this.square_viewport, this.world_square)
         invert(this.viewport_world, this.world_viewport)
     }
