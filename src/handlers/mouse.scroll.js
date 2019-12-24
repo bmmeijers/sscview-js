@@ -83,7 +83,7 @@ export function scrollHandler (map) {
             // make larger zoom steps if mousewheel went faster
             // FIXME: allow user to set multiplication factor, e.g.
             // (1, 2, 4) : (normal, fast, superfast) ?
-            switch(delta)
+            switch (true)
             {
                 case delta > 750:
                     step = 0.0625
