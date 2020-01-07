@@ -12,7 +12,7 @@
 export function vec3transform (out, a, m) {
     var x = a[0], y = a[1], z = a[2],
         w = m[3] * x + m[7] * y + m[11] * z + m[15];
-    w = w || 1.0;
+    w = w || 1.0; //if w == 0 or w == null, the result is 1.0; otherwise, the result is w
 //    console.log(m[0] + " " + x + " " + m[4]);
     out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
     out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
@@ -542,6 +542,29 @@ export function ortho(out, left, right, bottom, top, near, far) {
     out[15] = 1;
     return out;
 }
+
+
+export function console_log(m, name = 'matrix_nm') {
+    console.log(name + ':')
+    //console.log('{0}{1}{2}{3}'.format(m[0], m[1], m[2], m[3]))
+    //console.log("Hello, {name}, are you feeling {adjective}?".formatUnicorn({ name: "Gabriel", adjective: "OK" }));
+    //console.log('${m[0], m[1], m[2], m[3]}'.format(m[0], m[1], m[2], m[3]))
+    console.log(m[0], m[1], m[2], m[3])
+    console.log(m[4], m[5], m[6], m[7])
+    console.log(m[8], m[9], m[10], m[11])
+    console.log(m[12], m[13], m[14], m[15])
+
+    //var test = '5'
+    //console.log(
+    //    m[0], m[1], m[2], m[3] + '\n', '${m[0]}, ${m[1]}, ${m[2]}, ${m[3]}',
+    //)
+}
+
+
+
+
+
+
 
 
 ///**

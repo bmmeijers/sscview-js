@@ -274,7 +274,7 @@ void main()
         gl.disable(gl.DEPTH_TEST);
 
         // gl.enable(gl.CULL_FACE);
-        // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+         gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
         // gl.cullFace(gl.BACK);
         // gl.cullFace(gl.FRONT);
@@ -336,6 +336,14 @@ void main()
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M_location, false, matrix);
         }
+
+        gl.enable(gl.CULL_FACE);
+        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+        //gl.cullFace(gl.BACK);
+        gl.cullFace(gl.FRONT);
+        // gl.cullFace(gl.FRONT_AND_BACK);
+
         gl.disable(gl.BLEND);
         gl.enable(gl.DEPTH_TEST);
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);

@@ -1,4 +1,4 @@
-import { create, createvec3, vec3transform, multiply, invert } from './mat4';
+import { create, createvec3, vec3transform, multiply, invert, console_log } from './mat4';
 import Rectangle from './rect';
 var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
@@ -59,13 +59,13 @@ function square_viewport_matrix(box) {
 class Transform {
     constructor(center_world, viewport_size, denominator) {
 
-        this.viewport_world = create();
-        this.world_viewport = create();
+        this.viewport_world = create(); //matrix: to transform a point from a viewport to the realworld
+        this.world_viewport = create(); //matrix: to transform a point from the realworld to a viewport 
         //
         this.world_square = null;
         this.square_viewport = null;
         //
-        this.viewport = null;
+        this.viewport = null; //e.g., xmin:0, ymin:0, xmax: 1200, ymax: 929
 
         // set up initial transformation
         this.initTransform(center_world, viewport_size, denominator)
@@ -94,78 +94,81 @@ class Transform {
         // let visible_world = this.getVisibleWorld() //
         let visible_world = new Rectangle(xmin, ymin, xmax, ymax)
         // scaling/translating is then as follows:
-        let scale = [2. / visible_world.width(), 2. / visible_world.height()]
-        let translate = [-scale[0] * cx, -scale[1] * cy]
-        // by means of which we can calculate a world -> ndc square matrix
-        let world_square = create()
-        world_square[0] = scale[0]
-        world_square[5] = scale[1]
-        world_square[12] = translate[0]
-        world_square[13] = translate[1]
-        this.world_square = world_square
-        //console.log("INITIAL world square" + world_square);
-        // we can set up ndc square -> viewport matrix
-
-        this.square_viewport = square_viewport_matrix(this.viewport)
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        this.updateViewportTransform()
-
-        console.log(denominator)
-        console.log(this.getScaleDenominator())
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
-        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
+        this.update_world_square_viewport(visible_world, cx, cy)
     }
 
-    backward(vec3) {
-        let result = createvec3()
-        vec3transform(result, vec3, this.viewport_world)
-        return result
-    }
-
-    updateViewportTransform() {
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-//        console.log('square_viewport', this.square_viewport)
-//        console.log('world_square', this.world_square)
-
-        multiply(this.world_viewport, this.square_viewport, this.world_square)
-        invert(this.viewport_world, this.world_viewport)
-    }
 
     pan(dx, dy) {
+        //console_log(this.square_viewport, 'this.square_viewport before')
+        //console.log('dx, dy:', dx, dy)
         this.square_viewport[12] += dx
         this.square_viewport[13] += dy
 
-        multiply(this.world_viewport, this.square_viewport, this.world_square)
-        invert(this.viewport_world, this.world_viewport)
+        //console_log(this.square_viewport, 'this.square_viewport')
+        //console_log(this.world_square, 'this.world_square')
 
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
-        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
-        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
+        //e.g., viewport: 1200 x 929
+        //e.g., this.square_viewport changed by moving dx == 100 and dy == 50:
+        //  600         0       0       0
+        //    0     464.5       0       0
+        //    0         0       1       0
+        //  700     514.5       0       1
+        //e.g., this.world_square:
+        //    0.00006929133087396622      0                         0   0
+        //    0                           0.00008950447954703122    0   0
+        //    0                           0                         1   0
+        //  -12.938166618347168         -27.96834945678711          0   1
+        multiply(this.world_viewport, this.square_viewport, this.world_square)
+        //e.g., this.world_viewport:
+        //      0.04157479852437973     0                       0   0
+        //      0                       0.041574832051992416    0   0
+        //      0                       0                       1   0
+        //  -7062.89990234375      -12476.7978515625            0   1
+
+
+        //console_log(this.world_viewport, 'this.world_viewport')
+
+
+        invert(this.viewport_world, this.world_viewport)
 
         // we arrive at what part of the world then is visible
         let visible_world = this.getVisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
-        let scale = [2. / visible_world.width(), 2. / visible_world.height()]
-        let translate = [-scale[0] * center[0], -scale[1] * center[1]]
-        // by means of which we can calculate a world -> ndc square matrix
-        let world_square = create()
-        world_square[0] = scale[0]
-        world_square[5] = scale[1]
-        world_square[12] = translate[0]
-        world_square[13] = translate[1]
-        this.world_square = world_square
-        // and given the size of the viewport we can set up ndc square -> viewport matrix
-        // this.viewport = new Rectangle(0, 0, width, height)
-        this.square_viewport = square_viewport_matrix(this.viewport)
-        // and going from one to the other is then the concatenation of the 2 (and its inverse)
-        this.updateViewportTransform()
+        this.update_world_square_viewport(visible_world, center[0], center[1])
     }
 
-    zoom(factor, x, y) {
+    zoom(ssctree, zoom_factor, x, y) {
+        //console.log(' ')
+        let if_zoom = true
+        //console.log('transform.js St before:', this.getScaleDenominator())
+        //console.log('transform.js factor:', zoom_factor)
+
+        this.compute_zoom_parameters(zoom_factor, x, y)
+        let St = this.getScaleDenominator()
+        
+        //console.log('transform.js St after:', this.getScaleDenominator())
+
+        let snapped_step = ssctree.get_step_from_St(St, true)
+        
+
+        let snapped_St = ssctree.get_St_from_step(snapped_step)
+        //console.log('transform.js snapped_step:', snapped_step)
+        //console.log('transform.js snapped_St:', snapped_St)
+        //console.log('transform.js St / snapped_St:', St / snapped_St)
+        //let snapped_factor = factor * St / snapped_St
+        //this.compute_zoom_parameters(snapped_factor, x, y)
+        this.compute_zoom_parameters(St / snapped_St, x, y)
+        //let final_St = this.getScaleDenominator()
+        //console.log('transform.js final St:', final_St) 
+        //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
+        
+    }
+
+    compute_zoom_parameters(zoom_factor, x, y) {
+    //zoom(ssctree, factor, x, y) {
+        //console.log('transform.js test')
+
         var tmp = create()
         // 1. translate
         {
@@ -177,8 +180,8 @@ class Transform {
         // 2. scale
         {
             let eye = create()
-            eye[0] = factor
-            eye[5] = factor
+            eye[0] = zoom_factor
+            eye[5] = zoom_factor
             multiply(tmp, eye, tmp)
         }
         // 3. translate back
@@ -188,17 +191,20 @@ class Transform {
             eye[13] = y
             multiply(tmp, eye, tmp)
         }
-        this.square_viewport = tmp;
-        multiply(this.world_viewport, this.square_viewport, this.world_square)
+        //this.square_viewport = tmp;
+        multiply(this.world_viewport, tmp, this.world_square)
         invert(this.viewport_world, this.world_viewport)
-        // var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        // var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
         // we arrive at what part of the world then is visible
         let visible_world = this.getVisibleWorld() // new Rectangle(ll[0], ll[1], tr[0], tr[1])
         let center = visible_world.center()
         // scaling/translating is then as follows:
+        this.update_world_square_viewport(visible_world, center[0], center[1])
+    }
+
+    update_world_square_viewport(visible_world, cx, cy) {
+
         let scale = [2. / visible_world.width(), 2. / visible_world.height()]
-        let translate = [-scale[0] * center[0], -scale[1] * center[1]]
+        let translate = [-scale[0] * cx, -scale[1] * cy]
         // by means of which we can calculate a world -> ndc square matrix
         let world_square = create()
         world_square[0] = scale[0]
@@ -206,17 +212,50 @@ class Transform {
         world_square[12] = translate[0]
         world_square[13] = translate[1]
         this.world_square = world_square
+
+        //console.log("INITIAL world square" + world_square);
         // and given the size of the viewport we can set up ndc square -> viewport matrix
-        // this.viewport = new Rectangle(0, 0, width, height)
+
+
+        //console.log(this.viewport, 'this.viewport')
+
+        //e.g., this.viewport:  xmin: 0, ymin: 0, xmax: 1200, ymax: 929
+        //e.g., this.square_viewport obtained from function square_viewport_matrix:
+        //  600         0       0       0
+        //    0     464.5       0       0
+        //    0         0       1       0
+        //  600     464.5       0       1
         this.square_viewport = square_viewport_matrix(this.viewport)
+        //console_log(this.square_viewport, 'this.square_viewport')
+
         // and going from one to the other is then the concatenation of the 2 (and its inverse)
         this.updateViewportTransform()
+        //console.log('ll: ' + ll + " " + this.viewport.xmin + " " + this.viewport.ymin);
+        //console.log('tr: ' + tr + " " + this.viewport.xmax + " " + this.viewport.ymax);
+    }
+
+
+
+    backward(vec3) {
+        let result = createvec3()
+        vec3transform(result, vec3, this.viewport_world)
+        return result
+    }
+
+    updateViewportTransform() {
+        // and going from one to the other is then the concatenation of the 2 (and its inverse)
+        //        console.log('square_viewport', this.square_viewport)
+        //        console.log('world_square', this.world_square)
+
+        multiply(this.world_viewport, this.square_viewport, this.world_square)
+        invert(this.viewport_world, this.world_viewport)
     }
 
     getVisibleWorld() {
         //console.log("visibleWorld in transform.js")
-        var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]);
-        var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]);
+        var ll = this.backward([this.viewport.xmin, this.viewport.ymin, 0.0]); //e.g., this.viewport.xmin == 0; ll[0] == 170625
+        var tr = this.backward([this.viewport.xmax, this.viewport.ymax, 0.0]); //e.g., this.viewport.xmax == 1200
+
         // we arrive at what part of the world then is visible
         return new Rectangle(ll[0], ll[1], tr[0], tr[1])
     }

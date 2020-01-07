@@ -3,6 +3,7 @@ const commonjs = require('rollup-plugin-commonjs');         // https://github.co
 const eslint = require('rollup-plugin-eslint');             // https://github.com/TrySound/rollup-plugin-eslint
 const nodeResolve = require('rollup-plugin-node-resolve');  // https://github.com/rollup/rollup-plugin-node-resolve
 const uglify = require('rollup-plugin-uglify');             // https://github.com/TrySound/rollup-plugin-uglify
+
 //import { inherits } from 'util';
 //import builtins from 'rollup-plugin-node-builtins';
 //const builtins = require('rollup-plugin-node-builtins');
@@ -24,7 +25,15 @@ if (isProduction) {
     plugins.push(uglify());
 }
 
-var dist_folder = 'dist_test'; 
+
+//const set = fromArray(['X', 'Y']); // => SortedSet<[X, Y]>
+//console.log("rollup.config.js test")
+//console.log("rollup.config.js set['X']:", set['X'])
+
+
+
+
+//var dist_folder = 'dist_test'; 
 // var dist_folder = 'dist_buchholz_astar';
 // var dist_folder = 'dist_buchholz_greedy';
 // var dist_folder = 'dist_buchholz_greedy_parallel_2';
@@ -34,6 +43,7 @@ var dist_folder = 'dist_test';
 
 
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
+var dist_folder = 'dist_top10nl_9x9';
 
 export default [
     {

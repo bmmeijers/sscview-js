@@ -52,8 +52,8 @@ export function scrollHandler (map) {
         }
         _prev = now
 
-        // standard value for zoom step
-        var step = 0.1;
+        // standard value for zoom scroll_factor
+        var scroll_factor = 0.1;
         const direction = Math.max(-1, Math.min(1, -value));
         if (_trace === null)
         {
@@ -66,13 +66,13 @@ export function scrollHandler (map) {
             _trace.push(direction);
 
             // FIXME: SETTINGS: var radios = document.getElementsByName('speed');
-            let factor = 1
+            let speed = 1
             // FIXME: SETTINGS: 
             /*
             for (var i = 0, length = radios.length; i < length; i++) {
                 if (radios[i].checked) {
                     // do whatever you want with the checked radio
-                    factor = parseFloat(radios[i].value)
+                    scroll_factor = parseFloat(radios[i].value)
                     // only one radio can be logically checked, don't check the rest
                     break;
                 }
@@ -80,27 +80,27 @@ export function scrollHandler (map) {
             */
 
 
-            // make larger zoom steps if mousewheel went faster
-            // FIXME: allow user to set multiplication factor, e.g.
+            // make larger zoom scroll_factors if mousewheel went faster
+            // FIXME: allow user to set multiplication scroll_factor, e.g.
             // (1, 2, 4) : (normal, fast, superfast) ?
             switch (true)
             {
                 case delta > 750:
-                    step = 0.0625
+                    scroll_factor = 0.0625
                     break;
                 case delta > 500:
-                    step = 0.125
+                    scroll_factor = 0.125
                     break;
                 case delta > 50:
-                    step = 0.25
+                    scroll_factor = 0.25
                     break;
                 default:
-                    step = 0.5
+                    scroll_factor = 0.5
                     break;
             }
-            step *= factor
+            scroll_factor *= speed
             _trace.shift(2000);
-//            console.log(delta + " " + prev[1] + " " + step);
+//            console.log(delta + " " + prev[1] + " " + scroll_factor);
         }
 
         //if the canvas has size 800 x 800, 
@@ -115,10 +115,10 @@ export function scrollHandler (map) {
         switch(direction) 
         {
             case 1:
-                _map.zoomInAnimated(x, y, step);
+                _map.zoomInAnimated(x, y, scroll_factor);
                 break;
             case -1:
-                _map.zoomOutAnimated(x, y, step);
+                _map.zoomOutAnimated(x, y, scroll_factor);
                 break;
         }
 //        console.log(_trace._trace);

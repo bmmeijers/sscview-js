@@ -13,84 +13,84 @@
     <link rel="prefetch" href="worker.js">
 
     <!-- see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error# -->
-    <link rel="shortcut icon" href="#"> 
-    
+    <link rel="shortcut icon" href="#">
+
     <style type="text/css">
-                #canvas {
-                    display: block;
-                    background: white;
-                }
+        #canvas {
+            display: block;
+            background: white;
+        }
 
-                .tu-shadow {
-                    -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
-                    filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
-                    /* -webkit-filter: opacity(.6); filter: opacity(.6); */
-                }
+        .tu-shadow {
+            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
+            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
+            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
+        }
 
-                .tu-blue {
-                    color: white !important;
-                    background-color: rgb(110, 187,213) !important
-                }
+        .tu-blue {
+            color: white !important;
+            background-color: rgb(110, 187,213) !important
+        }
 
-                .tu-right {
-                    right: 0px;
-                }
-                /*
+        .tu-right {
+            right: 0px;
+        }
+        /*
         #navigationBar {
         border-bottom: 1px solid #ddd;
         }
         */
 
-                /* css3 spinner: define keyframes + how it should spin
+        /* css3 spinner: define keyframes + how it should spin
         note: also w3.css provides a spin class: w3-spin
         */
-                @-moz-keyframes spin {
-                    from {
-                        -moz-transform: rotate(0deg);
-                    }
+        @-moz-keyframes spin {
+            from {
+                -moz-transform: rotate(0deg);
+            }
 
-                    to {
-                        -moz-transform: rotate(359deg);
-                    }
-                }
+            to {
+                -moz-transform: rotate(359deg);
+            }
+        }
 
-                @-webkit-keyframes spin {
-                    from {
-                        -webkit-transform: rotate(0deg);
-                    }
+        @-webkit-keyframes spin {
+            from {
+                -webkit-transform: rotate(0deg);
+            }
 
-                    to {
-                        -webkit-transform: rotate(359deg);
-                    }
-                }
+            to {
+                -webkit-transform: rotate(359deg);
+            }
+        }
 
-                @keyframes spin {
-                    from {
-                        transform: rotate(0deg);
-                    }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
 
-                    to {
-                        transform: rotate(359deg);
-                    }
-                }
+            to {
+                transform: rotate(359deg);
+            }
+        }
 
-                .do-spin {
-                    -webkit-animation: spin 3s infinite linear;
-                    -moz-animation: spin 3s infinite linear;
-                    -o-animation: spin 3s infinite linear;
-                    animation: spin 2.5s infinite ease-in-out;
-                }
+        .do-spin {
+            -webkit-animation: spin 3s infinite linear;
+            -moz-animation: spin 3s infinite linear;
+            -o-animation: spin 3s infinite linear;
+            animation: spin 2.5s infinite ease-in-out;
+        }
 
-                input[type="radio"] {
-                    margin: 0px 6px 0 6px;
-                }
+        input[type="radio"] {
+            margin: 0px 6px 0 6px;
+        }
 
-                legend, label {
-                    -webkit-user-select: none; /* Safari */
-                    -moz-user-select: none; /* Firefox */
-                    -ms-user-select: none; /* IE10+/Edge */
-                    user-select: none;
-                }
+        legend, label {
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -129,29 +129,29 @@
                  class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
                 <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
                 <!--
-            <a href="#" class="w3-bar-item w3-button">Link 2</a>
-            <a href="#" class="w3-bar-item w3-button">Link 3</a>
-            <a href="#" class="w3-bar-item w3-button">Link 4</a>
-            <a href="#" class="w3-bar-item w3-button">Link 5</a>
-            <a href="#" class="w3-bar-item w3-button">Link 6</a>
-            <a href="#" class="w3-bar-item w3-button">Link 7</a>
-            <a href="#" class="w3-bar-item w3-button">Link 8</a>
-            <a href="#" class="w3-bar-item w3-button">Link 9</a>
-            <a href="#" class="w3-bar-item w3-button">Link 10</a>
-            <a href="#" class="w3-bar-item w3-button">Link 11</a>
-            -->
+                <a href="#" class="w3-bar-item w3-button">Link 2</a>
+                <a href="#" class="w3-bar-item w3-button">Link 3</a>
+                <a href="#" class="w3-bar-item w3-button">Link 4</a>
+                <a href="#" class="w3-bar-item w3-button">Link 5</a>
+                <a href="#" class="w3-bar-item w3-button">Link 6</a>
+                <a href="#" class="w3-bar-item w3-button">Link 7</a>
+                <a href="#" class="w3-bar-item w3-button">Link 8</a>
+                <a href="#" class="w3-bar-item w3-button">Link 9</a>
+                <a href="#" class="w3-bar-item w3-button">Link 10</a>
+                <a href="#" class="w3-bar-item w3-button">Link 11</a>
+                -->
             </div>
         </div>
 
         <!--            class="do-spin" style="visibility: visible;" -->
         <!-- hide, but keep space -->
         <!--
-    <span class="w3-bar-item">
-    <img
-    style="visibility: hidden;"
-    src="spinner.svg" height="20">
-    </span>
-    -->
+        <span class="w3-bar-item">
+        <img
+        style="visibility: hidden;"
+        src="spinner.svg" height="20">
+        </span>
+        -->
 
 
     </div>
@@ -232,12 +232,12 @@
                 </div>
             </div>
 
-<!--
-    zoom factor
-    <div>
-        small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
-    </div>
--->
+            <!--
+                zoom factor
+                <div>
+                    small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
+                </div>
+            -->
 
             <footer class="w3-container w3-light-grey w3-padding">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
@@ -281,66 +281,72 @@
             let canvas_nm = 'canvas'
             let canvas = document.getElementById(canvas_nm);
             var gl = canvas.getContext("webgl", { antialias: true }) ||
-                     canvas.getContext("experimental-webgl", { antialias: true });
+                canvas.getContext("experimental-webgl", { antialias: true });
             let hGap = 0;
             let vGap = document.getElementById("navigationBar").offsetHeight;
             canvas.width = window.innerWidth - hGap;
             canvas.height = window.innerHeight - vGap;
 
 
-//            var map_settings = {                
-//                'initialization': {                    
-//                    'scale_den': 500000,
-//                    'center2d': [3555384.53, 5907745.81],
-//                    'navigationBar_title': 'Test, Manual',
-//                },
-//                'canvas_nm': canvas_nm,
-//                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
-//                'interaction_defaults': []
-//            }
+            //            var map_settings = {
+            //                'initialization': {
+            //                    'scale_den': 500000,
+            //                    'center2d': [3555384.53, 5907745.81],
+            //                    'navigationBar_title': 'Test, Manual',
+            //                },
+            //                'canvas_nm': canvas_nm,
+            //                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
+            //                'interaction_defaults': []
+            //            }
 
 
-            var map_settings = {                
-                'initialization': {                    
-                    'scale_den': 12500,
-// BOX(204914.35 514637.283,270231.624 580203.629)
+            var map_settings = {
+                'initialization': {
+                    //'scale_den': 10000, //top10nl, start_scale
+                    'scale_den': 100000,  //top10nl; small test, three parcels
+                    //'scale_den': 12500,
+                    // BOX(204914.35 514637.283,270231.624 580203.629)
 
-                    'center2d': [233520.3,556776.9],
-                                //[204914 + (270231 - 204914) * 0.5,
-                                // 514637 + (580203 - 514637) * 0.5],
+                    //'center2d': [233520.3, 556776.9],
+                    'center2d': [186500.0, 312450.0],     //top10nl
+                    //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
+                    //[204914 + (270231 - 204914) * 0.5,
+                    // 514637 + (580203 - 514637) * 0.5],
                     'navigationBar_title': 'Top10NL Drenthe chunked',
                 },
                 'canvas_nm': canvas_nm,
                 'datasets': [{
-//                              'tree_root_file_nm': 'tree.json',
-//                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
-//                              'tile_root_href': '/data/tiles-nl/',
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/tiles-nl/',
 
-//                              'tree_root_file_nm': 'tree.json',
-//                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
-//                              'tile_root_href': '/data/9x9-quad/',
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/9x9-quad/',
 
-//                              'tree_root_file_nm': 'tree.json',
-//                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
-//                              'tile_root_href': '/data/9x9-quad-lines-lean/',
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/9x9-quad-lines-lean/',
 
-                              'tree_root_file_nm': 'tree.json',
-                              'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
-                              'tile_root_href': '/data/drenthe-quad-larger/',
+                    //'tree_root_file_nm': 'tree.json',
+                    //'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
+                    //'tile_root_href': '/data/drenthe-quad-larger/',
 
 
-//                              'tree_root_file_nm': 'top10nl_9x9.json',
-//                              'tree_root_href': '/data/',    // with trailing slash!
-//                              'tile_root_href': '/data/',
-                              /*
-                              // See:
-                              // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
-                              // for available tile maps
-                              */
-                              // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
-                              'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/' 
-                              // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
-                            }],
+                    'tree_root_file_nm': 'tree_smooth.json',
+                    //'tree_root_file_nm': 'tree.json',
+                    'eventnum_repetition_nm': 'eventnum_repetition.json',
+                    'tree_root_href': '/data/',    // with trailing slash!
+                    'tile_root_href': '/data/',
+                    /*
+                    // See:
+                    // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
+                    // for available tile maps
+                    */
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                    'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                }],
                 'interaction_defaults': []
             }
 
@@ -370,7 +376,7 @@
             var resize = function () {
                 let canvas = document.getElementById(canvas_nm);
                 var gl = canvas.getContext("webgl", { antialias: true }) ||
-                         canvas.getContext("experimental-webgl", { antialias: true });
+                    canvas.getContext("experimental-webgl", { antialias: true });
                 let newWidth = window.innerWidth - hGap;
                 let newHeight = window.innerHeight - vGap;
 
@@ -414,42 +420,42 @@
 
 
 
-        /* -- start slider -- */
-        let init_boundary_width_slider = () => {
-            let msgbus = new varioscale.MessageBusConnector();
-            msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
-                let el = document.getElementById("width-value");
-                el.innerHTML = message;
-            } );
-            let slider = document.getElementById("boundary-width");
-            slider.addEventListener('input',
-                () => {
-                    msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
-                }
-            );
-            msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
-        };
-        init_boundary_width_slider();
-        /* -- end of slider -- */
+            /* -- start slider -- */
+            let init_boundary_width_slider = () => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
+                    let el = document.getElementById("width-value");
+                    el.innerHTML = message;
+                });
+                let slider = document.getElementById("boundary-width");
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+                    }
+                );
+                msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+            };
+            init_boundary_width_slider();
+            /* -- end of slider -- */
 
 
 
-        /* -- start slider -- */
-        let init_slider = (name) => {
-            let msgbus = new varioscale.MessageBusConnector();
-            let slider = document.getElementById(name);
-            slider.addEventListener('input',
-                () => {
-                    msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
-                    // map.abortAndRender();
-                }
-            );
-            msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
-        }
-        //init_slider("zoom-factor");
-        init_slider("pan-animation");
-        init_slider("zoom-animation");
-        /* -- end of slider -- */
+            /* -- start slider -- */
+            let init_slider = (name) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                let slider = document.getElementById(name);
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                        // map.abortAndRender();
+                    }
+                );
+                msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+            }
+            //init_slider("zoom-factor");
+            init_slider("pan-animation");
+            init_slider("zoom-animation");
+            /* -- end of slider -- */
 
 
 

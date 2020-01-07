@@ -58,8 +58,9 @@ class Map {
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
-            const near_St = this.ssctree.stepMap(this._transform)
-            this._prepare_active_tiles(near_St[0])
+            let St = this._transform.getScaleDenominator()
+            var step = this.ssctree.get_step_from_St(St, true)
+            this._prepare_active_tiles(step)
         })
 
         this.msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
@@ -99,19 +100,24 @@ class Map {
 
 
         { 
-            let near_St = this.ssctree.stepMap(this.getTransform())
-            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), near_St[1]]) 
-        };
+            let St = this.getTransform().getScaleDenominator()
+            this.ssctree.get_step_from_St(St, true)
+            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]) 
+        }
 
         this.evictor = new Evictor(this.ssctree,
                                    this.getWebGLContext())
         // every 30 seconds release resources
         window.setInterval(
             () => {
-                const near_St = this.ssctree.stepMap(this.getTransform())
-                const near = near_St[0]
+
+                let St = this.getTransform().getScaleDenominator()
+                var step = this.ssctree.get_step_from_St(St, true)
+
+                //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
+                //const near = near_St[0]
                 const box2d = this.getTransform().getVisibleWorld()
-                const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+                const box3d = [box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step]
                 this.evictor.evict(box3d)
                 this.render()
             },
@@ -137,10 +143,23 @@ class Map {
     }
 
     render() {
-        const near_St = this.ssctree.stepMap(this.getTransform())
-        var matrix_box3d = this._prepare_active_tiles(near_St[0])
-        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), near_St[1]])
-        this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], near_St);
+
+        let St = this.getTransform().getScaleDenominator()
+        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
+
+        //We minus by 0.01 in order to compensate with (possibly) the round-off error
+        //so that the boundaries can be displayed correctly.
+        let last_step = this.ssctree.step_highs[this.ssctree.step_highs.length - 2]
+        var step = this.ssctree.get_step_from_St(St) - 0.01
+        if (step < 0) {
+            step = 0
+        }
+        else if (step > last_step) {
+            step = last_step
+        }
+       
+        var matrix_box3d = this._prepare_active_tiles(step)
+        this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], [step, St]);
     }
 
     _prepare_active_tiles(near) {
@@ -234,9 +253,9 @@ class Map {
         return interpolate;
     }
 
-    animateZoom(x, y, factor) {
+    animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
-        this.getTransform().zoom(factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+        this.getTransform().zoom(this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -269,7 +288,7 @@ class Map {
     }
 
     zoom(x, y, factor) {
-        this.getTransform().zoom(factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+        this.getTransform().zoom(this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
         this.render();
     }
 
@@ -284,19 +303,19 @@ class Map {
         this.render();
     }
 
-    zoomInAnimated(x, y, step) {
-        this.zoomAnimated(x, y, 1.0 + step)
+    zoomInAnimated(x, y, op_factor) {
+        this.zoomAnimated(x, y, 1.0 + op_factor) //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
     }
 
-    zoomOutAnimated(x, y, step) {
-        this.zoomAnimated(x, y, 1.0 / (1.0 + step))
+    zoomOutAnimated(x, y, op_factor) {
+        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor)) //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
     }
 
-    zoomAnimated(x, y, factor) {
+    zoomAnimated(x, y, zoom_factor) {
         if (this._abort !== null) {
             this._abort();
         }
-        var interpolator = this.animateZoom(x, y, factor);
+        var interpolator = this.animateZoom(x, y, zoom_factor);
         // FIXME: settings
         this._abort = timed(interpolator, this._interaction_settings.zoom_duration, this);
     }

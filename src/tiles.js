@@ -1,4 +1,8 @@
 import { now } from "./animate"
+//import { require } from "./require"
+//var SortedMap = require("collections/sorted-map");
+//import { fromArray } from '@collectable/sorted-set';
+//import { fromArray } from '../node_modules/@collectable/sorted-set';
 //import Transform from './transform';
 //import { log } from "util";
 
@@ -13,7 +17,8 @@ import { now } from "./animate"
 // [x] Resurrect Evictor, with default strategy of removing old stuff
 // [ ] Make use of worker to retrieve ImageTiles
 // [ ] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
-// [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), while not overloading the server (queueing requests / abortcontroller.signal)
+// [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), 
+//     while not overloading the server(queueing requests / abortcontroller.signal)
 
 
 function center2d(box3d)
@@ -68,6 +73,7 @@ export class SSCTree {
         this.msgbus = msgbus
         this.tree = null
         this.settings = settings
+        this.step_highs = []
         // pool of workers
         let pool_size = window.navigator.hardwareConcurrency || 2;
         this.worker_helpers = []
@@ -89,7 +95,38 @@ export class SSCTree {
 //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        console.log('fetching root' + this.settings.tree_root_href + this.settings.tree_root_file_nm)
+        //console.log('fetching root' + this.settings.tree_root_href + this.settings.tree_root_file_nm)
+
+        //e.g., this.settings.tree_root_href: '/data/'
+        //e.g., this.settings.tree_root_file_nm: 'tree.json'
+        //e.g., this.settings.eventnum_repetition_nm: 'eventnum_repetition.json'
+        var step_highs = null
+        
+        var eventnum_repetition_nm = 'eventnum_repetition_nm'
+        if (eventnum_repetition_nm in this.settings) {
+            fetch(this.settings.tree_root_href + this.settings[eventnum_repetition_nm])
+                .then(r => {
+                    step_highs = [0] //if the file exists, we will do parallel merging
+                    return r.json()
+                })
+                .then(eventnum_repetition_dt => {
+                    eventnum_repetition_dt.eventnum_repetition.forEach(function (eventnum_repetition_lt) {
+                        for (let index = 0; index < eventnum_repetition_lt[1]; ++index) {
+                            step_highs.push(step_highs[step_highs.length - 1] + eventnum_repetition_lt[0])
+                        }
+                    })
+                })
+                .then(() => {
+                    this.step_highs = step_highs
+                    //console.log('step_highs:', step_highs)
+                })
+                .catch(() => {
+                    this.step_highs = null
+                })
+        }
+        
+
+
         fetch(this.settings.tree_root_href + this.settings.tree_root_file_nm)
             .then(r => {
                 return r.json()
@@ -117,7 +154,7 @@ export class SSCTree {
     }
 
     load_subtree(node) {
-        console.log(this.settings.tree_root_href + node.href)
+        //console.log(this.settings.tree_root_href + node.href)
         fetch(this.settings.tree_root_href + node.href)
             .then(r => {
                 return r.json()
@@ -139,6 +176,7 @@ export class SSCTree {
                 console.error(err)
             })
     }
+    
 
 
     fetch_tiles(box3d, gl) {
@@ -200,15 +238,8 @@ export class SSCTree {
             })
     }
 
-    // FIXME: why not pass in St (current scale denominator, instead of transform class)
-    stepMap(transform) {
-
-//        let viewport_in_meter = new Rectangle(0, 0,
-//            transform.viewport.width() / meter_to_pixel,
-//            transform.viewport.height() / meter_to_pixel)
-//        let world_in_meter = transform.getvisibleWorld()
-
-//        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area()) //current scale denominator
+    get_step_from_St(St, if_snap = false) {
+        
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
@@ -221,10 +252,9 @@ export class SSCTree {
         //let Sb = 24000  // (start scale denominator)
         //let total_steps = 262144 - 1   // how many generalization steps did the process take?
 
-        let St = transform.getScaleDenominator()
         if (this.tree === null)
         {
-             return [0, St]
+             return 0
         }
         // reduction in percentage
         let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2) 
@@ -237,15 +267,60 @@ export class SSCTree {
         // FIXME: NO! Use Nb to determine mapping (number of objects at base scale) and 
         // clamp the range when steps are missing at the top (so when the tree of merge steps is not full)
 
-        let step = (this.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
-        return [Math.max(0, step), St] 
-        // FIXME: Why also return St??? (to make it easier for downstream methods?
-        // but where they are called, they should already have access to St (by means of the transform class)...
+        //let step = (this.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
+        let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        let step_highs = this.step_highs
+        if (if_snap == true && step_highs != null &&
+            step > step_highs[0] && step < step_highs[step_highs.length - 1]) {
+            //console.log('tiles.js original step:', step)
+            step = snap_to_existing_stephigh(step, step_highs)
+            //console.log('tiles.js adjusted step:', step)
+        }
+
+        //this.step_highs = step_highs
+        return Math.max(0, step)
+    }
+
+    get_St_from_step(step) {
+        let Nb = this.tree.metadata.no_of_objects_Nb
+        let St = this.tree.metadata.start_scale_Sb * Math.pow(Nb / (Nb - step), 0.5)
+
+        //console.log('transform.js step, Nb, Sb, St:', step, Nb, this.tree.metadata.start_scale_Sb, St)
+        return St
     }
 
 }
 
 
+function snap_to_existing_stephigh(step, step_highs) {
+    let start = 0, end = step_highs.length - 1;
+
+    // Iterate while start not meets end 
+    while (start <= end) {
+
+        // Find the mid index 
+        let mid = Math.floor((start + end) / 2);
+
+        // If element is present at mid, return True 
+        if (step_highs[mid] == step) return step;
+
+        // Else look in left or right half accordingly 
+        else if (step_highs[mid] < step)
+            start = mid + 1;
+        else
+            end = mid - 1;
+    }
+
+    //console.log('tiles.js start and end:', start, end)
+    //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
+    //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
+    if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
+        return step_highs[start]
+    }
+    else {
+        return step_highs[end]
+    }
+}
 
 
 function obtain_overlapped_dataelements(node, box3d) {
@@ -292,7 +367,8 @@ function obtain_overlapped_subtrees(node, box3d) {
                 {
                     stack.push(child)
                 }
-                else if (child.hasOwnProperty('href') && !child.hasOwnProperty('loaded') && overlaps3d(child.box, box3d)) {
+                else if (child.hasOwnProperty('href') && !child.hasOwnProperty('loaded')
+                    && overlaps3d(child.box, box3d)) {
                     result.push(child)
                     child.loaded = true;
                 }
@@ -601,6 +677,10 @@ class TileContent {
         data_text.split("\n").forEach(l => this._parseLine(
             l, vertex_lt, class_color_dt, triangle_color_lt,
             step_high, feature_color, vertices_bound_triangles, deltas_bound_triangles));
+
+        //console.log("tiles.js:", "..\")
+        //const set = fromArray(['X', 'Y']); // => SortedSet<[X, Y]>
+        //console.log("tiles.js, set:", set)
 
         //obtain line_triangleVertexPosBufr;
         var line_vertexElements = new Float32Array(vertices_bound_triangles.flat(1));
@@ -1000,7 +1080,8 @@ class TileContent {
         // let scope = this;
         // let client = new XMLHttpRequest();
         // client.open('GET', this.url, true);
-        // client.responseType = "text";  // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
+        // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
+        // client.responseType = "text";  
         // client.onreadystatechange = function()
         // {
         //     if (client.readyState === XMLHttpRequest.DONE && client.status === 200)
@@ -1108,7 +1189,8 @@ class TileContent {
 
     destroy(gl) {
         // clear buffers / textures
-        let buffers = [this.buffer, this.textureCoordBuffer, this.line_triangleVertexPosBufr, this.displacementBuffer, this.polygon_triangleVertexPosBufr]
+        let buffers = [this.buffer, this.textureCoordBuffer, this.line_triangleVertexPosBufr,
+                       this.displacementBuffer, this.polygon_triangleVertexPosBufr]
         buffers.forEach(
             buffer =>
             {
