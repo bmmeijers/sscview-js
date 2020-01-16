@@ -143,13 +143,15 @@ class Map {
     }
 
     render() {
-
         let St = this.getTransform().getScaleDenominator()
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
 
+        let last_step = Number.MAX_SAFE_INTEGER
+        if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+            last_step = this.ssctree.tree.metadata.no_of_steps_Ns
+        }
         //We minus by 0.01 in order to compensate with (possibly) the round-off error
         //so that the boundaries can be displayed correctly.
-        let last_step = this.ssctree.step_highs[this.ssctree.step_highs.length - 2]
         var step = this.ssctree.get_step_from_St(St) - 0.01
         if (step < 0) {
             step = 0

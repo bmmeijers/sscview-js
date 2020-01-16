@@ -73,7 +73,7 @@ export class SSCTree {
         this.msgbus = msgbus
         this.tree = null
         this.settings = settings
-        this.step_highs = []
+        this.step_highs = null
         // pool of workers
         let pool_size = window.navigator.hardwareConcurrency || 2;
         this.worker_helpers = []
@@ -113,6 +113,8 @@ export class SSCTree {
                     eventnum_repetition_dt.eventnum_repetition.forEach(function (eventnum_repetition_lt) {
                         for (let index = 0; index < eventnum_repetition_lt[1]; ++index) {
                             step_highs.push(step_highs[step_highs.length - 1] + eventnum_repetition_lt[0])
+                            //console.log('step_highs[step_highs.length - 1]:', step_highs[step_highs.length - 1])
+                            //console.log('step_highs.length - 1:', step_highs.length - 1)
                         }
                     })
                 })
@@ -256,29 +258,21 @@ export class SSCTree {
         {
              return 0
         }
-        // reduction in percentage
-        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2) 
-        //Originally, step = this.Nb * reductionf.
-        //If the goal map has only 1 feature left, then this.Nb = this.Ns + 1.
-        //If the base map has 5537 features and the goal map has 734 features,
-        //then there are 4803 steps (this.Nb != this.Ns + 1).
-        //It is better to use 'this.Ns + 1' instead of this.Nb
-        // <--->
-        // FIXME: NO! Use Nb to determine mapping (number of objects at base scale) and 
-        // clamp the range when steps are missing at the top (so when the tree of merge steps is not full)
 
-        //let step = (this.tree.metadata.no_of_steps_Ns + 1) * reductionf //step is not necessarily an integer
+        // reduction in percentage
+        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
         let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
         let step_highs = this.step_highs
-        if (if_snap == true && step_highs != null &&
-            step > step_highs[0] && step < step_highs[step_highs.length - 1]) {
-            //console.log('tiles.js original step:', step)
+        if (if_snap == true
+            && step_highs != null
+            && step > step_highs[0]
+            && step < step_highs[step_highs.length - 2] //without this line, the map will stop zooming out when at the last step
+        ) {
             step = snap_to_existing_stephigh(step, step_highs)
-            //console.log('tiles.js adjusted step:', step)
         }
-
-        //this.step_highs = step_highs
-        return Math.max(0, step)
+        
+        //return Math.max(0, step)
+        return step
     }
 
     get_St_from_step(step) {

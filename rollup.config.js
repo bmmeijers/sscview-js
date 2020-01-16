@@ -44,6 +44,7 @@ if (isProduction) {
 
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
 var dist_folder = 'dist_top10nl_9x9';
+//var dist_folder = 'dist_top10nl_9x9_two_rectangles';
 
 export default [
     {
