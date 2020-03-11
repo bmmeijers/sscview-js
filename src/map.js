@@ -152,14 +152,18 @@ class Map {
         }
         //We minus by 0.01 in order to compensate with (possibly) the round-off error
         //so that the boundaries can be displayed correctly.
-        var step = this.ssctree.get_step_from_St(St) - 0.01
+        var step = this.ssctree.get_step_from_St(St) - 0.02
+
         if (step < 0) {
             step = 0
         }
         else if (step > last_step) {
-            step = last_step
+            step = last_step + 0.01 // +0.01: in order to display the exterior boundary correctly
         }
-       
+
+        //console.log('map.js, step:', step)
+
+
         var matrix_box3d = this._prepare_active_tiles(step)
         this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], [step, St]);
     }

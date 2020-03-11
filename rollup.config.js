@@ -43,8 +43,14 @@ if (isProduction) {
 
 
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
-var dist_folder = 'dist_top10nl_9x9';
+// var dist_folder = 'dist_top10nl_9x9';
+// var dist_folder = 'dist_top10nl_9x9_0.01';
+// var dist_folder = 'dist_top10nl_9x9_0.1';
 //var dist_folder = 'dist_top10nl_9x9_two_rectangles';
+//var dist_folder = 'dist_top10nl_9x9_paper_six';
+//var dist_folder = 'dist_top10nl_9x9_seven';
+//var dist_folder = 'dist_top10nl_9x9_strong_nbr_4';
+var dist_folder = 'dist_top10nl_9x9_strong_weak_nbr';
 
 export default [
     {

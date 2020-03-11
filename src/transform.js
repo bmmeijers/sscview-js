@@ -153,6 +153,9 @@ class Transform {
         
 
         let snapped_St = ssctree.get_St_from_step(snapped_step)
+        //console.log('transform.js, snapped_step:', snapped_step)
+
+
         //console.log('transform.js snapped_step:', snapped_step)
         //console.log('transform.js snapped_St:', snapped_St)
         //console.log('transform.js St / snapped_St:', St / snapped_St)

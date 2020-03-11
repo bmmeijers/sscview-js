@@ -45,12 +45,12 @@ function generate_class_color() {
         10312: { r: 230, g: 0, b: 0 },
 
         // road - regional road
-        10400: { r: 255, g: 150, b: 0 },
-        10401: { r: 255, g: 150, b: 0 },
-        10402: { r: 255, g: 150, b: 0 },
-        10410: { r: 255, g: 150, b: 0 },
-        10411: { r: 255, g: 150, b: 0 },
-        10412: { r: 255, g: 150, b: 0 },
+        10400: { r: 255, g: 150, b: 0 },   //check
+        10401: { r: 255, g: 150, b: 0 },   //check
+        10402: { r: 255, g: 150, b: 0 },   //check
+        10410: { r: 255, g: 150, b: 0 },   //check
+        10411: { r: 255, g: 150, b: 0 },   //check
+        10412: { r: 255, g: 150, b: 0 },   //check
 
         // road - local road
         10500: { r: 255, g: 255, b: 0 },
@@ -77,9 +77,9 @@ function generate_class_color() {
         10792: { r: 255, g: 255, b: 255 },
 
         // road: half paved
-        10720: { r: 179, g: 179, b: 179 },
-        10721: { r: 179, g: 179, b: 179 },
-        10722: { r: 179, g: 179, b: 179 },
+        10720: { r: 179, g: 179, b: 179 },   //check
+        10721: { r: 179, g: 179, b: 179 },   //check
+        10722: { r: 179, g: 179, b: 179 },   //check
 
         // road: unpaved
         10730: { r: 156, g: 156, b: 156 },
@@ -227,13 +227,15 @@ function parse_obj(txt)
             case '#': {
                 // words[1]: step_high; words[2]: edge_id
                 if (words.length > 1) {
-                    step_high = parseInt(words[1])
+                    step_high = parseFloat(words[1])
                 }
                 break
             }
 
             case 'l': {
                 let polyline = [];
+                //console.log('words:', words)
+                //console.log('step_high:', step_high)
                 for (let i = 1; i < words.length; i++) {
                     polyline.push(output.vertices[words[i] - 1]);
                 }
@@ -242,6 +244,14 @@ function parse_obj(txt)
                 for (let j = 0; j < polyline.length; j++) {
                     let pt = polyline[j];
                     point_records.push([pt[0], pt[1], pt[2], step_high]); //pt[2] is step_low
+
+                    //if (pt[0] == 186750 && pt[1] == 312050) {
+                    //    console.log('pt:', pt, step_high)
+                    //}
+
+                    //if (pt[0] == 187000 && pt[1] == 312000) {
+                    //    console.log('pt:', pt, step_high)
+                    //}
                 }
 
                 for (var k = 0; k < point_records.length - 1; k++) {
@@ -277,8 +287,20 @@ function parse_obj(txt)
 
     })
 
+    //if
+
+
+
+    //console.log('parse.js output.boundaries.triangles:', output.boundaries.triangles)
+    //console.log('parse.js output.boundaries.deltas:', output.boundaries.deltas)
+
+    let flattened = flatten_output(output)
+    //console.log('parse.js flattened:', flattened)
+    return flattened
+
+
     // flatten nested lists to single lists as Float32Array
-    return flatten_output(output)
+    //return flatten_output(output)
 }
 
 
@@ -290,6 +312,8 @@ function flatten_output(output)
 //    output.boundaries.deltas = new Float32Array(output.boundaries.deltas.flat(1))
 
     return [
+
+
 //        new Float32Array(output.vertices.flat(1)).buffer,
         new Float32Array(output.triangles.flat(1)).buffer,
         new Float32Array(output.boundaries.triangles.flat(1)).buffer,
