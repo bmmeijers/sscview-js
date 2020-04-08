@@ -61,6 +61,7 @@ class Map {
             let St = this._transform.getScaleDenominator()
             var step = this.ssctree.get_step_from_St(St, true)
             this._prepare_active_tiles(step)
+            this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
         this.msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 

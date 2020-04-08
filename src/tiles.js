@@ -123,14 +123,7 @@ export class SSCTree {
                             //console.log('step_highs.length - 1:', step_highs.length - 1)
 
                         }
-
-
-
-                        //eventdiff_lt.forEach()
-
-
                     })
-
 
 
                     //eventdiff_dt.eventdiff.forEach(function (eventdiff_lt) {
@@ -141,7 +134,7 @@ export class SSCTree {
                 })
                 .then(() => {
                     this.step_highs = step_highs
-                    console.log('tiles.js step_highs:', step_highs)
+                    //console.log('tiles.js step_highs:', step_highs)
                 })
                 .catch(() => {
                     this.step_highs = null
@@ -261,7 +254,7 @@ export class SSCTree {
             })
     }
 
-    get_step_from_St(St, if_snap = false) {
+    get_step_from_St(St, if_snap = false, St_current = -1) {
         
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
@@ -291,7 +284,25 @@ export class SSCTree {
         ) {
             //console.log('tiles.js step_highs:', step_highs)
             //console.log('tiles.js step:', step)
-            step = snap_to_existing_stephigh(step, step_highs)
+            let step_index = snap_to_existing_stephigh(step, step_highs)
+            
+            //if we scroll too little, the map doesn't zoom because of the snapping.
+            //we force snapping for at least one step. 
+
+            let snapped_St = this.get_St_from_step(step_highs[step_index])
+            //console.log('tiles.js snapped_St:', snapped_St)
+            //console.log('tiles.js St_current:', St_current)
+            if (Math.abs(snapped_St - St_current) < 0.1 ) {
+                if (St < St_current) { //zooming in 
+                    step_index -= 1
+                }
+                else if (St > St_current) { //zooming out
+                    step_index += 1
+                }
+            }
+            step = step_highs[step_index]
+            //console.log('tiles.js new step:', step)
+
             //console.log('tiles.js snapped_step:', step)
         }
         
@@ -333,10 +344,10 @@ function snap_to_existing_stephigh(step, step_highs) {
     //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
     //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
     if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
-        return step_highs[start]
+        return start
     }
     else {
-        return step_highs[end]
+        return end
     }
 }
 

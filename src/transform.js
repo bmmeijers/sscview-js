@@ -144,22 +144,19 @@ class Transform {
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
 
+        let St_current = this.getScaleDenominator()
         this.compute_zoom_parameters(zoom_factor, x, y)
         let St = this.getScaleDenominator()
 
         //console.log('transform.js ----------------:')
         //console.log('transform.js St after:', this.getScaleDenominator())
 
-        let snapped_step = ssctree.get_step_from_St(St, true)
-        
-
+        let snapped_step = ssctree.get_step_from_St(St, true, St_current)
         let snapped_St = ssctree.get_St_from_step(snapped_step)
 
         //console.log('transform.js snapped_step:', snapped_step)
         //console.log('transform.js snapped_St:', snapped_St)
         //console.log('transform.js St / snapped_St:', St / snapped_St)
-        //let snapped_factor = zoom_factor * St / snapped_St
-        //this.compute_zoom_parameters(snapped_factor, x, y)
         this.compute_zoom_parameters(St / snapped_St, x, y)
         //let final_St = this.getScaleDenominator()
         //console.log('transform.js final St:', final_St) 
