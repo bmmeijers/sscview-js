@@ -3,7 +3,8 @@ import parse_obj from './parse';
 self.onmessage = function(e) {
     let url = e.data.msg
     let id = e.data.id
-    fetch(url)  //e.g., url = "http://localhost:8000/de/buchholz_greedy_test.obj"
+
+    fetch(url)  //e.g., url = "/gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj"
         .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            
         .then(data_text => { 
             let arrays = parse_obj(data_text)

@@ -300,6 +300,12 @@
             //            }
 
 
+            //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
+            //window_location = /gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/q/1368264
+            var window_location = window.location.pathname
+            //console.log('window_location:', window_location)
+
             var map_settings = {
                 'initialization': {
                     //'scale_den': 10000, //top10nl, start_scale
@@ -336,8 +342,8 @@
                     'tree_root_file_nm': 'tree_smooth.json',
                     //'tree_root_file_nm': 'tree.json',
                     //'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': '/data/',    // with trailing slash!
-                    'tile_root_href': '/data/',
+                    'tree_root_href': window_location + 'data/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data/',
                     /*
                     // See:
                     // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
@@ -390,33 +396,33 @@
             window.addEventListener('resize', resize, false);
             window.addEventListener('orientationchange', resize);
 
-            // the zoom buttons, and what they should do
-            document.getElementById("zoomInButton").addEventListener('click', function () {
-                var radios = document.getElementsByName('speed');
-                let factor = 1
-                for (var i = 0, length = radios.length; i < length; i++) {
-                    if (radios[i].checked) {
-                        // do whatever you want with the checked radio
-                        factor = parseFloat(radios[i].value)
-                        // only one radio can be logically checked, don't check the rest
-                        break;
-                    }
-                }
-                map.zoomInAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
-            });
-            document.getElementById("zoomOutButton").addEventListener('click', function () {
-                var radios = document.getElementsByName('speed');
-                let factor = 1
-                for (var i = 0, length = radios.length; i < length; i++) {
-                    if (radios[i].checked) {
-                        // do whatever you want with the checked radio
-                        factor = parseFloat(radios[i].value)
-                        // only one radio can be logically checked, don't check the rest
-                        break;
-                    }
-                }
-                map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
-            });
+            //// the zoom buttons, and what they should do
+            //document.getElementById("zoomInButton").addEventListener('click', function () {
+            //    var radios = document.getElementsByName('speed');
+            //    let factor = 1
+            //    for (var i = 0, length = radios.length; i < length; i++) {
+            //        if (radios[i].checked) {
+            //            // do whatever you want with the checked radio
+            //            factor = parseFloat(radios[i].value)
+            //            // only one radio can be logically checked, don't check the rest
+            //            break;
+            //        }
+            //    }
+            //    map.zoomInAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
+            //});
+            //document.getElementById("zoomOutButton").addEventListener('click', function () {
+            //    var radios = document.getElementsByName('speed');
+            //    let factor = 1
+            //    for (var i = 0, length = radios.length; i < length; i++) {
+            //        if (radios[i].checked) {
+            //            // do whatever you want with the checked radio
+            //            factor = parseFloat(radios[i].value)
+            //            // only one radio can be logically checked, don't check the rest
+            //            break;
+            //        }
+            //    }
+            //    map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
+            //});
 
 
 

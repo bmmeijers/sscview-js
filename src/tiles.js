@@ -241,7 +241,7 @@ export class SSCTree {
         to_retrieve.map(elem => {
             this.helper_idx_current = (this.helper_idx_current + 1) % this.worker_helpers.length
             let content = new TileContent(this.msgbus, this.settings.texture_root_href, this.worker_helpers[this.helper_idx_current])
-            content.load(elem.url, gl) //e.g., elem.url = de/buchholz_greedy_test.obj
+            content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             elem.content = content
             elem.loaded = true
             elem.last_touched = now()
@@ -289,7 +289,10 @@ export class SSCTree {
             && step > step_highs[0]
             && step < step_highs[step_highs.length - 1] //without this line, the map will stop zooming out when at the last step
         ) {
+            //console.log('tiles.js step_highs:', step_highs)
+            //console.log('tiles.js step:', step)
             step = snap_to_existing_stephigh(step, step_highs)
+            //console.log('tiles.js snapped_step:', step)
         }
         
         //return Math.max(0, step)
@@ -450,79 +453,6 @@ export function overlaps3d(one, other) {
     return are_overlapping
 }
 
-//function generate_class_color_dt() {
-
-//    var class_color_dt = {
-
-//        // atkis
-//        2101: { r: 239, g: 200, b: 200 },
-//        2112: { r: 255, g: 174, b: 185 },
-//        2114: { r: 204, g: 204, b: 204 },
-//        2201: { r: 138, g: 211, b: 175 },
-//        2202: { r: 51, g: 204, b: 153 },
-//        2213: { r: 170, g: 203, b: 175 },
-//        2230: { r: 181, g: 227, b: 181 },
-//        2301: { r: 157, g: 157, b: 108 },
-//        3103: { r: 254, g: 254, b: 254 },
-//        3302: { r: 204, g: 153, b: 255 },
-//        4101: { r: 234, g: 216, b: 189 },
-//        4102: { r: 230, g: 255, b: 204 },
-//        4103: { r: 171, g: 223, b: 150 },
-//        4104: { r: 255, g: 255, b: 192 },
-//        4105: { r: 40, g: 200, b: 254 },
-//        4107: { r: 141, g: 197, b: 108 },
-//        4108: { r: 174, g: 209, b: 160 },
-//        4109: { r: 207, g: 236, b: 168 },
-//        4111: { r: 190, g: 239, b: 255 },
-//        5112: { r: 181, g: 208, b: 208 },
-
-//        // top10nl
-//        10310: { r: 230, g: 0, b: 0 },
-//        10311: { r: 230, g: 0, b: 0 },
-//        10410: { r: 255, g: 170, b: 0 },
-//        10411: { r: 255, g: 170, b: 0 },
-//        10510: { r: 255, g: 255, b: 0 },
-//        10600: { r: 255, g: 255, b: 255 },
-//        10700: { r: 255, g: 255, b: 255 },
-//        10710: { r: 255, g: 255, b: 255 },
-//        10720: { r: 179, g: 179, b: 0 },
-//        10730: { r: 156, g: 156, b: 156 },
-//        10740: { r: 255, g: 211, b: 127 },
-//        10741: { r: 255, g: 211, b: 127 },
-//        10750: { r: 255, g: 167, b: 127 },
-//        10760: { r: 255, g: 167, b: 127 },
-//        10780: { r: 255, g: 255, b: 255 },
-//        12400: { r: 190, g: 232, b: 255 },
-//        12500: { r: 190, g: 232, b: 255 },
-//        13000: { r: 0, g: 0, b: 0 },
-//        14010: { r: 255, g: 255, b: 222 },
-//        14030: { r: 156, g: 156, b: 156 },
-//        14040: { r: 201, g: 235, b: 112 },
-//        14050: { r: 255, g: 255, b: 190 },
-//        14060: { r: 140, g: 168, b: 0 },
-//        14080: { r: 140, g: 168, b: 0 },
-//        14090: { r: 140, g: 168, b: 0 },
-//        14100: { r: 204, g: 204, b: 204 },
-//        14120: { r: 255, g: 255, b: 222 },
-//        14130: { r: 201, g: 235, b: 112 },
-//        14140: { r: 252, g: 179, b: 251 },
-//        14160: { r: 255, g: 255, b: 255 },
-//        14162: { r: 255, g: 255, b: 255 },
-//        14170: { r: 201, g: 235, b: 112 },
-//        14180: { r: 255, g: 255, b: 255 },
-
-//    };
-
-//    for (var key in class_color_dt) {
-//        var color = class_color_dt[key];  //color is a dictionary of elements r, g, b
-//        color.r_frac = color.r / 255;
-//        color.g_frac = color.g / 255;
-//        color.b_frac = color.b / 255;
-//    }
-
-//    return class_color_dt;
-//}
-
 let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
 
 
@@ -573,7 +503,7 @@ class TileContent {
     load_ssc_tile(url, gl)
     {
         this.worker_helper.send(
-            url, 
+            url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             (data) => {
 
                 // upload received data to GPU

@@ -23,6 +23,7 @@ function generate_class_color() {
         5112: { r: 181, g: 208, b: 208 },
 
         // top10nl
+        // http://register.geostandaarden.nl/visualisatie/top10nl/1.2.0/BRT_TOP10NL_1.2_beschrijving_visualisatie.xlsx
         // aeroway / runway
         10000: { r: 204, g: 204, b: 204 },
         10001: { r: 204, g: 204, b: 204 },
@@ -44,13 +45,21 @@ function generate_class_color() {
         10311: { r: 230, g: 0, b: 0 },
         10312: { r: 230, g: 0, b: 0 },
 
+        //// road - regional road
+        //10400: { r: 255, g: 150, b: 0 },   //check
+        //10401: { r: 255, g: 150, b: 0 },   //check
+        //10402: { r: 255, g: 150, b: 0 },   //check
+        //10410: { r: 255, g: 150, b: 0 },   //check
+        //10411: { r: 255, g: 150, b: 0 },   //check
+        //10412: { r: 255, g: 150, b: 0 },   //check
         // road - regional road
-        10400: { r: 255, g: 150, b: 0 },   //check
-        10401: { r: 255, g: 150, b: 0 },   //check
-        10402: { r: 255, g: 150, b: 0 },   //check
-        10410: { r: 255, g: 150, b: 0 },   //check
-        10411: { r: 255, g: 150, b: 0 },   //check
-        10412: { r: 255, g: 150, b: 0 },   //check
+        10400: { r: 255, g: 170, b: 0 },   //check
+        10401: { r: 255, g: 170, b: 0 },   //check
+        10402: { r: 255, g: 170, b: 0 },   //check
+        10410: { r: 255, g: 170, b: 0 },   //check
+        10411: { r: 255, g: 170, b: 0 },   //check
+        10412: { r: 255, g: 170, b: 0 },   //check
+
 
         // road - local road
         10500: { r: 255, g: 255, b: 0 },
@@ -76,10 +85,14 @@ function generate_class_color() {
         10791: { r: 255, g: 255, b: 255 },
         10792: { r: 255, g: 255, b: 255 },
 
+        //// road: half paved
+        //10720: { r: 179, g: 179, b: 179 },   //check
+        //10721: { r: 179, g: 179, b: 179 },   //check
+        //10722: { r: 179, g: 179, b: 179 },   //check
         // road: half paved
-        10720: { r: 179, g: 179, b: 179 },   //check
-        10721: { r: 179, g: 179, b: 179 },   //check
-        10722: { r: 179, g: 179, b: 179 },   //check
+        10720: { r: 179, g: 179, b: 0 },   //check
+        10721: { r: 179, g: 179, b: 0 },   //check
+        10722: { r: 179, g: 179, b: 0 },   //check
 
         // road: unpaved
         10730: { r: 156, g: 156, b: 156 },
