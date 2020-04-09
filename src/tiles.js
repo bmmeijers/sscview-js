@@ -254,7 +254,7 @@ export class SSCTree {
             })
     }
 
-    get_step_from_St(St, if_snap = false, St_current = -1) {
+    get_step_from_St(St, if_snap = false, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
         
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
@@ -276,6 +276,7 @@ export class SSCTree {
         // reduction in percentage
         let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
         let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        let snapped_step = step
         let step_highs = this.step_highs
         if (if_snap == true
             && step_highs != null
@@ -284,30 +285,138 @@ export class SSCTree {
         ) {
             //console.log('tiles.js step_highs:', step_highs)
             //console.log('tiles.js step:', step)
-            let step_index = snap_to_existing_stephigh(step, step_highs)
             
+
+            let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
+            if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
+                current_step = step_highs[current_step_index]
+            }
+
+
             //if we scroll too little, the map doesn't zoom because of the snapping.
             //we force snapping for at least one step. 
-
-            let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js snapped_St:', snapped_St)
-            //console.log('tiles.js St_current:', St_current)
-            if (Math.abs(snapped_St - St_current) < 0.1 ) {
-                if (St < St_current) { //zooming in 
-                    step_index -= 1
+            //let snapped_St = this.get_St_from_step(step_highs[step_index])
+            //console.log('tiles.js normal_step_diff:', normal_step_diff)
+            //console.log('tiles.js current_step:', current_step)
+            //console.log('tiles.js step_highs[step_index]:', step_highs[step_index])
+            let snapped_index = snap_to_existing_stephigh(step, step_highs)
+            snapped_step = step_highs[snapped_index]
+            if (current_step != Number.MAX_SAFE_INTEGER) {
+                if (current_step < step //zoom out
+                    && snapped_step <= current_step) { //wrong direction because of snapping
+                    snapped_index += 1
                 }
-                else if (St > St_current) { //zooming out
-                    step_index += 1
+                else if (current_step > step //zoom in
+                    && snapped_step >= current_step) { //wrong direction because of snapping
+                    snapped_index -= 1
                 }
             }
-            step = step_highs[step_index]
+
+
+
+
+
+            //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
+            //    if (zoom_factor>1) { //zooming in 
+            //        snapped_index -= 1
+            //    }
+            //    else if (zoom_factor < 1) { //zooming out
+            //        snapped_index += 1
+            //    }
+            //}
+            snapped_step = step_highs[snapped_index]
+
             //console.log('tiles.js new step:', step)
 
             //console.log('tiles.js snapped_step:', step)
         }
         
         //return Math.max(0, step)
-        return step
+        return snapped_step
+    }
+
+    get_time_factor(St, if_snap = false, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
+
+        if (this.tree === null || if_snap == false) {
+            return 1
+        }
+
+        // reduction in percentage
+        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        let snapped_step = step
+        let step_highs = this.step_highs
+        let time_factor = 1
+        if (if_snap == true
+            && step_highs != null
+            && step > step_highs[0]
+            && step < step_highs[step_highs.length - 1] //without this line, the map will stop zooming out when at the last step
+        ) {
+            //console.log('tiles.js --------------------------------------')
+            //console.log('tiles.js step_highs:', step_highs)
+            //console.log('tiles.js current_step:', current_step)
+            let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
+            if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
+                current_step = step_highs[current_step_index]
+            }
+
+
+
+            //console.log('tiles.js current_step_index:', current_step_index)
+
+            //console.log('tiles.js step:', step)
+            //console.log('tiles.js step_highs[current_step_index]:', step_highs[current_step_index])
+            let normal_step_diff = Math.abs(step - current_step)
+
+            let snapped_index = snap_to_existing_stephigh(step, step_highs)
+
+
+            //if we scroll too little, the map doesn't zoom because of the snapping.
+            //we force snapping for at least one step. 
+
+            //let snapped_St = this.get_St_from_step(step_highs[step_index])
+            //console.log('tiles.js normal_step_diff:', normal_step_diff)
+            //console.log('tiles.js snapped_index:', snapped_index)
+            //console.log('tiles.js step_highs[snapped_index]:', step_highs[snapped_index])
+            //console.log('tiles.js zoom_factor:', zoom_factor)
+            //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
+            //    if (zoom_factor > 1) { //zooming in 
+            //        snapped_index -= 1
+            //    }
+            //    else if (zoom_factor < 1) { //zooming out
+            //        snapped_index += 1
+            //    }
+            //}
+
+            snapped_step = step_highs[snapped_index]
+            if (current_step != Number.MAX_SAFE_INTEGER) {
+                if (current_step < step //zoom out
+                    && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
+                    snapped_index += 1
+                }
+                else if (current_step > step //zoom in
+                    && snapped_step >= current_step) { //wrong direction because of snapping
+                    snapped_index -= 1
+                }
+            }
+            snapped_step = step_highs[snapped_index]
+            //console.log('tiles.js snapped_step:', snapped_step)
+
+            let adjusted_step_diff = Math.abs(snapped_step - current_step)
+
+            if (current_step != Number.MAX_SAFE_INTEGER) {
+                time_factor = adjusted_step_diff / normal_step_diff
+            }
+
+            //console.log('tiles.js adjusted_step_diff:', adjusted_step_diff)
+            //console.log('tiles.js normal_step_diff:', normal_step_diff)
+            //console.log('tiles.js time_factor:', time_factor)
+
+            //console.log('tiles.js snapped_step:', step)
+        }
+
+        //return Math.max(0, step)
+        return time_factor
     }
 
     get_St_from_step(step) {
@@ -322,8 +431,8 @@ export class SSCTree {
 
 
 function snap_to_existing_stephigh(step, step_highs) {
-    let start = 0, end = step_highs.length - 1;
 
+    let start = 0, end = step_highs.length - 1;
     // Iterate while start not meets end 
     while (start <= end) {
 
@@ -331,7 +440,7 @@ function snap_to_existing_stephigh(step, step_highs) {
         let mid = Math.floor((start + end) / 2);
 
         // If element is present at mid, return True 
-        if (step_highs[mid] == step) return step;
+        if (step_highs[mid] == step) return mid;
 
         // Else look in left or right half accordingly 
         else if (step_highs[mid] < step)
@@ -344,10 +453,10 @@ function snap_to_existing_stephigh(step, step_highs) {
     //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
     //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
     if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
-        return start
+        return Math.min(start, step_highs.length - 1) //start will be larger than the last value of step_highs[0] if step is larger than all the values of step_highs    
     }
     else {
-        return end
+        return Math.max(end, 0) //end will be negtive if step is smaller than step_highs[0]
     }
 }
 

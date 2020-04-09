@@ -69,6 +69,8 @@ class Transform {
 
         // set up initial transformation
         this.initTransform(center_world, viewport_size, denominator)
+
+        //this.current_step = Number.MAX_SAFE_INTEGER
     }
 
     // fixme: rename -> initTransform
@@ -140,19 +142,25 @@ class Transform {
 
     zoom(ssctree, zoom_factor, x, y) {
         //console.log(' ')
-        let if_zoom = true
+        let if_snap = true
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
 
         let St_current = this.getScaleDenominator()
+        let current_step = ssctree.get_step_from_St(St_current) //current_step should be compute instantly because of aborting actions
         this.compute_zoom_parameters(zoom_factor, x, y)
         let St = this.getScaleDenominator()
-
+        
         //console.log('transform.js ----------------:')
         //console.log('transform.js St after:', this.getScaleDenominator())
 
-        let snapped_step = ssctree.get_step_from_St(St, true, St_current)
+
+
+        let snapped_step = ssctree.get_step_from_St(St, if_snap, zoom_factor, current_step)
+        let time_factor = ssctree.get_time_factor(St, if_snap, zoom_factor, current_step)
+
         let snapped_St = ssctree.get_St_from_step(snapped_step)
+        //this.current_step = snapped_step
 
         //console.log('transform.js snapped_step:', snapped_step)
         //console.log('transform.js snapped_St:', snapped_St)
@@ -161,7 +169,7 @@ class Transform {
         //let final_St = this.getScaleDenominator()
         //console.log('transform.js final St:', final_St) 
         //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
-        
+        return time_factor
     }
 
     compute_zoom_parameters(zoom_factor, x, y) {

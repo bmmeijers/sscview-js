@@ -43,6 +43,7 @@ class Map {
         this._interaction_settings = {
             zoom_factor: 1,
             zoom_duration: 1000,
+            time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
 
@@ -154,13 +155,20 @@ class Map {
         }
         //We minus by 0.01 in order to compensate with (possibly) the round-off error
         //so that the boundaries can be displayed correctly.
-        var step = this.ssctree.get_step_from_St(St) - 0.00001
+
+        //var step = this.getTransform().current_step
+        //if (step == Number.MAX_SAFE_INTEGER) {
+        //    var step = this.ssctree.get_step_from_St(St)
+        //}
+        var step = this.ssctree.get_step_from_St(St) + 0.001
+        //var step = this.ssctree.get_step_from_St(St) //- 0.001
+        
 
         if (step < 0) {
             step = 0
         }
         else if (step > last_step) {
-            step = last_step + 0.01 // +0.01: in order to display the exterior boundary correctly
+            step = last_step + 0.001 // +0.01: in order to display the exterior boundary correctly
         }
 
         //console.log('map.js, step:', step)
@@ -263,7 +271,8 @@ class Map {
 
     animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
-        this.getTransform().zoom(this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+        this._interaction_settings.time_factor = this.getTransform().zoom(
+            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -296,7 +305,8 @@ class Map {
     }
 
     zoom(x, y, factor) {
-        this.getTransform().zoom(this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+        this._interaction_settings.time_factor = this.getTransform().zoom(
+            this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
         this.render();
     }
 
@@ -325,7 +335,12 @@ class Map {
         }
         var interpolator = this.animateZoom(x, y, zoom_factor);
         // FIXME: settings
-        this._abort = timed(interpolator, this._interaction_settings.zoom_duration, this);
+
+        let zoom_duration = this._interaction_settings.zoom_duration * this._interaction_settings.time_factor
+        //console.log('map.js this._interaction_settings.zoom_duration:', this._interaction_settings.zoom_duration)
+        //console.log('map.js this._interaction_settings.time_factor:', this._interaction_settings.time_factor)
+        //console.log('map.js zoom_duration:', zoom_duration)
+        this._abort = timed(interpolator, zoom_duration, this);
     }
 
     panAnimated(dx, dy) {
