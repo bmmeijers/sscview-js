@@ -1,0 +1,677 @@
+﻿<!doctype html>
+<html>
+
+<head>
+    <title>Vario-scale Map Comparer</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <link rel="stylesheet" href="w3.css">
+
+    <script type="text/javascript" src="index.js?id=5"></script>
+    <link rel="prefetch" href="worker.js">
+
+
+    <link rel="shortcut icon" href="#">
+
+
+    <style type="text/css">
+        #canvas1 {
+            display: block;
+            background: white;
+        }
+
+        #canvas2 {
+            display: block;
+            background: white;
+        }
+
+        .tu-shadow {
+            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
+            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
+            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
+        }
+
+        .tu-blue {
+            color: white !important;
+            background-color: rgb(110, 187,213) !important
+        }
+
+        .tu-right {
+            right: 0px;
+        }
+        /*
+        #navigationBar {
+        border-bottom: 1px solid #ddd;
+        }
+        */
+
+        /* css3 spinner: define keyframes + how it should spin
+        note: also w3.css provides a spin class: w3-spin
+        */
+        @-moz-keyframes spin {
+            from {
+                -moz-transform: rotate(0deg);
+            }
+
+            to {
+                -moz-transform: rotate(359deg);
+            }
+        }
+
+        @-webkit-keyframes spin {
+            from {
+                -webkit-transform: rotate(0deg);
+            }
+
+            to {
+                -webkit-transform: rotate(359deg);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(359deg);
+            }
+        }
+
+        .do-spin {
+            -webkit-animation: spin 3s infinite linear;
+            -moz-animation: spin 3s infinite linear;
+            -o-animation: spin 3s infinite linear;
+            animation: spin 2.5s infinite ease-in-out;
+        }
+
+        input[type="radio"] {
+            margin: 0px 6px 0 6px;
+        }
+
+        legend, label {
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none;
+        }
+    </style>
+
+    
+</head>
+
+<body>
+
+    <!-- <div>
+        line-width value (mm): <span id="width-value"></span>
+    </div>
+    <div>
+        narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width"
+            style="margin: 0 16px 0 16px;"> wide
+    </div> -->
+    <!--
+    zoom factor
+    <div>
+        small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
+    </div>
+-->
+    <!-- zoom animation
+    <div>
+        short <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation"
+            style="margin: 0 16px 0 16px;"> long
+    </div> -->
+
+    <!-- pan animation factor
+    <div>
+        short <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation"
+            style="margin: 0 16px 0 16px;"> long
+    </div> -->
+
+    <!-- <div>Scale: <span id="scale-denominator"></span></div> -->
+
+
+
+
+
+
+    <!-- <script src="index.js"></script> -->
+
+    <style>
+        #map1 {
+            background-color: #fff !important;
+            background: white;
+            color: white;
+            /*position: absolute;*/
+            z-index: 1;
+        }
+
+        #map2 {
+            background: red;
+        }
+
+        /* styles for the swiper element / gutter */
+        .compare {
+            /*gutter*/
+            background-color: white;
+            position: absolute;
+            width: 3px;
+            /* height: 640px; */
+            z-index: 1;
+        }
+
+        .compare .compare-swiper {
+            /* swiper handle */
+            background-color: #3887be;
+            box-shadow: inset 0 0 0 3px #fff;
+            display: inline-block;
+            border-radius: 90%;
+            /* border-radius:50%; */
+            /* handle: circle or square */
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            top: 50%;
+            left: -30px;
+            margin: -30px 1px 0;
+            color: #fff;
+            cursor: ew-resize;
+            z-index: 1;
+            background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgICB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiAgIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiICAgd2lkdGg9IjYwIiAgIGhlaWdodD0iNjAiICAgdmVyc2lvbj0iMS4xIiAgIHZpZXdCb3g9IjAgMCA2MCA2MCIgICBpZD0ic3ZnNTQzNCIgICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkxK2RldmVsK29zeG1lbnUgcjEyOTExIiAgIHNvZGlwb2RpOmRvY25hbWU9Imwtci5zdmciPiAgPG1ldGFkYXRhICAgICBpZD0ibWV0YWRhdGE1NDQ0Ij4gICAgPHJkZjpSREY+ICAgICAgPGNjOldvcmsgICAgICAgICByZGY6YWJvdXQ9IiI+ICAgICAgICA8ZGM6Zm9ybWF0PmltYWdlL3N2Zyt4bWw8L2RjOmZvcm1hdD4gICAgICAgIDxkYzp0eXBlICAgICAgICAgICByZGY6cmVzb3VyY2U9Imh0dHA6Ly9wdXJsLm9yZy9kYy9kY21pdHlwZS9TdGlsbEltYWdlIiAvPiAgICAgICAgPGRjOnRpdGxlPjwvZGM6dGl0bGU+ICAgICAgPC9jYzpXb3JrPiAgICA8L3JkZjpSREY+ICA8L21ldGFkYXRhPiAgPGRlZnMgICAgIGlkPSJkZWZzNTQ0MiIgLz4gIDxzb2RpcG9kaTpuYW1lZHZpZXcgICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIgICAgIGJvcmRlcmNvbG9yPSIjNjY2NjY2IiAgICAgYm9yZGVyb3BhY2l0eT0iMSIgICAgIG9iamVjdHRvbGVyYW5jZT0iMTAiICAgICBncmlkdG9sZXJhbmNlPSIxMCIgICAgIGd1aWRldG9sZXJhbmNlPSIxMCIgICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIgICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMTI4NiIgICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9Ijc1MSIgICAgIGlkPSJuYW1lZHZpZXc1NDQwIiAgICAgc2hvd2dyaWQ9InRydWUiICAgICBpbmtzY2FwZTp6b29tPSI0IiAgICAgaW5rc2NhcGU6Y3g9IjI1Ljg4OTgzMSIgICAgIGlua3NjYXBlOmN5PSIzNC4zODE4MzMiICAgICBpbmtzY2FwZTp3aW5kb3cteD0iMCIgICAgIGlua3NjYXBlOndpbmRvdy15PSIyMyIgICAgIGlua3NjYXBlOndpbmRvdy1tYXhpbWl6ZWQ9IjAiICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmc1NDM0IiAgICAgaW5rc2NhcGU6b2JqZWN0LW5vZGVzPSJ0cnVlIiAgICAgaW5rc2NhcGU6c25hcC1zbW9vdGgtbm9kZXM9InRydWUiPiAgICA8aW5rc2NhcGU6Z3JpZCAgICAgICB0eXBlPSJ4eWdyaWQiICAgICAgIGlkPSJncmlkNTk4OSIgLz4gIDwvc29kaXBvZGk6bmFtZWR2aWV3PiAgPHBhdGggICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOjFweDtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2Utb3BhY2l0eToxIiAgICAgZD0iTSAyNSAyNCBMIDE2IDMwIEwgMjUgMzYgTCAyNSAyNCB6IE0gMzUgMjQgTCAzNSAzNiBMIDQ0IDMwIEwgMzUgMjQgeiAiICAgICBpZD0icGF0aDU5OTUiIC8+PC9zdmc+);
+        }
+    </style>
+
+<div class="w3-bar w3-light-grey" id="navigationBar">
+    <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
+    <span class="w3-bar-item">
+        <a href="http://www.gdmc.nl/">
+            <img class="tu-shadow"
+                 src="gdmc-cube.min.svg" height="22">
+        </a>
+    </span>
+    <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
+    <!--     <a href="#" class="w3-bar-item w3-button">Home</a>-->
+    <!--    <div class="w3-dropdown-click">-->
+    <!--        <button class="w3-bar-item w3-button tu-blue w3-padding" id="openMenuButton"><img class="tu-shadow" src="more-vert.svg" height="20"></button>-->
+    <!--        <div id="menu" class="w3-dropdown-content w3-bar-block w3-card">-->
+    <!--            <a href="#" class="w3-bar-item w3-button">Link 1</a>-->
+    <!--            <a href="#" class="w3-bar-item w3-button">Link 2</a>-->
+    <!--            <a href="#" class="w3-bar-item w3-button">Link 3</a>-->
+    <!--        </div>-->
+    <!--    </div>-->
+
+    <span class="w3-bar-item" id="demo_info"></span>
+    <span class="w3-bar-item" id="scale-denominator">1: scale</span>
+
+    <div class="w3-dropdown-click w3-right">
+        <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
+
+        <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
+        <div id="menu"
+             class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
+            <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
+            <!--
+            <a href="#" class="w3-bar-item w3-button">Link 2</a>
+            <a href="#" class="w3-bar-item w3-button">Link 3</a>
+            <a href="#" class="w3-bar-item w3-button">Link 4</a>
+            <a href="#" class="w3-bar-item w3-button">Link 5</a>
+            <a href="#" class="w3-bar-item w3-button">Link 6</a>
+            <a href="#" class="w3-bar-item w3-button">Link 7</a>
+            <a href="#" class="w3-bar-item w3-button">Link 8</a>
+            <a href="#" class="w3-bar-item w3-button">Link 9</a>
+            <a href="#" class="w3-bar-item w3-button">Link 10</a>
+            <a href="#" class="w3-bar-item w3-button">Link 11</a>
+            -->
+        </div>
+    </div>
+
+    <!--            class="do-spin" style="visibility: visible;" -->
+    <!-- hide, but keep space -->
+    <!--
+    <span class="w3-bar-item">
+    <img
+    style="visibility: hidden;"
+    src="spinner.svg" height="20">
+    </span>
+    -->
+
+
+</div>
+
+<div class="w3-display-container">
+    <!--
+    <div class="w3-display-bottomright w3-transparent w3-padding-large">
+    <button class="w3-button w3-circle w3-red">+</button>
+    <button class="w3-button w3-circle w3-teal">&mdash;</button>
+    </div>
+    -->
+    <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
+        <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
+    </div>
+    <!-- <canvas id="map1" style="w3-white"></canvas> -->
+
+    <div id='first' class='map1' style="background: darkgreen; position: absolute;">
+        <canvas id="canvas1" 
+            style="background-color: white;"></canvas>
+    </div>
+
+    <div id='second' class='map2' style="background-color: darkblue; position: absolute;">
+        <canvas id="canvas2"
+            style="background-color: white;"></canvas>
+    </div>
+
+    <!-- <div id='first' class='map' style="background: darkgreen; width: 1024px; height: 640px; position: absolute;">
+        <canvas id="canvas1" width="1024" height="640"
+            style="width:1124px; height: 640px; background-color: white;"></canvas>
+    </div>
+
+    <div id='second' class='map' style="background-color: darkblue; width: 1024px; height: 640px; position: absolute;">
+        <canvas id="canvas2" width="1024" height="640"
+            style="width:1124px; height: 640px; background-color: red;"></canvas>
+    </div> -->
+
+    <div id="swiper" class="compare">
+        <div id="swiper-handle" class="compare-swiper">
+        </div>
+    </div>
+
+</div>
+
+<div id="settingsModal" class="w3-modal">
+    <!-- style="touch-action: none;" -->
+    <div class="w3-modal-content">
+        <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
+
+        <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+
+        <div class="w3-container w3-padding">
+
+            <div class="setting">
+                <fieldset>
+                    <legend> zoom factor </legend>
+                    <div class="w3-margin">
+                        <!--<label for="speed-025">0.25</label>-->
+                        <input type="radio" id="speed-025" name="speed" value="0.25" class="radio-btn">
+                        <label for="speed-025">0.25 &nbsp;&nbsp;</label>
+                        <input type="radio" id="speed-05" name="speed" value="0.5" class="radio-btn">
+                        <label for="speed-05">0.5 &nbsp;&nbsp;</label>
+                        <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
+                        <label for="speed-1">1 &nbsp;&nbsp;</label>
+                        <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
+                        <label for="speed-2">2 &nbsp;&nbsp;</label>
+                        <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
+                        <label for="speed-4">4 &nbsp;&nbsp;</label>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend> zoom animation (short-long)</legend>
+                    <div class="w3-padding">
+                        short (0s)<input type="range" value="1001" step="25" min="0" max="5001" 
+                        id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend> pan animation (short-long)</legend>
+                    <div class="w3-padding">
+                        short (0s) <input type="range" value="1001" step="500" min="0" max="5001" 
+                        id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <header class="w3-container w3-light-grey w3-padding"><h2>Displaying settings</h2></header>
+        <div class="w3-container w3-padding">
+            <div class="setting">
+                <fieldset>
+                    <legend> boundary width</legend>
+                    <div>
+                        line-width value (mm): <span id="width-value"></span>
+                    </div>
+                    <div>
+                        narrow <input type="range" value="0.2" step="0.025" min="0" max="5" 
+                        id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <!--
+            zoom factor
+            <div>
+                small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
+            </div>
+        -->
+
+        <footer class="w3-container w3-light-grey w3-padding">
+            <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
+                Close
+            </button>
+        </footer>
+    </div>
+</div>
+
+    <footer class="w3-container w3-bottom" style="pointer-events: none;">
+        <!--
+        <p class="w3-left w3-margin-top">
+        {placeholder}
+        </p>
+        -->
+
+        <div class="w3-left">
+            <!--class="w3-bar-item w3-padding-small" -->
+
+
+            <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
+                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="logo.svg" height="30">
+            </a>
+        </div>
+
+        <div class="w3-right">
+            <!-- FIXME: zooming in with a button should also obey the setting panel; this is not the case at the moment -->
+            <button style="pointer-events: auto;" id="zoomInButton"
+                class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
+            <button style="pointer-events: auto;" id="zoomOutButton"
+                class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
+        </div>
+    </footer>
+
+    <script>
+        function setPosition(x) {
+            let pos = 'translate(' + x + 'px, 0)';
+            // set translate for swiping element: gutter + handle
+            document.getElementById('swiper').style.transform = pos;
+            document.getElementById('swiper').style.WebkitTransform = pos;
+            // clip both 'map' divs
+            let canvas1 = document.getElementById('canvas1');
+            var clip = 'rect(0, ' + x + 'px, ' + canvas1.height + 'px, 0)';
+            document.getElementById('first').style.clip = clip;
+            var clip = 'rect(0, 999em, ' + canvas1.height + 'px,' + x + 'px)';
+            document.getElementById('second').style.clip = clip;
+            // console.log('comparer.html canvas1.height:', canvas1.height)
+
+
+            // let swiper = document.getElementById("swiper");
+            // swiper.style.height = canvas1.height;
+            // swiper.height = canvas1.height;
+            // var clip = 'rect(0, ' + x + 'px, ' + '640' + 'px, 0)';
+            // document.getElementById('first').style.clip = clip;
+            // var clip = 'rect(0, 999em, ' + '640' + 'px,' + x + 'px)';
+            // document.getElementById('second').style.clip = clip;
+        }
+        function getX(e) {
+            // fixme: also handle touch events
+            // var e = e.touches ? e.touches[0] : e;
+            // fixme: handle initial position 
+            // (e.g. at center, instead of completely at left)
+            let x = e.clientX;
+            if (x < 0) x = 0;
+
+            let hGap = 0;
+            let newWidth = window.innerWidth - hGap;
+            if (x > newWidth) x = newWidth;
+            
+            return x;
+        }
+        function onMove(e) {
+            setPosition(getX(e));
+        }
+        function onMouseUp(e) {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+        function onDown(e) {
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+
+
+            let hGap = 0;
+            let vGap = document.getElementById("navigationBar").offsetHeight;
+            let innerWidth = window.innerWidth - hGap;
+            let innerHeight = window.innerHeight - vGap;
+
+            let canvas_nm1 = 'canvas1'
+            let canvas1 = document.getElementById(canvas_nm1);
+            canvas1.width = innerWidth;
+            canvas1.height = innerHeight;
+
+            let canvas_nm2 = 'canvas2'
+            let canvas2 = document.getElementById(canvas_nm2);
+            canvas2.width = innerWidth;
+            canvas2.height = innerHeight;
+
+            // $('.compare').height = window.innerHeight - vGap
+
+
+            let swiper = document.getElementById("swiper");
+            swiper.style.height = innerHeight + 'px';
+
+
+
+            //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
+            //window_location = /gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/q/1368264
+            //https://stackoverflow.com/questions/30863164
+            var href = window.location.href;
+            var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
+            // console.log('window_location:', window_location)
+
+
+            var map_settings1 = {
+                'initialization': {
+                    'scale_den': 10000, //top10nl, start_scale
+                    'center2d': [186500.0, 312450.0],     //top10nl, center
+                    // 'center2d': [150000, 400000],
+                    // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
+                    'navigationBar_title': 'Top10NL',
+                },
+                'canvas_nm': canvas_nm1,
+                'datasets': [{
+                    'tree_root_file_nm': 'tree_smooth.json',
+                    'eventdiff_nm': 'eventdiff.json',
+                    'tree_root_href': window_location + 'data_single/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data_single/',
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                    'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
+                    //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                }],
+                'interaction_defaults': []
+            }
+
+            var map_settings2 = {
+                'initialization': map_settings1.initialization,
+                'canvas_nm': canvas_nm2,
+                'datasets': [{
+                    'tree_root_file_nm': map_settings1.datasets[0].tree_root_file_nm,
+                    'eventdiff_nm': map_settings1.datasets[0].eventdiff_nm,
+                    'tree_root_href': window_location + 'data/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data/',
+                    'texture_root_href': map_settings1.datasets[0].texture_root_href
+                    //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                }],
+                'interaction_defaults': []
+            }
+
+            document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
+                map_settings1.initialization.navigationBar_title
+
+            let map1 = new varioscale.Map(map_settings1);
+            map1.loadTree();
+
+            let map2 = new varioscale.Map(map_settings2);
+            map2.loadTree();
+
+
+            function sync_movement(maps) {
+                var _subscription = null;
+                let handle = (topic, message, sender) => {
+                    subscribe_off()
+                    maps.forEach((map, index) => {
+                        if (sender !== map.msgbus.id) {
+                            map.jumpTo(message[0][0], message[0][1], message[1]);
+                        }
+                    });
+                    subscribe_on();
+                }
+
+                subscribe_on = () => {
+                    let msgbus = new varioscale.MessageBusConnector();
+                    _subscription = msgbus.subscribe('map.scale', handle);
+                }
+
+                subscribe_off = () => {
+                    _subscription.remove()
+                }
+
+                subscribe_on();
+
+            };
+            sync_movement([map1, map2]);
+
+            let subscribe_scale = (map) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe('map.scale', (topic, message, sender) => {
+                    if (sender !== map.msgbus.id) return;
+                    const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+                    let el = document.getElementById("scale-denominator");
+                    el.textContent = " 1:" + scale;
+                });
+            }
+            subscribe_scale(map1);
+
+
+            document.getElementById('swiper-handle').addEventListener('mousedown', onDown);
+
+                        // Resize the canvas to span complete screen, when the screen is resized
+            // (note, this does include device rotation on mobile)
+            var resize = function () {
+                // let canvas = document.getElementById(canvas_nm);
+                // var gl = canvas.getContext("webgl", { antialias: true }) ||
+                //     canvas.getContext("experimental-webgl", { antialias: true });
+                let newWidth = window.innerWidth - hGap;
+                let newHeight = window.innerHeight - vGap;
+
+                map1.resize(newWidth, newHeight);
+                // update the canvas its size with the new size given by the browser
+                canvas1.width = newWidth
+                canvas1.height = newHeight
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                map1.abortAndRender()
+
+                map2.resize(newWidth, newHeight);
+                // update the canvas its size with the new size given by the browser
+                canvas2.width = newWidth
+                canvas2.height = newHeight
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                map2.abortAndRender()
+
+                let swiper = document.getElementById("swiper");
+                swiper.style.height = newHeight + 'px';
+            };
+            window.addEventListener('resize', resize, false);
+            window.addEventListener('orientationchange', resize);
+
+            // // the zoom buttons, and what they should do
+            // document.getElementById("zoomInButton").addEventListener('click', function () {
+            //     var radios = document.getElementsByName('speed');
+            //     let factor = 1
+            //     for (var i = 0, length = radios.length; i < length; i++) {
+            //         if (radios[i].checked) {
+            //             // do whatever you want with the checked radio
+            //             factor = parseFloat(radios[i].value)
+            //             // only one radio can be logically checked, don't check the rest
+            //             break;
+            //         }
+            //     }
+            //     map.zoomInAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
+            // });
+            // document.getElementById("zoomOutButton").addEventListener('click', function () {
+            //     var radios = document.getElementsByName('speed');
+            //     let factor = 1
+            //     for (var i = 0, length = radios.length; i < length; i++) {
+            //         if (radios[i].checked) {
+            //             // do whatever you want with the checked radio
+            //             factor = parseFloat(radios[i].value)
+            //             // only one radio can be logically checked, don't check the rest
+            //             break;
+            //         }
+            //     }
+            //     map.zoomOutAnimated(window.innerWidth / 2, window.innerHeight / 2, factor);
+            // });
+
+
+
+            /* -- start slider -- */
+            let init_boundary_width_slider = () => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
+                    let el = document.getElementById("width-value");
+                    el.innerHTML = message;
+                });
+                let slider = document.getElementById("boundary-width");
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+                    }
+                );
+                msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+            };
+            init_boundary_width_slider();
+            /* -- end of slider -- */
+
+
+
+            /* -- start slider -- */
+            let init_slider = (name) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                let slider = document.getElementById(name);
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                        // map.abortAndRender();
+                    }
+                );
+                msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+            }
+            //init_slider("zoom-factor");
+            init_slider("pan-animation");
+            init_slider("zoom-animation");
+            /* -- end of slider -- */
+
+
+
+
+            /* opening and closing the settings modal dialog */
+            // FIXME: repetition of names and ids here is cumbersome
+            var modalSettingsOpen = function () {
+                toggleMenu(); // hide the menu
+                document.getElementById('settingsModal').style.display = 'block';
+            };
+            var modalSettingsClose = function () {
+                document.getElementById('settingsModal').style.display = 'none';
+            }
+            document.getElementById("openSettingsButton").addEventListener('click', modalSettingsOpen);
+            document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
+            document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
+
+            // the menu on the top
+            function toggleMenu() {
+                var x = document.getElementById("menu");
+                if (x.className.indexOf("w3-show") == -1) {
+                    x.className += " w3-show";
+                } else {
+                    x.className = x.className.replace(" w3-show", "");
+                }
+            };
+            document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
+        }
+
+        );
+    </script>
+</body>
+
+</html>

@@ -70,6 +70,8 @@ class Transform {
         // set up initial transformation
         this.initTransform(center_world, viewport_size, denominator)
 
+        this.snapped_step = Number.MAX_SAFE_INTEGER
+        this.snapped_St = denominator
         //this.current_step = Number.MAX_SAFE_INTEGER
     }
 
@@ -140,9 +142,9 @@ class Transform {
         this.update_world_square_viewport(visible_world, center[0], center[1])
     }
 
-    zoom(ssctree, zoom_factor, x, y) {
+    zoom(ssctree, zoom_factor, x, y, if_snap) {
         //console.log(' ')
-        let if_snap = true
+        //let if_snap = true
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
 
@@ -150,7 +152,13 @@ class Transform {
         let current_step = ssctree.get_step_from_St(St_current) //current_step should be compute instantly because of aborting actions
         this.compute_zoom_parameters(zoom_factor, x, y)
         let St = this.getScaleDenominator()
-        
+
+
+        //console.log('transform.js St_current:', St_current)
+        //console.log('transform.js St:', St)
+        //console.log('transform.js St_current / St:', St_current / St)
+        //console.log('transform.js zoom_factor:', zoom_factor)
+
         //console.log('transform.js ----------------:')
         //console.log('transform.js St after:', this.getScaleDenominator())
 
@@ -158,8 +166,10 @@ class Transform {
 
         let snapped_step = ssctree.get_step_from_St(St, if_snap, zoom_factor, current_step)
         let time_factor = ssctree.get_time_factor(St, if_snap, zoom_factor, current_step)
-
         let snapped_St = ssctree.get_St_from_step(snapped_step)
+        this.snapped_step = snapped_step
+        this.snapped_St = snapped_St
+
         //this.current_step = snapped_step
 
         //console.log('transform.js snapped_step:', snapped_step)

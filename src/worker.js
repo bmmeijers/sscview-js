@@ -1,8 +1,8 @@
 import parse_obj from './parse';
 
-self.onmessage = function(e) {
-    let url = e.data.msg
+self.onmessage = function(e) {    
     let id = e.data.id
+    let url = e.data.msg
 
     fetch(url)  //e.g., url = "/gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj"
         .then(response => { return response.text() })  //e.g., the text (dataset) stored in an .obj file            

@@ -20,6 +20,8 @@ import { MessageBusConnector } from './pubsub'
 
 class Map {
     constructor(map_settings) {
+        //console.log('map.js test:')
+        //console.log('map.js map_settings:', map_settings)
         let container = map_settings['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
@@ -46,7 +48,7 @@ class Map {
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-
+        this.if_snap = true
 
         this.msgbus = new MessageBusConnector()
 
@@ -145,33 +147,54 @@ class Map {
         return this._transform;
     }
 
-    render() {
-        let St = this.getTransform().getScaleDenominator()
+    render(k = 0) {
+
+        //if k==1, we are at the end of a zooming operation, 
+        //we directly use the snapped_step and snapped_St to avoid rounding problems
+        let St = 0
+        let step = 0
+        let snapped_step = this.getTransform().snapped_step
+        if (k == 1 && this.if_snap == true &&
+            snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
+            St = this.getTransform().snapped_St
+            step = snapped_step
+        }
+        else {
+            St = this.getTransform().getScaleDenominator()
+            step = this.ssctree.get_step_from_St(St)
+        }
+
+        step -= 0.001 //to compensate with the rounding problems
+        
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
 
         let last_step = Number.MAX_SAFE_INTEGER
         if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
             last_step = this.ssctree.tree.metadata.no_of_steps_Ns
         }
-        //We minus by 0.01 in order to compensate with (possibly) the round-off error
-        //so that the boundaries can be displayed correctly.
 
-        //var step = this.getTransform().current_step
-        //if (step == Number.MAX_SAFE_INTEGER) {
-        //    var step = this.ssctree.get_step_from_St(St)
+        //var step = this.ssctree.get_step_from_St(St) //+ 0.001
+        //console.log('map.js, step before snapping:', step)
+        //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
+        //    var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
+        //    if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
+        //        step = snapped_step
+        //    }
         //}
-        var step = this.ssctree.get_step_from_St(St) + 0.001
+
+        //step -= 0.001
+
         //var step = this.ssctree.get_step_from_St(St) //- 0.001
-        
+        //console.log('map.js, step:', step)
 
         if (step < 0) {
             step = 0
         }
-        else if (step > last_step) {
-            step = last_step + 0.001 // +0.01: in order to display the exterior boundary correctly
+        else if (step >= last_step) {
+            step = last_step
         }
 
-        //console.log('map.js, step:', step)
+        //console.log('map.js, step after snapping:', step)
 
 
         var matrix_box3d = this._prepare_active_tiles(step)
@@ -200,7 +223,7 @@ class Map {
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.render(k);
             if (k == 1) {
                 this._abort = null
             }
@@ -220,7 +243,7 @@ class Map {
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.render(k);
             if (k == 1) {
                 this._abort = null
             }
@@ -228,7 +251,7 @@ class Map {
         return interpolate;
     }
 
-    doEaseOutSine(start, end) {
+    doEaseOutSine(start, end) { //start: the start world square; end: the end world square
         let interpolate = (k) => {
             var m = new Float32Array(16);
             let D = (Math.sin(k * (Math.PI * 0.5)));
@@ -240,7 +263,7 @@ class Map {
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.render(k);
             if (k === 1) {
                 this._abort = null
             }
@@ -261,7 +284,7 @@ class Map {
             // update the world_square matrix
             this.getTransform().world_square = m;
             this.getTransform().updateViewportTransform()
-            this.render();
+            this.render(k);
             if (k == 1) {
                 this._abort = null
             }
@@ -272,7 +295,7 @@ class Map {
     animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -306,7 +329,7 @@ class Map {
 
     zoom(x, y, factor) {
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y);
+            this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     }
 
@@ -331,9 +354,15 @@ class Map {
 
     zoomAnimated(x, y, zoom_factor) {
         if (this._abort !== null) {
+            //console.log('map.js test1')
             this._abort();
         }
+        //console.log('map.js test2')
+        //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
+        //console.log('map.js zoom_factor:', zoom_factor)
         var interpolator = this.animateZoom(x, y, zoom_factor);
+        this._interaction_settings.zoom_factor = zoom_factor
+        //this.zoom_factor = zoom_factor
         // FIXME: settings
 
         let zoom_duration = this._interaction_settings.zoom_duration * this._interaction_settings.time_factor

@@ -49,7 +49,7 @@ class DrawProgram {
         }
     }
 
-    _prepare_vertices(gl, shaderProgram, attribute_name, itemSize, stride, offset) {
+    _specify_data_for_shaderProgram(gl, shaderProgram, attribute_name, itemSize, stride, offset) {
 
         const attrib_location = gl.getAttribLocation(shaderProgram, attribute_name);
         gl.enableVertexAttribArray(attrib_location);
@@ -115,7 +115,7 @@ class ImageTileDrawProgram extends DrawProgram
 
         let gl = this.gl;
         gl.useProgram(this.shaderProgram);
-        gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.buffer); 
 
         // FIXME: better to store with bucket how the layout of the mesh is?
         const positionAttrib = gl.getAttribLocation(this.shaderProgram, 'vertexPosition_modelspace');
@@ -225,10 +225,10 @@ void main()
         // interleaved arrays.
 
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-        this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 4, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, displacementBuffer);
-        this._prepare_vertices(gl, shaderProgram, 'displacement', 2, 0, 0);
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'displacement', 2, 0, 0);
 
         // the unit of boundary_width is mm; 1 mm equals 3.7795275590551 pixels
         // FIXME: MM: at which amount of dots per inch has this been calculated?
@@ -329,8 +329,12 @@ void main()
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-        this._prepare_vertices(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
-        this._prepare_vertices(gl, shaderProgram, 'vertexColor', 3, 24, 12);
+
+        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
+        //itemSize = 3: x, y, z;   
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
+        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 3, 24, 12);
 
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
@@ -351,6 +355,73 @@ void main()
 }
 
 
+class ForegroundDrawProgram extends DrawProgram {
+    constructor(gl) {
+        let vertexShaderText = `
+precision highp float;
+
+attribute vec3 vertexPosition_modelspace;
+attribute vec4 vertexColor;
+uniform mat4 M;
+varying vec4 fragColor;
+
+void main()
+{
+    fragColor = vertexColor;
+    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+}
+`;
+        let fragmentShaderText = `
+precision mediump float;
+
+varying vec4 fragColor;
+void main()
+{
+    gl_FragColor = vec4(fragColor);
+}
+`;
+        super(gl, vertexShaderText, fragmentShaderText)
+    }
+
+    draw_tile(matrix, tile) {
+        // guard: if no data in the tile, we will skip rendering
+        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
+        if (triangleVertexPosBufr === null) {
+            return;
+        }
+        // render
+        let gl = this.gl;
+        let shaderProgram = this.shaderProgram;
+        gl.useProgram(shaderProgram);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+
+        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
+        //itemSize = 3: x, y, z;   
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
+        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
+
+        {
+            let M_location = gl.getUniformLocation(shaderProgram, 'M');
+            gl.uniformMatrix4fv(M_location, false, matrix);
+        }
+
+        gl.enable(gl.CULL_FACE);
+        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+        //gl.cullFace(gl.BACK);
+        gl.cullFace(gl.FRONT);
+        // gl.cullFace(gl.FRONT_AND_BACK);
+
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        //gl.disable(gl.BLEND);
+        //gl.enable(gl.DEPTH_TEST);
+        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+    }
+}
+
+
 export class Renderer {
     constructor(gl, ssctree) {
         this.gl = gl
@@ -359,9 +430,10 @@ export class Renderer {
 
         // construct programs once, at init time
         this.programs = [
-            new PolygonDrawProgram(this.gl),
-            new LineDrawProgram(this.gl),
-            new ImageTileDrawProgram(gl)
+            new PolygonDrawProgram(gl),
+            new LineDrawProgram(gl),
+            new ImageTileDrawProgram(gl),
+            new ForegroundDrawProgram(gl)
         ];
     }
 
@@ -425,7 +497,19 @@ export class Renderer {
                 // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
                 // interior (color)
                 line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
-            })
+                })
+
+            var foreground_draw_program = this.programs[3];
+            tiles
+                .forEach(tile => {
+                    // FIXME: would be nice to specify width here in pixels.
+                    // bottom lines (black)
+                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                    // interior (color)
+                    foreground_draw_program.draw_tile(matrix, tile);
+                })
+
+
         }
 
         // this.buckets.forEach(bucket => {

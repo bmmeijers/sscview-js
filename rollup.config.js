@@ -48,9 +48,11 @@ var dist_folder = 'dist_top10nl_9x9/';
 // dist_folder += '0.1';
 // dist_folder += '0.01';
 // dist_folder += '0.001';
-// dist_folder += 'single_event';
+// dist_folder += 'single-event';
 dist_folder += '7';
+// dist_folder += 'one-triangle';
 
+// var dist_folder = 'dist_top10nl_9x9_0.1';
 // var dist_folder = 'dist_top10nl_9x9_0.01';
 // var dist_folder = 'dist_top10nl_9x9_0.001';
 // var dist_folder = 'dist_top10nl_9x9_single_event';
@@ -60,6 +62,7 @@ dist_folder += '7';
 //var dist_folder = 'dist_top10nl_9x9_strong_nbr_4';
 // var dist_folder = 'dist_top10nl_9x9_strong_weak_nbr';
 // var dist_folder = 'dist_top10nl_9x9_5';
+// var dist_folder = 'dist_top10nl_9x9_7';
 
 export default [
     {

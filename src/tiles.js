@@ -50,18 +50,18 @@ class WorkerHelper {
         this.worker.onmessage = (evt) => { this.receive(evt)}
     }
 
-    send(data, callback) 
+    send(url, callback) //e.g., callback: the function of makeBuffers
     {
         // use a random id
         const id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
         this.tasks[id] = callback
-        this.worker.postMessage({id: id, msg: data})
+        this.worker.postMessage({ id: id, msg: url}) //parse the data of the obj file specified by the url
     }
 
     receive(evt) 
     {
         const id = evt.data.id;
-        const msg = evt.data.msg
+        const msg = evt.data.msg // e.g., arrays = parse_obj(data_text)
         this.tasks[id](msg) // execute the callback that was registered while sending
         delete this.tasks[id]
     }
@@ -109,21 +109,41 @@ export class SSCTree {
                     step_highs = [0] //if the file exists, we will do parallel merging
                     return r.json()
                 })
-                .then(eventdiff_dt => {
-                    var current_face_num = eventdiff_dt.face_num
-                    var parallel_param = eventdiff_dt.parallel_param
-                    //eventdiff_ltlt = eventdiff_dt.eventdiff
-                    eventdiff_dt.eventdiff_repetition.forEach(eventdiff_rep_lt => {
-                        for (var i = 0; i < eventdiff_rep_lt[1]; i++) {
-                            var max_parallel = Math.ceil(current_face_num * parallel_param)
-                            var merged_num = max_parallel - eventdiff_rep_lt[0]
-                            current_face_num -= merged_num
-                            step_highs.push(step_highs[step_highs.length - 1] + merged_num)
-                            //console.log('step_highs[step_highs.length - 1]:', step_highs[step_highs.length - 1])
-                            //console.log('step_highs.length - 1:', step_highs.length - 1)
-
+                .then(step_eventdiff_dt => {
+                    var current_face_num = step_eventdiff_dt.face_num
+                    var parallel_param = step_eventdiff_dt.parallel_param
+                    var step_diff_ltlt = step_eventdiff_dt.step_eventdiff
+                    var diff_index = 0
+                    var step = 1
+                    while (current_face_num > 1) {
+                        var max_parallel = Math.ceil(current_face_num * parallel_param)
+                        var event_diff = 0
+                        if (diff_index < step_diff_ltlt.length && step_diff_ltlt[diff_index][0] == step) {
+                            event_diff = step_diff_ltlt[diff_index][1]
+                            diff_index += 1
                         }
-                    })
+                        var eventnum = max_parallel - event_diff                        
+                        step_highs.push(step_highs[step_highs.length - 1] + eventnum)
+
+                        step += 1
+                        current_face_num -= eventnum
+                    } 
+
+                    //console.log('tiles.js step_diff_ltlt.length:', step_diff_ltlt.length)
+
+
+                    ////eventdiff_ltlt = eventdiff_dt.eventdiff
+                    //step_eventdiff_dt.step_eventdiff.forEach(eventdiff_rep_lt => {
+                    //    for (var i = 0; i < eventdiff_rep_lt[1]; i++) {
+                    //        var max_parallel = Math.ceil(current_face_num * parallel_param)
+                    //        var merged_num = max_parallel - eventdiff_rep_lt[0]
+                    //        current_face_num -= merged_num
+                    //        step_highs.push(step_highs[step_highs.length - 1] + merged_num)
+                    //        //console.log('step_highs[step_highs.length - 1]:', step_highs[step_highs.length - 1])
+                    //        //console.log('step_highs.length - 1:', step_highs.length - 1)
+
+                    //    }
+                    //})
 
 
                     //eventdiff_dt.eventdiff.forEach(function (eventdiff_lt) {
@@ -134,6 +154,7 @@ export class SSCTree {
                 })
                 .then(() => {
                     this.step_highs = step_highs
+                    //this.msgbus.publish('data.step_highs.loaded')
                     //console.log('tiles.js step_highs:', step_highs)
                 })
                 .catch(() => {
@@ -280,8 +301,8 @@ export class SSCTree {
         let step_highs = this.step_highs
         if (if_snap == true
             && step_highs != null
-            && step > step_highs[0]
-            && step < step_highs[step_highs.length - 1] //without this line, the map will stop zooming out when at the last step
+            && step > step_highs[0] - 0.001
+            && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('tiles.js step_highs:', step_highs)
             //console.log('tiles.js step:', step)
@@ -301,29 +322,23 @@ export class SSCTree {
             //console.log('tiles.js step_highs[step_index]:', step_highs[step_index])
             let snapped_index = snap_to_existing_stephigh(step, step_highs)
             snapped_step = step_highs[snapped_index]
+
+
+
             if (current_step != Number.MAX_SAFE_INTEGER) {
-                if (current_step < step //zoom out
+                if (zoom_factor < 1 //zoom out
                     && snapped_step <= current_step) { //wrong direction because of snapping
                     snapped_index += 1
                 }
-                else if (current_step > step //zoom in
+                else if (zoom_factor > 1 //zoom in
                     && snapped_step >= current_step) { //wrong direction because of snapping
                     snapped_index -= 1
                 }
             }
+            else {
+                //do nothing
+            }
 
-
-
-
-
-            //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
-            //    if (zoom_factor>1) { //zooming in 
-            //        snapped_index -= 1
-            //    }
-            //    else if (zoom_factor < 1) { //zooming out
-            //        snapped_index += 1
-            //    }
-            //}
             snapped_step = step_highs[snapped_index]
 
             //console.log('tiles.js new step:', step)
@@ -349,8 +364,8 @@ export class SSCTree {
         let time_factor = 1
         if (if_snap == true
             && step_highs != null
-            && step > step_highs[0]
-            && step < step_highs[step_highs.length - 1] //without this line, the map will stop zooming out when at the last step
+            && step > step_highs[0] - 0.001
+            && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('tiles.js --------------------------------------')
             //console.log('tiles.js step_highs:', step_highs)
@@ -390,11 +405,13 @@ export class SSCTree {
 
             snapped_step = step_highs[snapped_index]
             if (current_step != Number.MAX_SAFE_INTEGER) {
-                if (current_step < step //zoom out
+                if (//current_step < step //zoom out
+                    zoom_factor < 1
                     && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
                     snapped_index += 1
                 }
-                else if (current_step > step //zoom in
+                else if (//current_step > step //zoom in
+                    zoom_factor > 1
                     && snapped_step >= current_step) { //wrong direction because of snapping
                     snapped_index -= 1
                 }
@@ -601,6 +618,7 @@ class TileContent {
         this.polygon_triangleVertexPosBufr = null;
         this.line_triangleVertexPosBufr = null;
         this.displacementBuffer = null;
+        this.foreground_triangleVertexPosBufr = null;
 
 
     }
@@ -624,35 +642,41 @@ class TileContent {
     {
         this.worker_helper.send(
             url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
-            (data) => {
+            (data) => { //I call the function makeBuffers
 
                 // upload received data to GPU
 
-                // polygons
-                let triangles = new Float32Array(data[0])
-                this.polygon_triangleVertexPosBufr = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.polygon_triangleVertexPosBufr);
-                gl.bufferData(gl.ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
-                this.polygon_triangleVertexPosBufr.itemSize = 3;
-                this.polygon_triangleVertexPosBufr.numItems = triangles.length / 6; 
+                // buffer for triangles of polygons
+                // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
+                this.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6)
 
-                // lines
-                let line_triangles = new Float32Array(data[1])
-                this.line_triangleVertexPosBufr = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.line_triangleVertexPosBufr);
-                gl.bufferData(gl.ARRAY_BUFFER, line_triangles, gl.STATIC_DRAW);
-                this.line_triangleVertexPosBufr.itemSize = 4;
-                this.line_triangleVertexPosBufr.numItems = line_triangles.length / 4; 
+                // buffer for triangles of boundaries
+                // itemSize = 4: x, y, z (step_low), w (step_high); e.g., start (see parse.js)
+                this.line_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[1]), 4)
 
-                let line_displacements = new Float32Array(data[2])
-                this.displacementBuffer = gl.createBuffer()
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.displacementBuffer)
-                gl.bufferData(gl.ARRAY_BUFFER, line_displacements, gl.STATIC_DRAW)
-                this.displacementBuffer.itemSize = 2   //each item has only x and y
-                this.displacementBuffer.numItems = line_displacements.length / 2
+                // buffer for displacements of boundaries
+                // itemSize = 2: x and y; e.g., startl (see parse.js)
+                this.displacementBuffer = create_data_buffer(gl, new Float32Array(data[2]), 2)
+
+                var foreground_data_array = new Float32Array([
+                    186500, 312600, 0, 1, 0, 0, 0.5,
+                    186700, 311800, 0, 0, 0, 1, 0.5,
+                    186200, 311800, 0, 0, 1, 0, 0.5]) //clockwise
+                this.foreground_triangleVertexPosBufr = create_data_buffer(gl, foreground_data_array, 7)
+
 
                 // notify we are ready
                 this.msgbus.publish('data.tile.loaded', 'tile.ready')
+
+                function create_data_buffer(gl, data_array, itemSize) {
+                    let data_buffer = gl.createBuffer();
+                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, data_array, gl.STATIC_DRAW);
+                    data_buffer.itemSize = itemSize; //x, y, z, r_frac, g_frac, b_frac
+                    data_buffer.numItems = data_array.length / itemSize;
+                    return data_buffer;
+                }
+                
             }
         )
     }

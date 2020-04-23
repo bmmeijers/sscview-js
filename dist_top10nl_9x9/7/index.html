@@ -118,7 +118,7 @@
         <!--        </div>-->
         <!--    </div>-->
 
-        <span class="w3-bar-item" id="demo_info">Vario-scale demo: Dataset_nm, Algorithm, Parameter</span>
+        <span class="w3-bar-item" id="demo_info"></span>
         <span class="w3-bar-item" id="scale-denominator">1: scale</span>
 
         <div class="w3-dropdown-click w3-right">
@@ -187,29 +187,29 @@
 
                 <div class="setting">
                     <fieldset>
-                        <legend> zoom factor </legend>
+                        <legend> zooming factor </legend>
                         <div class="w3-margin">
-                            <label for="speed-025">small</label>
+                            <!--<label for="speed-025">0.25</label>-->
                             <input type="radio" id="speed-025" name="speed" value="0.25" class="radio-btn">
-                            <label for="speed-05"></label>
+                            <label for="speed-025">0.25 &nbsp;&nbsp;</label>
                             <input type="radio" id="speed-05" name="speed" value="0.5" class="radio-btn">
-                            <label for="speed-1"></label>
+                            <label for="speed-05">0.5 &nbsp;&nbsp;</label>
                             <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
-                            <label for="speed-2"></label>
+                            <label for="speed-1">1 &nbsp;&nbsp;</label>
                             <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
-                            <label for="speed-3"></label>
+                            <label for="speed-2">2 &nbsp;&nbsp;</label>
                             <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
-                            <label for="speed-4">large</label>
+                            <label for="speed-4">4 &nbsp;&nbsp;</label>
                         </div>
                     </fieldset>
                     <fieldset>
-                        <legend> zoom animation (short-long)</legend>
+                        <legend> zooming duration (short-long)</legend>
                         <div class="w3-padding">
-                            short (0s)<input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                     <fieldset>
-                        <legend> pan animation (short-long)</legend>
+                        <legend> panning duration (short-long)</legend>
                         <div class="w3-padding">
                             short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
@@ -287,6 +287,8 @@
             canvas.width = window.innerWidth - hGap;
             canvas.height = window.innerHeight - vGap;
 
+            
+
 
             //            var map_settings = {
             //                'initialization': {
@@ -299,17 +301,18 @@
             //                'interaction_defaults': []
             //            }
 
-
             //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
             //window_location = /gpudemo/2020/03/merge/0.1/
             //more information: https://stackoverflow.com/q/1368264
-            var window_location = window.location.pathname
-            //console.log('window_location:', window_location)
+            //https://stackoverflow.com/questions/30863164
+            var href = window.location.href;
+            var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
+            // console.log('window_location:', window_location)
 
             var map_settings = {
                 'initialization': {
-                    'scale_den': 10000, //top10nl, start_scale
-                    //'scale_den': 100000,  //top10nl; small test, three parcels
+                    //'scale_den': 10000, //top10nl, start_scale
+                    'scale_den': 9000,  //top10nl; small test, three parcels
                     //'scale_den': 12500,
                     // BOX(204914.35 514637.283,270231.624 580203.629)
 
@@ -318,7 +321,7 @@
                     //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
                     //[204914 + (270231 - 204914) * 0.5,
                     // 514637 + (580203 - 514637) * 0.5],
-                    'navigationBar_title': 'Top10NL Drenthe chunked',
+                    'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
                 'datasets': [{
@@ -341,7 +344,7 @@
 
                     'tree_root_file_nm': 'tree_smooth.json',
                     //'tree_root_file_nm': 'tree.json',
-                    //'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                    'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                     'tree_root_href': window_location + 'data/',    // with trailing slash!
                     'tile_root_href': window_location + 'data/',
                     /*
@@ -356,8 +359,8 @@
                 'interaction_defaults': []
             }
 
-            document.getElementById("demo_info").textContent =
-                "Vario-scale demo: " + map_settings.initialization.navigationBar_title
+            document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
+                map_settings.initialization.navigationBar_title
 
             // Make a new map instance
             var map = new varioscale.Map(map_settings);
