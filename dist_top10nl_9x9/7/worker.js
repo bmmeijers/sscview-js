@@ -26,7 +26,7 @@
             switch (words[0])
             {
                 case 'v': {
-                    output.vertices.push( [parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3]) ] );
+                    output.vertices.push([parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3])]);
                     break
                 }
 

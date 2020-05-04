@@ -155,7 +155,7 @@ export class SSCTree {
                 .then(() => {
                     this.step_highs = step_highs
                     //this.msgbus.publish('data.step_highs.loaded')
-                    //console.log('tiles.js step_highs:', step_highs)
+                    console.log('tiles.js step_highs:', step_highs)
                 })
                 .catch(() => {
                     this.step_highs = null

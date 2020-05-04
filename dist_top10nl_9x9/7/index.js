@@ -1833,15 +1833,11 @@
                 line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
                 });
 
-            var foreground_draw_program = this.programs[3];
-            tiles
-                .forEach(function (tile) {
-                    // FIXME: would be nice to specify width here in pixels.
-                    // bottom lines (black)
-                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                    // interior (color)
-                    foreground_draw_program.draw_tile(matrix, tile);
-                });
+            //var foreground_draw_program = this.programs[3];
+            //tiles
+            //.forEach(tile => {
+            //    foreground_draw_program.draw_tile(matrix, tile);
+            //})
 
 
         }
@@ -2024,7 +2020,7 @@
                 .then(function () {
                     this$1.step_highs = step_highs;
                     //this.msgbus.publish('data.step_highs.loaded')
-                    //console.log('tiles.js step_highs:', step_highs)
+                    console.log('tiles.js step_highs:', step_highs);
                 })
                 .catch(function () {
                     this$1.step_highs = null;
@@ -3050,7 +3046,8 @@
     };
 
     Map.prototype.getWebGLContext = function getWebGLContext () {
-        return this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true })
+        return this.getCanvasContainer().getContext("webgl",
+            { antialias: true, alpha: false, premultipliedAlpha: false })
     };
 
     Map.prototype.getTransform = function getTransform () {

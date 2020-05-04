@@ -280,8 +280,7 @@
             let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
             let canvas_nm = 'canvas'
             let canvas = document.getElementById(canvas_nm);
-            var gl = canvas.getContext("webgl", { antialias: true }) ||
-                canvas.getContext("experimental-webgl", { antialias: true });
+            // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
             let hGap = 0;
             let vGap = document.getElementById("navigationBar").offsetHeight;
             canvas.width = window.innerWidth - hGap;
@@ -312,7 +311,7 @@
             var map_settings = {
                 'initialization': {
                     //'scale_den': 10000, //top10nl, start_scale
-                    'scale_den': 9000,  //top10nl; small test, three parcels
+                    'scale_den': 10000,  //top10nl; small test, three parcels
                     //'scale_den': 12500,
                     // BOX(204914.35 514637.283,270231.624 580203.629)
 
@@ -384,8 +383,7 @@
             // (note, this does include device rotation on mobile)
             var resize = function () {
                 let canvas = document.getElementById(canvas_nm);
-                var gl = canvas.getContext("webgl", { antialias: true }) ||
-                    canvas.getContext("experimental-webgl", { antialias: true });
+                // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
                 let newWidth = window.innerWidth - hGap;
                 let newHeight = window.innerHeight - vGap;
 
