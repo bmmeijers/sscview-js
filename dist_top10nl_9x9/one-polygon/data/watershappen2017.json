@@ -16,13 +16,13 @@
     "view_scale_Sv_comment": "scale denominator of initial view (according to users' preference)"
   },
   "id": 0,
-  "box": [ 182000.0, 307900.0, 0.0, 191000.0, 317000.0, 4.0 ],
+  "box": [ 182000.0, 307900.0, 4.0, 191000.0, 317000.0, 7.0 ],
   "children": [],
   "dataelements": [
     {
       "id": 1,
       "box": [ 182000.0, 307900.0, 0.0, 191000.0, 317000.0, 7.0 ],
-      "href": "Aanvoergebieden.obj"
+      "href": "watershappen2017.obj"
     }
   ]
 }
