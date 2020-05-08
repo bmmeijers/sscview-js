@@ -330,48 +330,6 @@
 
 
 
-    
-
-
-//export class Evictor {
-//    constructor(ssctree, gl) {
-//        this.ssctree = ssctree
-//        this.gl = gl
-//    }
-
-//    evict(box) {
-//        console.log('evict called')
-//        let gl = this.gl
-//        let to_evict = []
-//        if (this.ssctree.ssctree === null) { return; }
-//        this.ssctree.ssctree.forEach(tile => {
-//            // remove tiles that were rendered more than 3 seconds ago
-//            // and that are currently not on the screen
-//            if (tile.last_touched !== null && (tile.last_touched + 3000) < now() && !overlaps2d(box, tile.box)) {
-//                to_evict.push(tile)
-//            }
-//        })
-//        console.log(to_evict)
-//        to_evict.forEach(tile => {
-//            this.ssctree.retrieved[tile.url] = false
-//            tile.content.destroy(gl)
-//            tile.content = null
-//            tile.last_touched = null
-//        })
-//        // when we have removed tiles, let's clear the screen
-//        if (to_evict.length > 0) {
-//            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-//        }
-//    }
-
-//}
-
-
-
-
-
-
-
 //  // q.add(f)
 
 //         // let image = new Image()
@@ -1956,4 +1914,29 @@
     //        return [v[1], -v[0]];
     //    }
     ////#endregion
+    //}
+
+
+   //load_subtree(node) {
+    //    //console.log(this.dataset.tree_root_href + node.href)
+    //    fetch(this.dataset.tree_root_href + node.href)
+    //        .then(r => {
+    //            return r.json()
+    //        })
+    //        .then(j => {
+
+    //            node.children = j.children;
+    //            let dataelements = obtain_dataelements(node)  //dataelements recorded in .json file
+    //            dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
+    //                element.content = null
+    //                element.last_touched = null
+    //                element.url = this.dataset.tile_root_href + element.href
+    //                element.loaded = false;
+    //            })
+
+    //            this.msgbus.publish('data.tree.loaded', 'tree.ready')
+    //        })
+    //        .catch(err => {
+    //            console.error(err)
+    //        })
     //}

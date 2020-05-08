@@ -14,7 +14,7 @@ import { Renderer } from "./render";
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
-import { SSCTree, Evictor } from './tiles';
+import { SSCTree, Evictor } from './ssctree';
 
 import { MessageBusConnector } from './pubsub'
 
@@ -22,6 +22,7 @@ class Map {
     constructor(map_settings) {
         //console.log('map.js test:')
         //console.log('map.js map_settings:', map_settings)
+        this.ssctree_lt = []
         let container = map_settings['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
@@ -90,9 +91,25 @@ class Map {
         });
 
 
+        map_settings.datasets.forEach((dataset) => {
+            console.log('map.js dataset:', dataset)
+            this.ssctree_lt.push(new SSCTree(this.msgbus, dataset))
+        })
+
+        if (this.ssctree_lt.length > 1) {
+            //for the data from FEM, we draw the back faces because the triangles are clockwise
+            //PLEASE check the directions of your triangles.
+            this.ssctree_lt[1].bln_glfront = false    
+            this.ssctree_lt[1].bln_depth_test = false
+            this.ssctree_lt[1].opacity = 0.8
+        }
+
+
         // data load
-        this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
-        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree);
+        //this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
+
+        this.ssctree = this.ssctree_lt[0]
+        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree_lt);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height)
 
@@ -132,7 +149,12 @@ class Map {
     }
 
     loadTree() {
-        this.ssctree.load()
+        //this.ssctree.load()
+
+        this.ssctree_lt.forEach((ssctree) => {
+            //console.log('map.js ssctree.dataset:', ssctree.dataset)
+            ssctree.load()
+        })
     }
 
     getCanvasContainer() {
@@ -140,8 +162,7 @@ class Map {
     }
 
     getWebGLContext() {
-        return this.getCanvasContainer().getContext("webgl",
-            { antialias: true, alpha: false, premultipliedAlpha: false })
+        return this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true })
     }
 
     getTransform() {
@@ -210,7 +231,8 @@ class Map {
         const box2d = this.getTransform().getVisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this.getWebGLContext();
-        this.ssctree.fetch_tiles(box3d, gl)
+        this.ssctree_lt.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     }
 

@@ -296,13 +296,14 @@ class PolygonDrawProgram extends DrawProgram {
 precision highp float;
 
 attribute vec3 vertexPosition_modelspace;
-attribute vec4 vertexColor;
+attribute vec3 vertexColor;
 uniform mat4 M;
 varying vec4 fragColor;
+uniform float opacity;
 
 void main()
 {
-    fragColor = vertexColor;
+    fragColor = vec4(vertexColor, opacity);
     gl_Position = M * vec4(vertexPosition_modelspace, 1);
 }
 `;
@@ -318,10 +319,14 @@ void main()
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
-    draw_tile(matrix, tile) {
+    //fragColor = vec4(vertexColor, opacity);
+    //fragColor = vec4(1, 0, 0, 0.5);
+
+    draw_tile(matrix, tile, opacity = 1, bln_glfront = true, bln_depth_test = true) {
         // guard: if no data in the tile, we will skip rendering
         let triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {
+            console.log('render.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
             return;
         }
         // render
@@ -339,101 +344,115 @@ void main()
         {
             let M_location = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M_location, false, matrix);
+
+            let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+            gl.uniform1f(opacity_location, opacity);
         }
 
         gl.enable(gl.CULL_FACE);
         //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        //gl.cullFace(gl.BACK);
-        gl.cullFace(gl.FRONT);
-        // gl.cullFace(gl.FRONT_AND_BACK);
-
-        gl.disable(gl.BLEND);
-        gl.enable(gl.DEPTH_TEST);
-        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-    }
-}
-
-
-class ForegroundDrawProgram extends DrawProgram {
-    constructor(gl) {
-        let vertexShaderText = `
-precision highp float;
-
-attribute vec3 vertexPosition_modelspace;
-attribute vec4 vertexColor;
-uniform mat4 M;
-varying vec4 fragColor;
-
-void main()
-{
-    fragColor = vertexColor;
-    gl_Position = M * vec4(vertexPosition_modelspace, 1);
-}
-`;
-        let fragmentShaderText = `
-precision mediump float;
-
-varying vec4 fragColor;
-void main()
-{
-    gl_FragColor = vec4(fragColor);
-}
-`;
-        super(gl, vertexShaderText, fragmentShaderText)
-    }
-
-    draw_tile(matrix, tile) {
-        // guard: if no data in the tile, we will skip rendering
-        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
-        if (triangleVertexPosBufr === null) {
-            return;
-        }
-        // render
-        let gl = this.gl;
-        let shaderProgram = this.shaderProgram;
-        gl.useProgram(shaderProgram);
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-
-        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
-        //itemSize = 3: x, y, z;   
-        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
-        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
-        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
-
-        {
-            let M_location = gl.getUniformLocation(shaderProgram, 'M');
-            gl.uniformMatrix4fv(M_location, false, matrix);
+        //bln_glback = true
+        gl.cullFace(gl.FRONT); //by default, draw the front faces
+        if (bln_glfront == false) {
+            gl.cullFace(gl.BACK);
         }
 
-        gl.enable(gl.CULL_FACE);
-        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+        //gl.disable(gl.BLEND);
 
-        //gl.cullFace(gl.BACK);
-        gl.cullFace(gl.FRONT);
-        // gl.cullFace(gl.FRONT_AND_BACK);
+
+        gl.enable(gl.DEPTH_TEST); //by default, do depth test
+        if (bln_depth_test == false) {
+            gl.disable(gl.DEPTH_TEST);
+        }
 
         gl.enable(gl.BLEND)
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-        //gl.disable(gl.BLEND);
-        //gl.enable(gl.DEPTH_TEST);
+
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }
 
 
+//class ForegroundDrawProgram extends DrawProgram {
+//    constructor(gl) {
+//        let vertexShaderText = `
+//precision highp float;
+
+//attribute vec3 vertexPosition_modelspace;
+//attribute vec4 vertexColor;
+//uniform mat4 M;
+//varying vec4 fragColor;
+
+//void main()
+//{
+//    fragColor = vertexColor;
+//    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+//}
+//`;
+//        let fragmentShaderText = `
+//precision mediump float;
+
+//varying vec4 fragColor;
+//void main()
+//{
+//    gl_FragColor = vec4(fragColor);
+//}
+//`;
+//        super(gl, vertexShaderText, fragmentShaderText)
+//    }
+
+//    draw_tile(matrix, tile) {
+//        // guard: if no data in the tile, we will skip rendering
+//        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
+//        if (triangleVertexPosBufr === null) {
+//            return;
+//        }
+//        // render
+//        let gl = this.gl;
+//        let shaderProgram = this.shaderProgram;
+//        gl.useProgram(shaderProgram);
+//        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+
+//        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
+//        //itemSize = 3: x, y, z;   
+//        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
+//        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
+//        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
+
+//        {
+//            let M_location = gl.getUniformLocation(shaderProgram, 'M');
+//            gl.uniformMatrix4fv(M_location, false, matrix);
+//        }
+
+//        gl.enable(gl.CULL_FACE);
+//        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+//        //gl.cullFace(gl.BACK);
+//        gl.cullFace(gl.FRONT);
+//        // gl.cullFace(gl.FRONT_AND_BACK);
+
+//        gl.enable(gl.BLEND)
+//        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+//        //gl.disable(gl.BLEND);
+//        //gl.enable(gl.DEPTH_TEST);
+//        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+//    }
+//}
+
+
 export class Renderer {
-    constructor(gl, ssctree) {
+    constructor(gl, ssctree_lt) {
         this.gl = gl
-        this.ssctree = ssctree
+        this.ssctree_lt = ssctree_lt
         this.settings = { boundary_width: 0.2 }
 
         // construct programs once, at init time
         this.programs = [
             new PolygonDrawProgram(gl),
             new LineDrawProgram(gl),
-            new ImageTileDrawProgram(gl),
-            new ForegroundDrawProgram(gl)
+            new ImageTileDrawProgram(gl)
+            //new ForegroundDrawProgram(gl)
         ];
     }
 
@@ -449,71 +468,82 @@ export class Renderer {
     //     // }, 15000)
     // }
 
+
+
     render_relevant_tiles(matrix, box3d, near_St) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
 
-        var tiles = this.ssctree.get_relevant_tiles(box3d)
-//            .filter(tile => {return tile.hasOwnProperty('content') && tile.content !== null})
 
-//        let gl = this.gl;
-//        gl.clearColor(1.0, 1.0, 1.0, 1.0);
-//        gl.clearDepth(1.0); // Clear everything
-//        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+        //            .filter(tile => {return tile.hasOwnProperty('content') && tile.content !== null})
+
 
         this._clear();
-        if (tiles.length > 0) {
 
-            var polygon_draw_program = this.programs[0];
-            tiles
-//            .filter(tile => {tile.}) // FIXME tile should only have polygon data
-            .forEach(tile => {
-                polygon_draw_program.draw_tile(matrix, tile);
-            })
+        this.ssctree_lt.forEach(ssctree => {
+            //console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
 
-            var image_tile_draw_program = this.programs[2];
-            tiles
-                .filter(
-                    // tile should have image data
-                    tile => {
-                        return tile.texture !== null
-                    }
-                ) 
-                .forEach(tile => {
-                    image_tile_draw_program.draw_tile(matrix, tile);
-                })
+            var tiles = ssctree.get_relevant_tiles(box3d)
+            if (tiles.length > 0) {
+                if (ssctree.dataset.tree_root_file_nm == 'Aanvoergebieden.json') {
+                    console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
+                }
+                
+                var polygon_draw_program = this.programs[0];
+                tiles
+                    //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                    .forEach(tile => {
+                        polygon_draw_program.draw_tile(matrix, tile, ssctree.opacity, ssctree.bln_glfront, ssctree.bln_depth_test);
+                    })
 
-
-            // FIXME: if lines have width == 0; why draw them?
-            // If we want to draw lines twice -> thick line under / small line over
-            // we need to do this twice + move the code for determining line width here...
-            var line_draw_program = this.programs[1];
-            tiles
-            .forEach(tile => {
-                // FIXME: would be nice to specify width here in pixels.
-                // bottom lines (black)
-                // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                // interior (color)
-                line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
-                })
-
-            //var foreground_draw_program = this.programs[3];
-            //tiles
-            //    .forEach(tile => {
-            //        foreground_draw_program.draw_tile(matrix, tile);
-            //    })
+                var image_tile_draw_program = this.programs[2];
+                tiles
+                    .filter(
+                        // tile should have image data
+                        tile => {
+                            return tile.texture !== null
+                        }
+                    )
+                    .forEach(tile => {
+                        image_tile_draw_program.draw_tile(matrix, tile);
+                    })
 
 
-        }
+                // FIXME: if lines have width == 0; why draw them?
+                // If we want to draw lines twice -> thick line under / small line over
+                // we need to do this twice + move the code for determining line width here...
+                var line_draw_program = this.programs[1];
+                tiles
+                    .forEach(tile => {
+                        // FIXME: would be nice to specify width here in pixels.
+                        // bottom lines (black)
+                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                        // interior (color)
+                        line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
+                    })
 
-        // this.buckets.forEach(bucket => {
-        //     this.programs[0].draw(matrix, bucket);
-        // })
-        // FIXME:
-        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-        // we should this.gl.clear()
+                //var foreground_draw_program = this.programs[3];
+                //tiles
+                //    .forEach(tile => {
+                //        foreground_draw_program.draw_tile(matrix, tile);
+                //    })
+
+
+            }
+
+            // this.buckets.forEach(bucket => {
+            //     this.programs[0].draw(matrix, bucket);
+            // })
+            // FIXME:
+            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+            // we should this.gl.clear()
+
+
+        })
+
+
     }
 
     _clear()
