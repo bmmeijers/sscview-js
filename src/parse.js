@@ -70,14 +70,6 @@ function parse_obj(txt)
                 for (let j = 0; j < polyline.length; j++) {
                     let pt = polyline[j];
                     point_records.push([pt[0], pt[1], pt[2], step_high]); //pt[2] is step_low
-
-                    //if (pt[0] == 186750 && pt[1] == 312050) {
-                    //    console.log('pt:', pt, step_high)
-                    //}
-
-                    //if (pt[0] == 187000 && pt[1] == 312000) {
-                    //    console.log('pt:', pt, step_high)
-                    //}
                 }
 
                 for (var k = 0; k < point_records.length - 1; k++) {

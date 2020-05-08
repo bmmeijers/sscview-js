@@ -41,7 +41,9 @@ export class SSCTree {
         this.helper_idx_current = -1
         this.bln_glfront = true  //by default, draw the front faces
         this.bln_depth_test = true //by default, do depth test
+        this.bln_blend = false
         this.opacity = 1 //by default, opaque (not transparent)
+
     }
 
     load() {
@@ -107,7 +109,7 @@ export class SSCTree {
             .then(r => {
                 return r.json()
             })
-            .then(tree => {
+            .then(tree => {  //tree: the content in the json file
                 this.tree = tree;
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
@@ -136,9 +138,9 @@ export class SSCTree {
     fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
         //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
-        console.log('')
-        console.log('tiles.js fetch_tiles, this.tree:', this.tree)
-        console.log('tiles.js fetch_tiles, box3d:', box3d)
+        //console.log('')
+        //console.log('tiles.js fetch_tiles, this.tree:', this.tree)
+        //console.log('tiles.js fetch_tiles, box3d:', box3d)
         //e.g., this.tree: the content in file tree_smooth.json
         //let subtrees = obtain_overlapped_subtrees(this.tree, box3d)
         //subtrees.map(node => {
@@ -148,7 +150,7 @@ export class SSCTree {
 
 
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
-        console.log('tiles.js fetch_tiles, overlapped_dataelements:', overlapped_dataelements)
+        //console.log('tiles.js fetch_tiles, overlapped_dataelements:', overlapped_dataelements)
 
         let to_retrieve = [];
         overlapped_dataelements.map(elem => {
@@ -179,15 +181,15 @@ export class SSCTree {
 
         //this.dataset
         //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
-        console.log('tiles.js fetch_tiles, to_retrieve:', to_retrieve)
+        //console.log('tiles.js fetch_tiles, to_retrieve:', to_retrieve)
 
         // schedule tiles for retrieval
         to_retrieve.map(elem => {
             this.helper_idx_current = (this.helper_idx_current + 1) % this.worker_helpers.length
             let content = new TileContent(this.msgbus, this.dataset.texture_root_href, this.worker_helpers[this.helper_idx_current])
             content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
-            console.log('tiles.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
-            console.log('tiles.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
+            //console.log('tiles.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
+            //console.log('tiles.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
             
             elem.content = content
             elem.loaded = true

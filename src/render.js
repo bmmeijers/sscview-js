@@ -319,14 +319,12 @@ void main()
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
-    //fragColor = vec4(vertexColor, opacity);
-    //fragColor = vec4(1, 0, 0, 0.5);
 
-    draw_tile(matrix, tile, opacity = 1, bln_glfront = true, bln_depth_test = true) {
+    draw_tile(matrix, tile, ssctree) {
         // guard: if no data in the tile, we will skip rendering
         let triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {
-            console.log('render.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
+            //console.log('render.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
             return;
         }
         // render
@@ -346,7 +344,7 @@ void main()
             gl.uniformMatrix4fv(M_location, false, matrix);
 
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-            gl.uniform1f(opacity_location, opacity);
+            gl.uniform1f(opacity_location, ssctree.opacity);
         }
 
         gl.enable(gl.CULL_FACE);
@@ -354,7 +352,7 @@ void main()
 
         //bln_glback = true
         gl.cullFace(gl.FRONT); //by default, draw the front faces
-        if (bln_glfront == false) {
+        if (ssctree.bln_glfront == false) {
             gl.cullFace(gl.BACK);
         }
 
@@ -362,13 +360,17 @@ void main()
 
 
         gl.enable(gl.DEPTH_TEST); //by default, do depth test
-        if (bln_depth_test == false) {
+        if (ssctree.bln_depth_test == false) {
             gl.disable(gl.DEPTH_TEST);
         }
 
+        //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
         gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        if (ssctree.bln_blend == false) {
+            gl.disable(gl.BLEND)
+        }
 
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }
@@ -477,25 +479,34 @@ export class Renderer {
         // when the bucket is constructed?
 
 
-        //            .filter(tile => {return tile.hasOwnProperty('content') && tile.content !== null})
-
 
         this._clear();
 
         this.ssctree_lt.forEach(ssctree => {
+            if (ssctree.tree == null) {
+                return
+            }
+            //console.log('')
+            //console.log('render.js ssctree.tree:', ssctree.tree)
+            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+            var z_low = ssctree.tree.box[2] - 0.001
+            var z_high = ssctree.tree.box[5] - 0.001
+            var z_plane = box3d[2]
+            if (z_plane < z_low || z_plane >= z_high) {
+                return
+            }
+
             //console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
+            //console.log('render.js box3d:', box3d)
+            //console.log('render.js near_St:', near_St)
 
             var tiles = ssctree.get_relevant_tiles(box3d)
-            if (tiles.length > 0) {
-                if (ssctree.dataset.tree_root_file_nm == 'Aanvoergebieden.json') {
-                    console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
-                }
-                
+            if (tiles.length > 0) {                
                 var polygon_draw_program = this.programs[0];
                 tiles
                     //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     .forEach(tile => {
-                        polygon_draw_program.draw_tile(matrix, tile, ssctree.opacity, ssctree.bln_glfront, ssctree.bln_depth_test);
+                        polygon_draw_program.draw_tile(matrix, tile, ssctree);
                     })
 
                 var image_tile_draw_program = this.programs[2];

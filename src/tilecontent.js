@@ -39,19 +39,19 @@ export class TileContent {
         this.worker_helper.send( //send is a function of class WorkerHelper (see above)
             url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             (data) => { //I call the function makeBuffers, this is a function used as a parameter
-                console.log('')
-                console.log('tilecontent.js load_ssc_tile, url:', url)
+                //console.log('')
+                //console.log('tilecontent.js load_ssc_tile, url:', url)
                 // upload received data to GPU
 
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
                 this.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6)
-                console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
-                if (this.polygon_triangleVertexPosBufr == null) {
-                    console.log('tilecontent.js load_ssc_tile, url:', url)
-                    console.log('tilecontent.js load_ssc_tile, polygon_triangleVertexPosBufr:', polygon_triangleVertexPosBufr)
-                    console.log('tilecontent.js load_ssc_tile, data[0]:', data[0])
-                }
+                //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
+                //if (this.polygon_triangleVertexPosBufr == null) {
+                //    console.log('tilecontent.js load_ssc_tile, url:', url)
+                //    console.log('tilecontent.js load_ssc_tile, polygon_triangleVertexPosBufr:', polygon_triangleVertexPosBufr)
+                //    console.log('tilecontent.js load_ssc_tile, data[0]:', data[0])
+                //}
                 //console.log('tiles.js url2:', url)
 
 

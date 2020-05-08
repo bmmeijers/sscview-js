@@ -92,16 +92,23 @@ class Map {
 
 
         map_settings.datasets.forEach((dataset) => {
-            console.log('map.js dataset:', dataset)
+            //console.log('map.js dataset:', dataset)
             this.ssctree_lt.push(new SSCTree(this.msgbus, dataset))
         })
 
         if (this.ssctree_lt.length > 1) {
             //for the data from FEM, we draw the back faces because the triangles are clockwise
             //PLEASE check the directions of your triangles.
-            this.ssctree_lt[1].bln_glfront = false    
-            this.ssctree_lt[1].bln_depth_test = false
-            this.ssctree_lt[1].opacity = 0.8
+
+            for (var i = 1; i < this.ssctree_lt.length; i++) {
+                this.ssctree_lt[i].bln_glfront = false
+                this.ssctree_lt[i].bln_depth_test = false
+                this.ssctree_lt[i].bln_blend = true
+                this.ssctree_lt[i].opacity = 0.8
+            }
+
+
+            //this.ssctree_lt[2].bln_glfront = true
         }
 
 
