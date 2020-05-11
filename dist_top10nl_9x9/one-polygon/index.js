@@ -1631,7 +1631,7 @@
             // gl.clear(gl.COLOR_BUFFER_BIT)
 
             // gl.disable(gl.BLEND);
-            gl.enable(gl.BLEND); // FIXME: needed?
+            //gl.enable(gl.BLEND); // FIXME: needed?
             gl.disable(gl.DEPTH_TEST);
 
             // gl.enable(gl.CULL_FACE);
@@ -1700,9 +1700,6 @@
             if (ssctree.bln_glfront == false) {
                 gl.cullFace(gl.BACK);
             }
-
-            //gl.disable(gl.BLEND);
-
 
             gl.enable(gl.DEPTH_TEST); //by default, do depth test
             if (ssctree.bln_depth_test == false) {
@@ -1851,15 +1848,13 @@
             var tiles = ssctree.get_relevant_tiles(box3d);
             if (tiles.length > 0) {                
                 var polygon_draw_program = this$1.programs[0];
-                tiles
-                    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                    .forEach(function (tile) {
+                tiles.forEach(function (tile) {
+                    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data                    
                         polygon_draw_program.draw_tile(matrix, tile, ssctree);
                     });
 
                 var image_tile_draw_program = this$1.programs[2];
-                tiles
-                    .filter(
+                tiles.filter(
                         // tile should have image data
                         function (tile) {
                             return tile.texture !== null
@@ -1870,24 +1865,19 @@
                     });
 
 
-                // FIXME: if lines have width == 0; why draw them?
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
-                var line_draw_program = this$1.programs[1];
-                tiles
-                    .forEach(function (tile) {
-                        // FIXME: would be nice to specify width here in pixels.
-                        // bottom lines (black)
-                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                        // interior (color)
-                        line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
-                    });
+                if (this$1.settings.boundary_width>0) {
+                    var line_draw_program = this$1.programs[1];
+                    tiles.forEach(function (tile) {
+                            // FIXME: would be nice to specify width here in pixels.
+                            // bottom lines (black)
+                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                            // interior (color)
+                            line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
+                        });
+                }
 
-                //var foreground_draw_program = this.programs[3];
-                //tiles
-                //.forEach(tile => {
-                //    foreground_draw_program.draw_tile(matrix, tile);
-                //})
 
 
             }

@@ -210,11 +210,8 @@ class Map {
         //        step = snapped_step
         //    }
         //}
-
-        //step -= 0.001
-
-        //var step = this.ssctree.get_step_from_St(St) //- 0.001
-        //console.log('map.js, step:', step)
+        
+        
 
         if (step < 0) {
             step = 0
