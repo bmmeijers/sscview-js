@@ -91,12 +91,16 @@
             -ms-user-select: none; /* IE10+/Edge */
             user-select: none;
         }
+
+        .prevent-pull-to-refresh {
+            touch-action: none;
+        }
     </style>
 </head>
 
 
 
-<body style="touch-action: none;" class="w3-white">
+<body class="w3-white prevent-pull-to-refresh">
     <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
 
     <div class="w3-bar w3-light-grey" id="navigationBar">
@@ -309,44 +313,41 @@
             // console.log('window_location:', window_location)
 
 
-            var dataset_dt1 = {
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/tiles-nl/',
+            let dataset1 = {
+                'tree_root_file_nm': 'tree_smooth.json',
+                'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/'
+            }
 
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/9x9-quad/',
-
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/9x9-quad-lines-lean/',
-
-                    //'tree_root_file_nm': 'tree.json',
-                    //'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
-                    //'tile_root_href': '/data/drenthe-quad-larger/',
+            let dataset2 = {
+                'tree_root_file_nm': 'Aanvoergebieden.json',
+                'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/'
+            }
 
 
-                    'tree_root_file_nm': 'tree_smooth.json',
-                    //'tree_root_file_nm': 'tree.json',
-                    'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': window_location + 'data/',    // with trailing slash!
-                    'tile_root_href': window_location + 'data/',
-                    /*
-                    // See:
-                    // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
-                    // for available tile maps
-                    */
-                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
-                    'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
-                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
-                }
+            let dataset3 = {
+                'tree_root_file_nm': 'watershappen2017.json',
+                'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/'
+            }
 
-            var dataset_dt2 = Object.assign({}, dataset_dt1) //just a shallow copy
-            dataset_dt2.tree_root_file_nm = 'Aanvoergebieden.json'
+            let dataset4 = {
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
+                'tree_root_file_nm': 'tree.json',
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
+                'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/'
+            }
 
-            var dataset_dt3 = Object.assign({}, dataset_dt1) //just a shallow copy
-            dataset_dt3.tree_root_file_nm = 'watershappen2017.json'
+            let dataset5 = {
+                'tree_root_file_nm': 'tree.json',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/'
+            }
+
 
             // console.log('index.html, dataset_dt1:', dataset_dt1)
             // console.log('index.html, dataset_dt2:', dataset_dt2)
@@ -360,15 +361,19 @@
                     // BOX(204914.35 514637.283,270231.624 580203.629)
 
                     //'center2d': [233520.3, 556776.9],
-                    'center2d': [186500.0, 312450.0],     //top10nl
+                    // POINT(257148.828 533408.562)
+                    'center2d': [257148.828, 533408.562],
+                    //'center2d': [186500.0, 312450.0],     //top10nl
                     //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
                 'datasets': [
-                    dataset_dt1, 
-                    dataset_dt2, 
-                    dataset_dt3,
+                    dataset4,
+                    dataset5,
+                    dataset1, 
+                    dataset2, 
+                    dataset3,
                 ],
                 'interaction_defaults': []
             }
@@ -380,8 +385,6 @@
             // Make a new map instance
             var map = new varioscale.Map(map_settings);
             map.loadTree();
-
-            window.map = map;
 
             let subscribe_scale = (map) => {
                 let msgbus = new varioscale.MessageBusConnector();

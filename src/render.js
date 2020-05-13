@@ -477,21 +477,23 @@ export class Renderer {
 
 
 
-        this._clear();
+
 
         this.ssctree_lt.forEach(ssctree => {
+
+            this._clear();
             if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
                 return
             }
             //console.log('')
             //console.log('render.js ssctree.tree:', ssctree.tree)
             //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-            var z_low = ssctree.tree.box[2] - 0.001
-            var z_high = ssctree.tree.box[5] - 0.001
-            var z_plane = box3d[2]
-            if (z_plane < z_low || z_plane >= z_high) {
-                return
-            }
+//            var z_low = ssctree.tree.box[2] - 0.001
+//            var z_high = ssctree.tree.box[5] - 0.001
+//            var z_plane = box3d[2]
+//            if (z_plane < z_low || z_plane >= z_high) {
+//                return
+//            }
 
             //console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
             //console.log('render.js box3d:', box3d)
@@ -501,7 +503,7 @@ export class Renderer {
             if (tiles.length > 0) {                
                 var polygon_draw_program = this.programs[0];
                 tiles.forEach(tile => {
-                    //            .filter(tile => {tile.}) // FIXME tile should only have polygon data                    
+                    //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
                         polygon_draw_program.draw_tile(matrix, tile, ssctree);
                     })
 
@@ -552,7 +554,8 @@ export class Renderer {
         let gl = this.gl;
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  // Clear the color buffer with specified clear color
+//        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.DEPTH_BUFFER_BIT);  // clear depth buffer
 
     }
 

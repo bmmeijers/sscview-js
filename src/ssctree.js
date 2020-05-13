@@ -17,9 +17,10 @@ import { TileContent } from "./tilecontent"
 // [x] Make Renderer play nicely with the modifications
 // [x] Resurrect Evictor, with default strategy of removing old stuff
 // [ ] Make use of worker to retrieve ImageTiles
-// [ ] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
+// [x] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
 // [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), 
 //     while not overloading the server(queueing requests / abortcontroller.signal)
+// [ ] It should be possible to cancel unneeded requests that have not yet been retrieved (e.g. after user has zoomed)
 
 
 
@@ -31,6 +32,11 @@ export class SSCTree {
         this.tree = null
         this.dataset = dataset
         this.step_highs = null
+        // FIXME: as the pool of workers is owned by the ssctree, adding a new SSCTree makes again (many) more workers
+        // There should be just 1 pool of workers, e.g. in the map object, that is used by all
+        // SSCTrees for data retrieval -> also images should be retrieved by a
+        // worker for example
+
         // pool of workers
         let pool_size = window.navigator.hardwareConcurrency || 2;
         this.worker_helpers = []
@@ -39,6 +45,8 @@ export class SSCTree {
         }
         console.log(pool_size + ' workers made')
         this.helper_idx_current = -1
+
+        // FIXME: theses should be put in settings *per* SSCTree ?
         this.bln_glfront = true  //by default, draw the front faces
         this.bln_depth_test = true //by default, do depth test
         this.bln_blend = false
@@ -84,7 +92,7 @@ export class SSCTree {
                             event_diff = step_diff_ltlt[diff_index][1]
                             diff_index += 1
                         }
-                        var eventnum = max_parallel - event_diff                        
+                        var eventnum = max_parallel - event_diff
                         step_highs.push(step_highs[step_highs.length - 1] + eventnum)
 
                         step += 1
@@ -102,15 +110,13 @@ export class SSCTree {
                     this.step_highs = null
                 })
         }
-        
-
 
         fetch(this.dataset.tree_root_href + this.dataset.tree_root_file_nm)
             .then(r => {
                 return r.json()
             })
             .then(tree => {  //tree: the content in the json file
-                this.tree = tree;
+                this.tree = tree
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
                 let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
@@ -131,9 +137,30 @@ export class SSCTree {
             })
     }
 
- 
-    
+    // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
+    // when we have made new tree serialization for tiles, we should change the code here!
+    load_subtree(node) {
+        fetch(this.dataset.tree_root_href + node.uri) // FIXME: was: node.href
+            .then(r => {
+                return r.json()
+            })
+            .then(j => {
 
+                node.children = j.children;
+                let dataelements = obtain_dataelements(node)  //dataelements recorded in .json file
+                dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
+                    element.content = null
+                    element.last_touched = null
+                    element.url = this.dataset.tile_root_href + element.info // FIXME:  was: element.href
+                    element.loaded = false;
+                })
+
+                this.msgbus.publish('data.tree.loaded', 'tree.ready')
+            })
+            .catch(err => {
+                console.error(err)
+            })
+    }
 
     fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
@@ -142,15 +169,12 @@ export class SSCTree {
         //console.log('tiles.js fetch_tiles, this.tree:', this.tree)
         //console.log('tiles.js fetch_tiles, box3d:', box3d)
         //e.g., this.tree: the content in file tree_smooth.json
-        //let subtrees = obtain_overlapped_subtrees(this.tree, box3d)
-        //subtrees.map(node => {
-        //    this.load_subtree(node)
-        //})
-
-
+        let subtrees = obtain_overlapped_subtrees(this.tree, box3d)
+        subtrees.map(node => {
+            this.load_subtree(node)
+        })
 
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
-        //console.log('tiles.js fetch_tiles, overlapped_dataelements:', overlapped_dataelements)
 
         let to_retrieve = [];
         overlapped_dataelements.map(elem => {
@@ -186,7 +210,11 @@ export class SSCTree {
         // schedule tiles for retrieval
         to_retrieve.map(elem => {
             this.helper_idx_current = (this.helper_idx_current + 1) % this.worker_helpers.length
-            let content = new TileContent(this.msgbus, this.dataset.texture_root_href, this.worker_helpers[this.helper_idx_current])
+            let content = new TileContent(
+                this.msgbus,
+                this.dataset.texture_root_href,
+                this.worker_helpers[this.helper_idx_current]
+            )
             content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             //console.log('tiles.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
             //console.log('tiles.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
@@ -457,7 +485,7 @@ function obtain_overlapped_subtrees(node, box3d) {
                 {
                     stack.push(child)
                 }
-                else if (child.hasOwnProperty('href') && !child.hasOwnProperty('loaded')
+                else if (child.hasOwnProperty('uri') && !child.hasOwnProperty('loaded')
                     && overlaps3d(child.box, box3d)) {
                     result.push(child)
                     child.loaded = true;
@@ -528,9 +556,6 @@ export function overlaps3d(one, other) {
     //console.log('tiles.js are_overlapping:', are_overlapping)
     return are_overlapping
 }
-
-let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
-
 
 function center2d(box3d) {
     // 2D center of bottom of box
@@ -623,7 +648,7 @@ export class Evictor {
             tile.last_touched = null
             tile.loaded = false
         })
-        // when we have removed tiles, let's clear the screen
+        // when we have removed tiles, let's clear the screen (both color and depth buffer)
         if (to_evict.length > 0 )
         {
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

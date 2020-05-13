@@ -100,13 +100,13 @@ class Map {
             //for the data from FEM, we draw the back faces because the triangles are clockwise
             //PLEASE check the directions of your triangles.
 
+            // FIXME: these settings should be specified per dataset in the *settings* property of the SSCtree
             for (var i = 1; i < this.ssctree_lt.length; i++) {
                 this.ssctree_lt[i].bln_glfront = false
                 this.ssctree_lt[i].bln_depth_test = false
                 this.ssctree_lt[i].bln_blend = true
-                this.ssctree_lt[i].opacity = 0.8
+                this.ssctree_lt[i].opacity = 0.5
             }
-
 
             //this.ssctree_lt[2].bln_glfront = true
         }

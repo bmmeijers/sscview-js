@@ -3,6 +3,9 @@
 
 // This makes TileContent quite big class -> split in subclasses?
 
+
+let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
+
 export class TileContent {
     constructor(msgbus, texture_root_href, worker_helper) {
         this.msgbus = msgbus
@@ -110,7 +113,7 @@ export class TileContent {
             const border = 0;
             const srcFormat = gl.RGBA;
             const srcType = gl.UNSIGNED_BYTE;
-            const pixel = new Uint8Array([255, 255, 255, 255]);  // opaque blue
+            const pixel = new Uint8Array([255, 255, 255, 0]);  // white
             gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 width, height, border, srcFormat, srcType,
                 pixel);
@@ -198,7 +201,8 @@ export class TileContent {
         // could also be: response.points.flat(1); ???
         this._upload_image_tile_mesh(gl, new Float32Array(result))
 
-        /* // using image object to retrieve the texture
+        /*
+        // using image object to retrieve the texture
         let image = new Image()
         image.crossOrigin = ""
         image.src = this.texture_root_href + response.texture_href
@@ -209,6 +213,7 @@ export class TileContent {
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
                 if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
                 {
+                    console.log('mipmapping')
                     gl.generateMipmap(gl.TEXTURE_2D);
                 }
                 else
@@ -221,7 +226,7 @@ export class TileContent {
             }
         )
         */
-
+        
         // using createImageBitmap and fetch to retrieve the texture
         fetch(this.texture_root_href + response.texture_href, { mode: 'cors' })
             .then((response) => {
