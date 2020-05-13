@@ -38,7 +38,6 @@ export function touchDragHandler(map) {
         //        console.log('doMouseDown');
         //        console.log([x,y]);
         let point = getTouchPoint(evt);
-        console.log('touchstart');
         _trace = new Trace(point);
         _state = 'pending';
     }
@@ -130,7 +129,8 @@ export function touchDragHandler(map) {
                 let vx = dx / time * percent;
                 let vy = dy / time * percent;
                 // const max_distance = 400 // 0.5 * screen size
-                var duration = parseFloat(document.getElementById('panduration').value);
+                let duration = parseFloat(map._interaction_settings.pan_duration);
+                // var duration = parseFloat(document.getElementById('panduration').value);
                 // with combined speed  of departure and arrivale
                 // * departure (= speed of user action px/s) and
                 // * arrival (= 0 px /s)
