@@ -169,7 +169,8 @@ class Map {
     }
 
     getWebGLContext() {
-        return this.getCanvasContainer().getContext('webgl', { alpha: true, antialias: true })
+        return this.getCanvasContainer().getContext('webgl', 
+            { antialias: true, alpha: false, premultipliedAlpha: false})
     }
 
     getTransform() {
