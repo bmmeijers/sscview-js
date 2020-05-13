@@ -71,9 +71,10 @@ export class SSCTree {
         //e.g., this.dataset.tree_root_file_nm: 'tree.json'
         //e.g., this.dataset.eventdiff_nm: 'eventdiff.json'
         var step_highs = null
-        
+        var if_snap = false
         var eventdiff_nm = 'eventdiff_nm'
         if (eventdiff_nm in this.dataset) {
+            if_snap = true
             fetch(this.dataset.tree_root_href + this.dataset[eventdiff_nm])
                 .then(r => {
                     step_highs = [0] //if the file exists, we will do parallel merging
@@ -99,12 +100,12 @@ export class SSCTree {
                         current_face_num -= eventnum
                     } 
 
-                    //console.log('tiles.js step_diff_ltlt.length:', step_diff_ltlt.length)
+                    //console.log('ssctree.js step_diff_ltlt.length:', step_diff_ltlt.length)
                 })
                 .then(() => {
                     this.step_highs = step_highs
                     //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('tiles.js step_highs:', step_highs)
+                    console.log('ssctree.js step_highs:', step_highs)
                 })
                 .catch(() => {
                     this.step_highs = null
@@ -123,7 +124,8 @@ export class SSCTree {
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
-                    element.url = this.dataset.tile_root_href + element.href
+                    element.url = this.dataset.tile_root_href + element.href  //e.g., element.href: node02145.obj
+                    console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 })
             })
@@ -135,6 +137,8 @@ export class SSCTree {
             .catch(err => {
                 console.error(err)
             })
+
+        return if_snap
     }
 
     // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
@@ -151,7 +155,9 @@ export class SSCTree {
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
+                    //e.g., element.info: 10/502/479.json
                     element.url = this.dataset.tile_root_href + element.info // FIXME:  was: element.href
+                    //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 })
 
@@ -164,10 +170,10 @@ export class SSCTree {
 
     fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
-        //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
         //console.log('')
-        //console.log('tiles.js fetch_tiles, this.tree:', this.tree)
-        //console.log('tiles.js fetch_tiles, box3d:', box3d)
+        //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
+        //console.log('ssctree.js fetch_tiles, box3d:', box3d)
         //e.g., this.tree: the content in file tree_smooth.json
         let subtrees = obtain_overlapped_subtrees(this.tree, box3d)
         subtrees.map(node => {
@@ -204,8 +210,8 @@ export class SSCTree {
 
 
         //this.dataset
-        //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
-        //console.log('tiles.js fetch_tiles, to_retrieve:', to_retrieve)
+        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, to_retrieve:', to_retrieve)
 
         // schedule tiles for retrieval
         to_retrieve.map(elem => {
@@ -216,8 +222,8 @@ export class SSCTree {
                 this.worker_helpers[this.helper_idx_current]
             )
             content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
-            //console.log('tiles.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
-            //console.log('tiles.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
+            //console.log('ssctree.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
+            //console.log('ssctree.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
             
             elem.content = content
             elem.loaded = true
@@ -256,9 +262,11 @@ export class SSCTree {
         {
              return 0
         }
+        //console.log('')
 
         // reduction in percentage
         let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        console.log('ssctree.js reductionf:', reductionf)
         let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
         let snapped_step = step
         let step_highs = this.step_highs
@@ -267,8 +275,8 @@ export class SSCTree {
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js step:', step)
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js step:', step)
             
 
             let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
@@ -280,9 +288,9 @@ export class SSCTree {
             //if we scroll too little, the map doesn't zoom because of the snapping.
             //we force snapping for at least one step. 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js current_step:', current_step)
-            //console.log('tiles.js step_highs[step_index]:', step_highs[step_index])
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js current_step:', current_step)
+            //console.log('ssctree.js step_highs[step_index]:', step_highs[step_index])
             let snapped_index = snap_to_existing_stephigh(step, step_highs)
             snapped_step = step_highs[snapped_index]
 
@@ -304,11 +312,15 @@ export class SSCTree {
 
             snapped_step = step_highs[snapped_index]
 
-            //console.log('tiles.js new step:', step)
+            //console.log('ssctree.js new step:', step)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
         }
+
         
+        console.log('ssctree.js new step:', step)
+        console.log('ssctree.js snapped_step:', snapped_step)
+
         //return Math.max(0, step)
         return snapped_step
     }
@@ -330,9 +342,9 @@ export class SSCTree {
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js --------------------------------------')
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js current_step:', current_step)
+            //console.log('ssctree.js --------------------------------------')
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js current_step:', current_step)
             let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
             if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
                 current_step = step_highs[current_step_index]
@@ -340,10 +352,10 @@ export class SSCTree {
 
 
 
-            //console.log('tiles.js current_step_index:', current_step_index)
+            //console.log('ssctree.js current_step_index:', current_step_index)
 
-            //console.log('tiles.js step:', step)
-            //console.log('tiles.js step_highs[current_step_index]:', step_highs[current_step_index])
+            //console.log('ssctree.js step:', step)
+            //console.log('ssctree.js step_highs[current_step_index]:', step_highs[current_step_index])
             let normal_step_diff = Math.abs(step - current_step)
 
             let snapped_index = snap_to_existing_stephigh(step, step_highs)
@@ -353,10 +365,10 @@ export class SSCTree {
             //we force snapping for at least one step. 
 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js snapped_index:', snapped_index)
-            //console.log('tiles.js step_highs[snapped_index]:', step_highs[snapped_index])
-            //console.log('tiles.js zoom_factor:', zoom_factor)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js snapped_index:', snapped_index)
+            //console.log('ssctree.js step_highs[snapped_index]:', step_highs[snapped_index])
+            //console.log('ssctree.js zoom_factor:', zoom_factor)
             //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
             //    if (zoom_factor > 1) { //zooming in 
             //        snapped_index -= 1
@@ -380,7 +392,7 @@ export class SSCTree {
                 }
             }
             snapped_step = step_highs[snapped_index]
-            //console.log('tiles.js snapped_step:', snapped_step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
 
             let adjusted_step_diff = Math.abs(snapped_step - current_step)
 
@@ -388,11 +400,11 @@ export class SSCTree {
                 time_factor = adjusted_step_diff / normal_step_diff
             }
 
-            //console.log('tiles.js adjusted_step_diff:', adjusted_step_diff)
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js time_factor:', time_factor)
+            //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js time_factor:', time_factor)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', step)
         }
 
         //return Math.max(0, step)
@@ -429,7 +441,7 @@ function snap_to_existing_stephigh(step, step_highs) {
             end = mid - 1;
     }
 
-    //console.log('tiles.js start and end:', start, end)
+    //console.log('ssctree.js start and end:', start, end)
     //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
     //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
     if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
@@ -553,7 +565,7 @@ export function overlaps3d(one, other) {
             break
         }
     }
-    //console.log('tiles.js are_overlapping:', are_overlapping)
+    //console.log('ssctree.js are_overlapping:', are_overlapping)
     return are_overlapping
 }
 

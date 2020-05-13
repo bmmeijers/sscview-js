@@ -521,7 +521,7 @@ export class Renderer {
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
-                if (this.settings.boundary_width>0) {
+                if (this.settings.boundary_width > 0) {
                     var line_draw_program = this.programs[1];
                     tiles.forEach(tile => {
                             // FIXME: would be nice to specify width here in pixels.

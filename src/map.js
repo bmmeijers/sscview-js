@@ -49,7 +49,7 @@ class Map {
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-        this.if_snap = true
+        this.if_snap = false
 
         this.msgbus = new MessageBusConnector()
 
@@ -107,7 +107,10 @@ class Map {
                 this.ssctree_lt[i].bln_blend = true
                 this.ssctree_lt[i].opacity = 0.5
             }
-
+            //this.ssctree_lt[0].bln_glfront = true
+            //this.ssctree_lt[0].bln_depth_test = true
+            //this.ssctree_lt[0].bln_blend = false
+            //this.ssctree_lt[0].opacity = 0.5
             //this.ssctree_lt[2].bln_glfront = true
         }
 
@@ -160,7 +163,10 @@ class Map {
 
         this.ssctree_lt.forEach((ssctree) => {
             //console.log('map.js ssctree.dataset:', ssctree.dataset)
-            ssctree.load()
+            var if_snap = ssctree.load()
+            if (if_snap == true) {
+                this.if_snap = true
+            }
         })
     }
 
@@ -191,6 +197,7 @@ class Map {
         }
         else {
             St = this.getTransform().getScaleDenominator()
+            //console.log('map.js render, test')
             step = this.ssctree.get_step_from_St(St)
         }
 
@@ -202,6 +209,7 @@ class Map {
         if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
             last_step = this.ssctree.tree.metadata.no_of_steps_Ns
         }
+        //console.log('map.js render, last_step:', last_step)
 
         //var step = this.ssctree.get_step_from_St(St) //+ 0.001
         //console.log('map.js, step before snapping:', step)

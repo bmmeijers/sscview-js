@@ -1272,7 +1272,7 @@
 
 
         //console.log('transform.js St_current:', St_current)
-        //console.log('transform.js St:', St)
+        console.log('transform.js St:', St);
         //console.log('transform.js St_current / St:', St_current / St)
         //console.log('transform.js zoom_factor:', zoom_factor)
 
@@ -1289,8 +1289,8 @@
 
         //this.current_step = snapped_step
 
-        //console.log('transform.js snapped_step:', snapped_step)
-        //console.log('transform.js snapped_St:', snapped_St)
+        console.log('transform.js snapped_step:', snapped_step);
+        console.log('transform.js snapped_St:', snapped_St);
         //console.log('transform.js St / snapped_St:', St / snapped_St)
         this.compute_zoom_parameters(St / snapped_St, x, y);
         //let final_St = this.getScaleDenominator()
@@ -1869,7 +1869,7 @@
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
-                if (this$1.settings.boundary_width>0) {
+                if (this$1.settings.boundary_width > 0) {
                     var line_draw_program = this$1.programs[1];
                     tiles.forEach(function (tile) {
                             // FIXME: would be nice to specify width here in pixels.
@@ -2289,9 +2289,10 @@
         //e.g., this.dataset.tree_root_file_nm: 'tree.json'
         //e.g., this.dataset.eventdiff_nm: 'eventdiff.json'
         var step_highs = null;
-            
+        var if_snap = false;
         var eventdiff_nm = 'eventdiff_nm';
         if (eventdiff_nm in this.dataset) {
+            if_snap = true;
             fetch(this.dataset.tree_root_href + this.dataset[eventdiff_nm])
                 .then(function (r) {
                     step_highs = [0]; //if the file exists, we will do parallel merging
@@ -2317,12 +2318,12 @@
                         current_face_num -= eventnum;
                     } 
 
-                    //console.log('tiles.js step_diff_ltlt.length:', step_diff_ltlt.length)
+                    //console.log('ssctree.js step_diff_ltlt.length:', step_diff_ltlt.length)
                 })
                 .then(function () {
                     this$1.step_highs = step_highs;
                     //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('tiles.js step_highs:', step_highs);
+                    console.log('ssctree.js step_highs:', step_highs);
                 })
                 .catch(function () {
                     this$1.step_highs = null;
@@ -2341,7 +2342,8 @@
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = this$1.dataset.tile_root_href + element.href;
+                    element.url = this$1.dataset.tile_root_href + element.href;  //e.g., element.href: node02145.obj
+                    console.log('ssctree.js element.href:', element.href);
                     element.loaded = false;
                 });
             })
@@ -2353,6 +2355,8 @@
             .catch(function (err) {
                 console.error(err);
             });
+
+        return if_snap
     };
 
     // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
@@ -2371,7 +2375,9 @@
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
+                    //e.g., element.info: 10/502/479.json
                     element.url = this$1.dataset.tile_root_href + element.info; // FIXME:  was: element.href
+                    //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 });
 
@@ -2386,10 +2392,10 @@
             var this$1 = this;
 
         if (this.tree === null) { return }
-        //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
         //console.log('')
-        //console.log('tiles.js fetch_tiles, this.tree:', this.tree)
-        //console.log('tiles.js fetch_tiles, box3d:', box3d)
+        //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
+        //console.log('ssctree.js fetch_tiles, box3d:', box3d)
         //e.g., this.tree: the content in file tree_smooth.json
         var subtrees = obtain_overlapped_subtrees(this.tree, box3d);
         subtrees.map(function (node) {
@@ -2426,8 +2432,8 @@
 
 
         //this.dataset
-        //console.log('tiles.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
-        //console.log('tiles.js fetch_tiles, to_retrieve:', to_retrieve)
+        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, to_retrieve:', to_retrieve)
 
         // schedule tiles for retrieval
         to_retrieve.map(function (elem) {
@@ -2438,8 +2444,8 @@
                 this$1.worker_helpers[this$1.helper_idx_current]
             );
             content.load(elem.url, gl); //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
-            //console.log('tiles.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
-            //console.log('tiles.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
+            //console.log('ssctree.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
+            //console.log('ssctree.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
                 
             elem.content = content;
             elem.loaded = true;
@@ -2482,9 +2488,11 @@
         {
              return 0
         }
+        //console.log('')
 
         // reduction in percentage
         var reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2);
+        console.log('ssctree.js reductionf:', reductionf);
         var step = this.tree.metadata.no_of_objects_Nb * reductionf; //step is not necessarily an integer
         var snapped_step = step;
         var step_highs = this.step_highs;
@@ -2493,8 +2501,8 @@
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js step:', step)
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js step:', step)
                 
 
             var current_step_index = snap_to_existing_stephigh(current_step, step_highs);
@@ -2506,9 +2514,9 @@
             //if we scroll too little, the map doesn't zoom because of the snapping.
             //we force snapping for at least one step. 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js current_step:', current_step)
-            //console.log('tiles.js step_highs[step_index]:', step_highs[step_index])
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js current_step:', current_step)
+            //console.log('ssctree.js step_highs[step_index]:', step_highs[step_index])
             var snapped_index = snap_to_existing_stephigh(step, step_highs);
             snapped_step = step_highs[snapped_index];
 
@@ -2527,11 +2535,15 @@
 
             snapped_step = step_highs[snapped_index];
 
-            //console.log('tiles.js new step:', step)
+            //console.log('ssctree.js new step:', step)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
         }
+
             
+        console.log('ssctree.js new step:', step);
+        console.log('ssctree.js snapped_step:', snapped_step);
+
         //return Math.max(0, step)
         return snapped_step
     };
@@ -2557,9 +2569,9 @@
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js --------------------------------------')
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js current_step:', current_step)
+            //console.log('ssctree.js --------------------------------------')
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js current_step:', current_step)
             var current_step_index = snap_to_existing_stephigh(current_step, step_highs);
             if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
                 current_step = step_highs[current_step_index];
@@ -2567,10 +2579,10 @@
 
 
 
-            //console.log('tiles.js current_step_index:', current_step_index)
+            //console.log('ssctree.js current_step_index:', current_step_index)
 
-            //console.log('tiles.js step:', step)
-            //console.log('tiles.js step_highs[current_step_index]:', step_highs[current_step_index])
+            //console.log('ssctree.js step:', step)
+            //console.log('ssctree.js step_highs[current_step_index]:', step_highs[current_step_index])
             var normal_step_diff = Math.abs(step - current_step);
 
             var snapped_index = snap_to_existing_stephigh(step, step_highs);
@@ -2580,10 +2592,10 @@
             //we force snapping for at least one step. 
 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js snapped_index:', snapped_index)
-            //console.log('tiles.js step_highs[snapped_index]:', step_highs[snapped_index])
-            //console.log('tiles.js zoom_factor:', zoom_factor)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js snapped_index:', snapped_index)
+            //console.log('ssctree.js step_highs[snapped_index]:', step_highs[snapped_index])
+            //console.log('ssctree.js zoom_factor:', zoom_factor)
             //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
             //if (zoom_factor > 1) { //zooming in 
             //    snapped_index -= 1
@@ -2607,7 +2619,7 @@
                 }
             }
             snapped_step = step_highs[snapped_index];
-            //console.log('tiles.js snapped_step:', snapped_step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
 
             var adjusted_step_diff = Math.abs(snapped_step - current_step);
 
@@ -2615,11 +2627,11 @@
                 time_factor = adjusted_step_diff / normal_step_diff;
             }
 
-            //console.log('tiles.js adjusted_step_diff:', adjusted_step_diff)
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js time_factor:', time_factor)
+            //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js time_factor:', time_factor)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', step)
         }
 
         //return Math.max(0, step)
@@ -2654,7 +2666,7 @@
                 { end = mid - 1; }
         }
 
-        //console.log('tiles.js start and end:', start, end)
+        //console.log('ssctree.js start and end:', start, end)
         //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
         //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
         if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
@@ -2780,7 +2792,7 @@
                 break
             }
         }
-        //console.log('tiles.js are_overlapping:', are_overlapping)
+        //console.log('ssctree.js are_overlapping:', are_overlapping)
         return are_overlapping
     }
 
@@ -3018,7 +3030,7 @@
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-        this.if_snap = true;
+        this.if_snap = false;
 
         this.msgbus = new MessageBusConnector();
 
@@ -3076,7 +3088,10 @@
                 this.ssctree_lt[i].bln_blend = true;
                 this.ssctree_lt[i].opacity = 0.5;
             }
-
+            //this.ssctree_lt[0].bln_glfront = true
+            //this.ssctree_lt[0].bln_depth_test = true
+            //this.ssctree_lt[0].bln_blend = false
+            //this.ssctree_lt[0].opacity = 0.5
             //this.ssctree_lt[2].bln_glfront = true
         }
 
@@ -3125,11 +3140,16 @@
     };
 
     Map.prototype.loadTree = function loadTree () {
+            var this$1 = this;
+
         //this.ssctree.load()
 
         this.ssctree_lt.forEach(function (ssctree) {
             //console.log('map.js ssctree.dataset:', ssctree.dataset)
-            ssctree.load();
+            var if_snap = ssctree.load();
+            if (if_snap == true) {
+                this$1.if_snap = true;
+            }
         });
     };
 
@@ -3162,6 +3182,7 @@
         }
         else {
             St = this.getTransform().getScaleDenominator();
+            //console.log('map.js render, test')
             step = this.ssctree.get_step_from_St(St);
         }
 
@@ -3173,6 +3194,7 @@
         if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
             last_step = this.ssctree.tree.metadata.no_of_steps_Ns;
         }
+        //console.log('map.js render, last_step:', last_step)
 
         //var step = this.ssctree.get_step_from_St(St) //+ 0.001
         //console.log('map.js, step before snapping:', step)

@@ -155,7 +155,7 @@ class Transform {
 
 
         //console.log('transform.js St_current:', St_current)
-        //console.log('transform.js St:', St)
+        console.log('transform.js St:', St)
         //console.log('transform.js St_current / St:', St_current / St)
         //console.log('transform.js zoom_factor:', zoom_factor)
 
@@ -172,8 +172,8 @@ class Transform {
 
         //this.current_step = snapped_step
 
-        //console.log('transform.js snapped_step:', snapped_step)
-        //console.log('transform.js snapped_St:', snapped_St)
+        console.log('transform.js snapped_step:', snapped_step)
+        console.log('transform.js snapped_St:', snapped_St)
         //console.log('transform.js St / snapped_St:', St / snapped_St)
         this.compute_zoom_parameters(St / snapped_St, x, y)
         //let final_St = this.getScaleDenominator()
