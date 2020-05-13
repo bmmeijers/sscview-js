@@ -30,6 +30,9 @@ export class TileContent {
         else if (url.endsWith('json') == true) {
             this.load_image_tile(url, gl)
         }
+        //else if (url.endsWith('geojson') == true) {
+        //    this.load_geojson_tile(url, gl)
+        //}
         else {
             console.error('unknown url type: ' + url)
         }
