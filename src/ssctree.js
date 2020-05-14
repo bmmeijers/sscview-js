@@ -47,7 +47,7 @@ export class SSCTree {
         this.helper_idx_current = -1
 
         // FIXME: theses should be put in settings *per* SSCTree ?
-        this.bln_glfront = true  //by default, draw the front faces
+        this.bln_glfront = false  //by default, draw the front faces
         this.bln_depth_test = true //by default, do depth test
         this.bln_blend = false
         this.opacity = 1 //by default, opaque (not transparent)

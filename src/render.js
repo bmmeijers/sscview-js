@@ -478,10 +478,11 @@ export class Renderer {
 
 
 
+        this._clearColor()
 
         this.ssctree_lt.forEach(ssctree => {
 
-            this._clear();
+            this._clearDepth()
             if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
                 return
             }
@@ -549,14 +550,20 @@ export class Renderer {
 
     }
 
-    _clear()
+    _clearDepth()
     {
         let gl = this.gl;
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        // gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
 //        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
         gl.clear(gl.DEPTH_BUFFER_BIT);  // clear depth buffer
+    }
 
+    _clearColor()
+    {
+        let gl = this.gl;
+        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
     }
 
     setViewport(width, height) {
