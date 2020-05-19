@@ -460,18 +460,22 @@
             var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
             // console.log('window_location:', window_location)
 
-            var dataset_dt1 = {
+            var tree_setting1 = {
                     'tree_root_file_nm': 'tree_smooth.json',
-                    'eventdiff_nm': 'eventdiff.json',
+                    'step_event_nm': 'step_event.json',
                     'tree_root_href': window_location + 'data_single/',    // with trailing slash!
                     'tile_root_href': window_location + 'data_single/',
+                    'draw_cw_faces': false,
+                    'do_depth_test': false,                    
+                    'do_blend': false,
+                    'opacity': 1,
                     // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
                     'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
                     //'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
                 }
-            var dataset_dt2 = Object.assign({}, dataset_dt1) //just a shallow copy  
-            dataset_dt2.tree_root_href =  window_location + 'data/'
-            dataset_dt2.tile_root_href =  window_location + 'data/'
+            var tree_setting2 = Object.assign({}, tree_setting1) //just a shallow copy  
+            tree_setting2.tree_root_href =  window_location + 'data/'
+            tree_setting2.tile_root_href =  window_location + 'data/'
 
             var map_settings1 = {
                 'initialization': {
@@ -482,13 +486,13 @@
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm1,
-                'datasets': [dataset_dt1],
+                'tree_settings': [tree_setting1],
                 'interaction_defaults': []
             }
 
-            var map_settings2 = Object.assign({}, map_settings1)  //just a shallow copy 
-            map_settings2.canvas_nm = canvas_nm2
-            map_settings2.datasets = [dataset_dt2]
+            var map_setting2 = Object.assign({}, map_settings1)  //just a shallow copy 
+            map_setting2.canvas_nm = canvas_nm2
+            map_setting2.tree_settings = [tree_setting2]
 
 
 
@@ -498,7 +502,7 @@
             let map1 = new varioscale.Map(map_settings1);
             map1.loadTree();
 
-            let map2 = new varioscale.Map(map_settings2);
+            let map2 = new varioscale.Map(map_setting2);
             map2.loadTree();
 
 

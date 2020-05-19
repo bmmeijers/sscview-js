@@ -19,11 +19,11 @@ import { SSCTree, Evictor } from './ssctree';
 import { MessageBusConnector } from './pubsub'
 
 class Map {
-    constructor(map_settings) {
+    constructor(map_setting) {
         //console.log('map.js test:')
-        //console.log('map.js map_settings:', map_settings)
-        this.ssctree_lt = []
-        let container = map_settings['canvas_nm']
+        //console.log('map.js map_setting:', map_setting)
+        this.ssctrees = []
+        let container = map_setting['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
         }
@@ -38,9 +38,9 @@ class Map {
 //        this._should_broadcast_move = true;
 
         this._abort = null
-        this._transform = new Transform(map_settings.initialization.center2d,
+        this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
-                                        map_settings.initialization.scale_den)
+                                        map_setting.initialization.scale_den)
 
         /* settings for zooming and panning */
         this._interaction_settings = {
@@ -91,35 +91,17 @@ class Map {
         });
 
 
-        map_settings.datasets.forEach((dataset) => {
-            //console.log('map.js dataset:', dataset)
-            this.ssctree_lt.push(new SSCTree(this.msgbus, dataset))
+        map_setting.tree_settings.forEach((tree_setting) => {
+            //console.log('map.js tree_setting:', tree_setting)
+            this.ssctrees.push(new SSCTree(this.msgbus, tree_setting))
         })
-
-        if (this.ssctree_lt.length > 1) {
-            //for the data from FEM, we draw the back faces because the triangles are clockwise
-            //PLEASE check the directions of your triangles.
-
-            // FIXME: these settings should be specified per dataset in the *settings* property of the SSCtree
-            for (var i = 1; i < this.ssctree_lt.length; i++) {
-                this.ssctree_lt[i].bln_glfront = false
-                this.ssctree_lt[i].bln_depth_test = false
-                this.ssctree_lt[i].bln_blend = true
-                this.ssctree_lt[i].opacity = 0.5
-            }
-            //this.ssctree_lt[0].bln_glfront = true
-            //this.ssctree_lt[0].bln_depth_test = true
-            //this.ssctree_lt[0].bln_blend = false
-            //this.ssctree_lt[0].opacity = 0.5
-            //this.ssctree_lt[2].bln_glfront = true
-        }
 
 
         // data load
-        //this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
+        //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
-        this.ssctree = this.ssctree_lt[0]
-        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree_lt);
+        this.ssctree = this.ssctrees[0]
+        this.renderer = new Renderer(this.getWebGLContext(), this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height)
 
@@ -161,8 +143,8 @@ class Map {
     loadTree() {
         //this.ssctree.load()
 
-        this.ssctree_lt.forEach((ssctree) => {
-            //console.log('map.js ssctree.dataset:', ssctree.dataset)
+        this.ssctrees.forEach((ssctree) => {
+            //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
             var if_snap = ssctree.load()
             if (if_snap == true) {
                 this.if_snap = true
@@ -244,7 +226,7 @@ class Map {
         const box2d = this.getTransform().getVisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this.getWebGLContext();
-        this.ssctree_lt.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
         //this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     }

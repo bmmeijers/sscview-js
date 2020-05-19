@@ -1918,8 +1918,8 @@
 
 
    //load_subtree(node) {
-    //    //console.log(this.dataset.tree_root_href + node.href)
-    //    fetch(this.dataset.tree_root_href + node.href)
+    //    //console.log(this.tree_setting.tree_root_href + node.href)
+    //    fetch(this.tree_setting.tree_root_href + node.href)
     //        .then(r => {
     //            return r.json()
     //        })
@@ -1930,7 +1930,7 @@
     //            dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
     //                element.content = null
     //                element.last_touched = null
-    //                element.url = this.dataset.tile_root_href + element.href
+    //                element.url = this.tree_setting.tile_root_href + element.href
     //                element.loaded = false;
     //            })
 

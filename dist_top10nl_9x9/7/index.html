@@ -289,14 +289,14 @@
             
 
 
-            //            var map_settings = {
+            //            var map_setting = {
             //                'initialization': {
             //                    'scale_den': 500000,
             //                    'center2d': [3555384.53, 5907745.81],
             //                    'navigationBar_title': 'Test, Manual',
             //                },
             //                'canvas_nm': canvas_nm,
-            //                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
+            //                'tree_setting': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
             //                'interaction_defaults': []
             //            }
 
@@ -308,7 +308,7 @@
             var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
             // console.log('window_location:', window_location)
 
-            var map_settings = {
+            var map_setting = {
                 'initialization': {
                     //'scale_den': 10000, //top10nl, start_scale
                     'scale_den': 10000,  //top10nl; small test, three parcels
@@ -323,7 +323,7 @@
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
-                'datasets': [{
+                'tree_settings': [{
                     //                              'tree_root_file_nm': 'tree.json',
                     //                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
                     //                              'tile_root_href': '/data/tiles-nl/',
@@ -343,9 +343,13 @@
 
                     'tree_root_file_nm': 'tree_smooth.json',
                     //'tree_root_file_nm': 'tree.json',
-                    'eventdiff_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                    'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                     'tree_root_href': window_location + 'data/',    // with trailing slash!
                     'tile_root_href': window_location + 'data/',
+                    'draw_cw_faces': false,
+                    'do_depth_test': false,                    
+                    'do_blend': false,
+                    'opacity': 1,
                     /*
                     // See:
                     // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
@@ -353,16 +357,16 @@
                     */
                     // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
                     'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
-                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'                                  
                 }],
                 'interaction_defaults': []
             }
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
-                map_settings.initialization.navigationBar_title
+                map_setting.initialization.navigationBar_title
 
             // Make a new map instance
-            var map = new varioscale.Map(map_settings);
+            var map = new varioscale.Map(map_setting);
             map.loadTree();
 
             window.map = map;

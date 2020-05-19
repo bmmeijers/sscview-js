@@ -589,7 +589,6 @@
             //        console.log('doMouseDown');
             //        console.log([x,y]);
             var point = getTouchPoint(evt);
-            console.log('touchstart');
             _trace = new Trace(point);
             _state = 'pending';
         }
@@ -681,7 +680,8 @@
                     var vx = dx / time * percent;
                     var vy = dy / time * percent;
                     // const max_distance = 400 // 0.5 * screen size
-                    var duration = parseFloat(document.getElementById('panduration').value);
+                    var duration = parseFloat(map._interaction_settings.pan_duration);
+                    // var duration = parseFloat(document.getElementById('panduration').value);
                     // with combined speed  of departure and arrivale
                     // * departure (= speed of user action px/s) and
                     // * arrival (= 0 px /s)
@@ -1631,7 +1631,7 @@
             // gl.clear(gl.COLOR_BUFFER_BIT)
 
             // gl.disable(gl.BLEND);
-            gl.enable(gl.BLEND); // FIXME: needed?
+            //gl.enable(gl.BLEND); // FIXME: needed?
             gl.disable(gl.DEPTH_TEST);
 
             // gl.enable(gl.CULL_FACE);
@@ -1655,7 +1655,7 @@
 
     var PolygonDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function PolygonDrawProgram(gl) {
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec4 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vertexColor;\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\n\nvoid main()\n{\n    fragColor = vec4(vertexColor, opacity);\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
             var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
         }
@@ -1664,10 +1664,12 @@
         PolygonDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
         PolygonDrawProgram.prototype.constructor = PolygonDrawProgram;
 
-        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile) {
+
+        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, tree_setting) {
             // guard: if no data in the tile, we will skip rendering
             var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
             if (triangleVertexPosBufr === null) {
+                //console.log('render.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
                 return;
             }
             // render
@@ -1685,17 +1687,40 @@
             {
                 var M_location = gl.getUniformLocation(shaderProgram, 'M');
                 gl.uniformMatrix4fv(M_location, false, matrix);
+
+                var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+                gl.uniform1f(opacity_location, tree_setting.opacity);
             }
 
             gl.enable(gl.CULL_FACE);
             //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-            //gl.cullFace(gl.BACK);
-            gl.cullFace(gl.FRONT);
-            // gl.cullFace(gl.FRONT_AND_BACK);
+            
+                   
+            if (tree_setting.draw_cw_faces == true) {
+                gl.cullFace(gl.BACK); //triangles from FME are clock wise
+            }
+            else {
+                gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
+            }
 
-            gl.disable(gl.BLEND);
-            gl.enable(gl.DEPTH_TEST);
+            if (tree_setting.do_depth_test == true) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {            
+                gl.disable(gl.DEPTH_TEST);
+            }
+
+            //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+            
+            if (tree_setting.do_blend == true) {
+                gl.enable(gl.BLEND);
+            }
+            else {
+                gl.disable(gl.BLEND);
+            }
+
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
         };
 
@@ -1703,69 +1728,84 @@
     }(DrawProgram));
 
 
-    var ForegroundDrawProgram = /*@__PURE__*/(function (DrawProgram) {
-        function ForegroundDrawProgram(gl) {
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec4 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vertexColor;\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
-            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
-            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
-        }
+    //class ForegroundDrawProgram extends DrawProgram {
+    //    constructor(gl) {
+    //        let vertexShaderText = `
+    //precision highp float;
 
-        if ( DrawProgram ) ForegroundDrawProgram.__proto__ = DrawProgram;
-        ForegroundDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
-        ForegroundDrawProgram.prototype.constructor = ForegroundDrawProgram;
+    //attribute vec3 vertexPosition_modelspace;
+    //attribute vec4 vertexColor;
+    //uniform mat4 M;
+    //varying vec4 fragColor;
 
-        ForegroundDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile) {
-            // guard: if no data in the tile, we will skip rendering
-            var triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
-            if (triangleVertexPosBufr === null) {
-                return;
-            }
-            // render
-            var gl = this.gl;
-            var shaderProgram = this.shaderProgram;
-            gl.useProgram(shaderProgram);
-            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+    //void main()
+    //{
+    //    fragColor = vertexColor;
+    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+    //}
+    //`;
+    //        let fragmentShaderText = `
+    //precision mediump float;
 
-            //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
-            //itemSize = 3: x, y, z;   
-            this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
-            //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
-            this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
+    //varying vec4 fragColor;
+    //void main()
+    //{
+    //    gl_FragColor = vec4(fragColor);
+    //}
+    //`;
+    //        super(gl, vertexShaderText, fragmentShaderText)
+    //    }
 
-            {
-                var M_location = gl.getUniformLocation(shaderProgram, 'M');
-                gl.uniformMatrix4fv(M_location, false, matrix);
-            }
+    //    draw_tile(matrix, tile) {
+    //        // guard: if no data in the tile, we will skip rendering
+    //        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
+    //        if (triangleVertexPosBufr === null) {
+    //            return;
+    //        }
+    //        // render
+    //        let gl = this.gl;
+    //        let shaderProgram = this.shaderProgram;
+    //        gl.useProgram(shaderProgram);
+    //        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
 
-            gl.enable(gl.CULL_FACE);
-            //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+    //        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
+    //        //itemSize = 3: x, y, z;   
+    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
+    //        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
+    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
 
-            //gl.cullFace(gl.BACK);
-            gl.cullFace(gl.FRONT);
-            // gl.cullFace(gl.FRONT_AND_BACK);
+    //        {
+    //            let M_location = gl.getUniformLocation(shaderProgram, 'M');
+    //            gl.uniformMatrix4fv(M_location, false, matrix);
+    //        }
 
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
-            //gl.disable(gl.BLEND);
-            //gl.enable(gl.DEPTH_TEST);
-            gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-        };
+    //        gl.enable(gl.CULL_FACE);
+    //        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        return ForegroundDrawProgram;
-    }(DrawProgram));
+    //        //gl.cullFace(gl.BACK);
+    //        gl.cullFace(gl.FRONT);
+    //        // gl.cullFace(gl.FRONT_AND_BACK);
+
+    //        gl.enable(gl.BLEND)
+    //        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+    //        //gl.disable(gl.BLEND);
+    //        //gl.enable(gl.DEPTH_TEST);
+    //        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+    //    }
+    //}
 
 
-    var Renderer = function Renderer(gl, ssctree) {
+    var Renderer = function Renderer(gl, ssctrees) {
         this.gl = gl;
-        this.ssctree = ssctree;
+        this.ssctrees = ssctrees;
         this.settings = { boundary_width: 0.2 };
 
         // construct programs once, at init time
         this.programs = [
             new PolygonDrawProgram(gl),
             new LineDrawProgram(gl),
-            new ImageTileDrawProgram(gl),
-            new ForegroundDrawProgram(gl)
+            new ImageTileDrawProgram(gl)
+            //new ForegroundDrawProgram(gl)
         ];
     };
 
@@ -1781,6 +1821,8 @@
     // // }, 15000)
     // }
 
+
+
     Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (matrix, box3d, near_St) {
             var this$1 = this;
 
@@ -1789,78 +1831,405 @@
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
 
-        var tiles = this.ssctree.get_relevant_tiles(box3d);
-    //        .filter(tile => {return tile.hasOwnProperty('content') && tile.content !== null})
-
-    //    let gl = this.gl;
-    //    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    //    gl.clearDepth(1.0); // Clear everything
-    //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-
-        this._clear();
-        if (tiles.length > 0) {
-
-            var polygon_draw_program = this.programs[0];
-            tiles
-    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-            .forEach(function (tile) {
-                polygon_draw_program.draw_tile(matrix, tile);
-            });
-
-            var image_tile_draw_program = this.programs[2];
-            tiles
-                .filter(
-                    // tile should have image data
-                    function (tile) {
-                        return tile.texture !== null
-                    }
-                ) 
-                .forEach(function (tile) {
-                    image_tile_draw_program.draw_tile(matrix, tile);
-                });
 
 
-            // FIXME: if lines have width == 0; why draw them?
-            // If we want to draw lines twice -> thick line under / small line over
-            // we need to do this twice + move the code for determining line width here...
-            var line_draw_program = this.programs[1];
-            tiles
-            .forEach(function (tile) {
-                // FIXME: would be nice to specify width here in pixels.
-                // bottom lines (black)
-                // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                // interior (color)
-                line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
-                });
 
-            //var foreground_draw_program = this.programs[3];
-            //tiles
-            //.forEach(tile => {
-            //    foreground_draw_program.draw_tile(matrix, tile);
-            //})
+        this._clearColor();
+
+        this.ssctrees.forEach(function (ssctree) {
+
+            this$1._clearDepth();
+            if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
+                return
+            }
+            //console.log('')
+            //console.log('render.js ssctree.tree:', ssctree.tree)
+            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+    //        var z_low = ssctree.tree.box[2] - 0.001
+    //        var z_high = ssctree.tree.box[5] - 0.001
+    //        var z_plane = box3d[2]
+    //        if (z_plane < z_low || z_plane >= z_high) {
+    //            return
+    //        }
+
+            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
+            //console.log('render.js box3d:', box3d)
+            //console.log('render.js near_St:', near_St)
+
+            var tiles = ssctree.get_relevant_tiles(box3d);
+            if (tiles.length > 0) {                
+                var polygon_draw_program = this$1.programs[0];
+                tiles.forEach(function (tile) {
+                        //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+                    });
+
+                var image_tile_draw_program = this$1.programs[2];
+                tiles.filter(
+                        // tile should have image data
+                        function (tile) {
+                            return tile.texture !== null
+                        }
+                    )
+                    .forEach(function (tile) {
+                        image_tile_draw_program.draw_tile(matrix, tile);
+                    });
 
 
-        }
+                // If we want to draw lines twice -> thick line under / small line over
+                // we need to do this twice + move the code for determining line width here...
+                if (this$1.settings.boundary_width > 0) {
+                    var line_draw_program = this$1.programs[1];
+                    tiles.forEach(function (tile) {
+                            // FIXME: would be nice to specify width here in pixels.
+                            // bottom lines (black)
+                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                            // interior (color)
+                            line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
+                        });
+                }
 
-        // this.buckets.forEach(bucket => {
-        // this.programs[0].draw(matrix, bucket);
-        // })
-        // FIXME:
-        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-        // we should this.gl.clear()
+
+
+            }
+
+            // this.buckets.forEach(bucket => {
+            // this.programs[0].draw(matrix, bucket);
+            // })
+            // FIXME:
+            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+            // we should this.gl.clear()
+
+
+        });
+
+
     };
 
-    Renderer.prototype._clear = function _clear ()
+    Renderer.prototype._clearDepth = function _clearDepth ()
     {
         var gl = this.gl;
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        // gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  // Clear the color buffer with specified clear color
+    //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.DEPTH_BUFFER_BIT);  // clear depth buffer
+    };
 
+    Renderer.prototype._clearColor = function _clearColor ()
+    {
+        var gl = this.gl;
+        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
     };
 
     Renderer.prototype.setViewport = function setViewport (width, height) {
         this.gl.viewport(0, 0, width, height);
+    };
+
+    // FIXME: UNIFY TileContent and ImageTileContent by branching inside load()-method
+    // on the file extension to be retrieved... (not super elegant)
+
+    // This makes TileContent quite big class -> split in subclasses?
+
+
+    var isPowerOf2 = (function (value) { return (value & (value - 1)) == 0 });
+
+    var TileContent = function TileContent(msgbus, texture_root_href, worker_helper) {
+        this.msgbus = msgbus;
+        this.worker_helper = worker_helper;
+
+        // image tiles
+        this.texture_root_href = texture_root_href;
+        this.buffer = null;
+        this.texture = null;
+        this.textureCoordBuffer = null;
+
+        // ssc tiles
+        this.polygon_triangleVertexPosBufr = null;
+        this.line_triangleVertexPosBufr = null;
+        this.displacementBuffer = null;
+        //this.foreground_triangleVertexPosBufr = null;
+
+
+    };
+
+    TileContent.prototype.load = function load (url, gl) {
+        if (url.endsWith('obj') == true) {
+            this.load_ssc_tile(url, gl);
+        }
+        else if (url.endsWith('json') == true) {
+            this.load_image_tile(url, gl);
+        }
+        //else if (url.endsWith('geojson') == true) {
+        //this.load_geojson_tile(url, gl)
+        //}
+        else {
+            console.error('unknown url type: ' + url);
+        }
+    };
+
+    TileContent.prototype.load_ssc_tile = function load_ssc_tile (url, gl) {
+            var this$1 = this;
+
+        this.worker_helper.send( //send is a function of class WorkerHelper (see above)
+            url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
+            function (data) { //I call the function makeBuffers, this is a function used as a parameter
+                //console.log('')
+                //console.log('tilecontent.js load_ssc_tile, url:', url)
+                // upload received data to GPU
+
+                // buffer for triangles of polygons
+                // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
+                this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
+                //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
+                //if (this.polygon_triangleVertexPosBufr == null) {
+                //console.log('tilecontent.js load_ssc_tile, url:', url)
+                //console.log('tilecontent.js load_ssc_tile, polygon_triangleVertexPosBufr:', polygon_triangleVertexPosBufr)
+                //console.log('tilecontent.js load_ssc_tile, data[0]:', data[0])
+                //}
+                //console.log('tiles.js url2:', url)
+
+
+                // buffer for triangles of boundaries
+                // itemSize = 4: x, y, z (step_low), w (step_high); e.g., start (see parse.js)
+                this$1.line_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[1]), 4);
+
+                // buffer for displacements of boundaries
+                // itemSize = 2: x and y; e.g., startl (see parse.js)
+                this$1.displacementBuffer = create_data_buffer(gl, new Float32Array(data[2]), 2);
+
+                //var foreground_data_array = new Float32Array([
+                //186500, 312600, 0, 1, 0, 0, 0.5,
+                //186700, 311800, 0, 0, 0, 1, 0.5,
+                //186200, 311800, 0, 0, 1, 0, 0.5]) //clockwise
+                //this.foreground_triangleVertexPosBufr = create_data_buffer(gl, foreground_data_array, 7)
+
+
+                // notify we are ready
+                this$1.msgbus.publish('data.tile.loaded', 'tile.ready');
+
+                function create_data_buffer(gl, data_array, itemSize) {
+                    var data_buffer = gl.createBuffer();
+                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, data_array, gl.STATIC_DRAW);
+                    data_buffer.itemSize = itemSize; //x, y, z, r_frac, g_frac, b_frac
+                    //console.log('tiles.js data_array.length:', data_array.length)
+                    data_buffer.numItems = data_array.length / itemSize;
+                    return data_buffer;
+                }
+
+            }
+        );
+    };
+
+
+
+    TileContent.prototype.load_image_tile = function load_image_tile (href, gl) {
+            var this$1 = this;
+
+        var f = function () {
+
+            // setup texture as placeholder for texture to be retrieved later
+            this$1.texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
+            // Because images have to be download over the internet
+            // they might take a moment until they are ready.
+            // Until then put a single pixel in the texture so we can
+            // use it immediately. When the image has finished downloading
+            // we'll update the texture with the contents of the image.
+            var level = 0;
+            var internalFormat = gl.RGBA;
+            var width = 1;
+            var height = 1;
+            var border = 0;
+            var srcFormat = gl.RGBA;
+            var srcType = gl.UNSIGNED_BYTE;
+            var pixel = new Uint8Array([255, 255, 255, 0]);  // white
+            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                width, height, border, srcFormat, srcType,
+                pixel);
+
+            this$1.textureCoordBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this$1.textureCoordBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                0.0, 0.0,
+                0.0, 1.0,
+                1.0, 1.0,
+                0.0, 0.0,
+                1.0, 1.0,
+                1.0, 0.0
+            ]), gl.STATIC_DRAW);
+
+            fetch(href).then(function (r) { return r.json() })
+                .then(function (mesh) {
+                    this$1._process_image_tile(mesh, gl);
+                    // this.msgbus.publish('data', 'tile.loaded.triangles')
+                })
+                .catch(function (err) { console.error(err); });
+        };
+
+        f();
+        // q.add(f)
+
+        // let image = new Image()
+        // let now = performance.now()
+        // image.crossOrigin = ""
+        // image.src = 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/0/0/0.png'
+        // image.addEventListener('load', () => {
+        // this.texture = gl.createTexture();
+        // gl.bindTexture(gl.TEXTURE_2D, this.texture);         
+        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        // console.log(performance.now() - now)
+        // if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
+        // {
+        //     gl.generateMipmap(gl.TEXTURE_2D);
+        // }
+        // else
+        // {
+        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        // }
+        // })
+        /*
+        this.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        
+        var now = performance.now();
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    */
+        // let scope = this;
+        // let client = new XMLHttpRequest();
+        // client.open('GET', this.url, true);
+        // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
+        // client.responseType = "text";  
+        // client.onreadystatechange = function()
+        // {
+        // if (client.readyState === XMLHttpRequest.DONE && client.status === 200)
+        // {
+        //     console.log('loaded tile ' + scope.url)
+        //     scope._process(client.response);
+        //     // var buf = new ArrayBuffer(client.response.length);
+        //     // buf = client.response;
+        //     // // Here we do transfer the buffer in a way that does not involve
+        //     // // copying the ArrayBuffer
+        //     // // Note, we do assume that this works, but as it has been added
+        //     // // to the spec later, this could not be implemented in a browser!
+        //     // postMessage(buf, [buf]);
+        // }
+        // // we close the worker process
+        // // close();
+        // }
+        // client.send(null);
+    };
+
+    TileContent.prototype._process_image_tile = function _process_image_tile (response, gl) {
+            var this$1 = this;
+
+        var result = [];
+
+        response.points.forEach(
+            function (point) { return result.push.apply(result, point); }
+        );
+        // could also be: response.points.flat(1); ???
+        this._upload_image_tile_mesh(gl, new Float32Array(result));
+
+        /*
+        // using image object to retrieve the texture
+        let image = new Image()
+        image.crossOrigin = ""
+        image.src = this.texture_root_href + response.texture_href
+        image.addEventListener('load', 
+            () => {
+                this.texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
+                {
+                    console.log('mipmapping')
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                }
+                else
+                {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                }
+                this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
+            }
+        )
+        */
+            
+        // using createImageBitmap and fetch to retrieve the texture
+        fetch(this.texture_root_href + response.texture_href, { mode: 'cors' })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw response;
+                }
+
+                return response.blob();
+            })
+            .then(function (blob) {
+                // Giving options does not work for Firefox (do we need to give all option fields?)
+                return createImageBitmap(blob
+                    // , 
+                    // {
+                    // premultiplyAlpha: 'none',
+                    // colorSpaceConversion: 'none',
+                    // }
+                );
+            }).then(function (bitmap) {
+                this$1.texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+                if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) {
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                }
+                else {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                }
+                this$1.msgbus.publish('data.tile.loaded', 'tile.loaded.texture');
+            }).catch(function (e) {
+                console.error(e);
+            });
+    };
+
+    TileContent.prototype._upload_image_tile_mesh = function _upload_image_tile_mesh (gl, mesh) {
+        this.buffer = gl.createBuffer();  //buffer is an object with a reference to the memory location on the GPU
+        // bind buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+        // upload content to the GPU
+        gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
+        // remember number of triangles for this buffer
+        this.buffer.numItems = (mesh.length) / 3;
+        // do not keep the floatarray object alive
+        // now we have uploaded the triangles to the GPU
+        // FIXME: is this needed?
+        // this.buffer.buffer = null
+    };
+
+    TileContent.prototype.destroy = function destroy (gl) {
+        // clear buffers / textures
+        var buffers = [this.buffer, this.textureCoordBuffer, this.line_triangleVertexPosBufr,
+        this.displacementBuffer, this.polygon_triangleVertexPosBufr];
+        buffers.forEach(
+            function (buffer) {
+                if (buffer !== null) {
+                    gl.deleteBuffer(buffer);
+                    buffer = null;
+                }
+            }
+        );
+        var textures = [this.texture];
+        textures.forEach(
+            function (texture) {
+                gl.deleteTexture(texture);
+                texture = null;
+            }
+        );
+
     };
 
     //import { require } from "./require"
@@ -1880,63 +2249,25 @@
     // [x] Make Renderer play nicely with the modifications
     // [x] Resurrect Evictor, with default strategy of removing old stuff
     // [ ] Make use of worker to retrieve ImageTiles
-    // [ ] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
+    // [x] Use logicalProcessors = window.navigator.hardwareConcurrency for creating the WorkerHelper Pool
     // [ ] Make retrieval more resilient against non-working server (e.g. ask again for tile content), 
     //     while not overloading the server(queueing requests / abortcontroller.signal)
+    // [ ] It should be possible to cancel unneeded requests that have not yet been retrieved (e.g. after user has zoomed)
 
 
-    function center2d(box3d)
-    {
-        // 2D center of bottom of box
-        var xmin = box3d[0];
-        var ymin = box3d[1];
-        var xmax = box3d[3];
-        var ymax = box3d[4];
-        return [xmin + 0.5 * (xmax - xmin),
-                ymin + 0.5 * (ymax - ymin)]
-    }
-
-    function distance2d(target, against)
-    {
-        // find projected distance between 2 box3d objects
-        var ctr_t = center2d(target);
-        var ctr_a = center2d(against);
-        var dx2 = Math.pow(ctr_a[0] - ctr_t[0], 2);
-        var dy2 = Math.pow(ctr_a[1] - ctr_t[1], 2);
-        return Math.sqrt(dx2 + dy2)
-    }
 
 
-    var WorkerHelper = function WorkerHelper() {
-        var this$1 = this;
 
-        this.tasks = {};
-        this.worker = new Worker('worker.js');
-        this.worker.onmessage = function (evt) { this$1.receive(evt);};
-    };
-
-    WorkerHelper.prototype.send = function send (url, callback) //e.g., callback: the function of makeBuffers
-    {
-        // use a random id
-        var id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10);
-        this.tasks[id] = callback;
-        this.worker.postMessage({ id: id, msg: url}); //parse the data of the obj file specified by the url
-    };
-
-    WorkerHelper.prototype.receive = function receive (evt) 
-    {
-        var id = evt.data.id;
-        var msg = evt.data.msg; // e.g., arrays = parse_obj(data_text)
-        this.tasks[id](msg); // execute the callback that was registered while sending
-        delete this.tasks[id];
-    };
-
-
-    var SSCTree = function SSCTree(msgbus, settings) {
+    var SSCTree = function SSCTree(msgbus, tree_setting) {
         this.msgbus = msgbus;
         this.tree = null;
-        this.settings = settings;
+        this.tree_setting = tree_setting;
         this.step_highs = null;
+        // FIXME: as the pool of workers is owned by the ssctree, adding a new SSCTree makes again (many) more workers
+        // There should be just 1 pool of workers, e.g. in the map object, that is used by all
+        // SSCTrees for data retrieval -> also images should be retrieved by a
+        // worker for example
+
         // pool of workers
         var pool_size = window.navigator.hardwareConcurrency || 2;
         this.worker_helpers = [];
@@ -1945,6 +2276,13 @@
         }
         console.log(pool_size + ' workers made');
         this.helper_idx_current = -1;
+
+        //// FIXME: theses should be put in settings *per* SSCTree ?
+        //this.draw_cw_faces = true  
+        //this.do_depth_test = true //by default, do depth test
+        //this.do_blend = false
+        //this.opacity = 1 //by default, opaque (not transparent)
+
     };
 
     SSCTree.prototype.load = function load () {
@@ -1960,80 +2298,57 @@
     //    let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        //console.log('fetching root' + this.settings.tree_root_href + this.settings.tree_root_file_nm)
+        //console.log('fetching root' + this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
 
-        //e.g., this.settings.tree_root_href: '/data/'
-        //e.g., this.settings.tree_root_file_nm: 'tree.json'
-        //e.g., this.settings.eventdiff_nm: 'eventdiff.json'
+        //e.g., this.tree_setting.tree_root_href: '/data/'
+        //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
+        //e.g., this.tree_setting.step_event_nm: 'step_event.json'
         var step_highs = null;
-            
-        var eventdiff_nm = 'eventdiff_nm';
-        if (eventdiff_nm in this.settings) {
-            fetch(this.settings.tree_root_href + this.settings[eventdiff_nm])
+        var if_snap = false;
+        var step_event_nm = 'step_event_nm';
+        if (step_event_nm in this.tree_setting) {
+            if_snap = true;
+            fetch(this.tree_setting.tree_root_href + this.tree_setting[step_event_nm])
                 .then(function (r) {
                     step_highs = [0]; //if the file exists, we will do parallel merging
                     return r.json()
                 })
-                .then(function (step_eventdiff_dt) {
-                    var current_face_num = step_eventdiff_dt.face_num;
-                    var parallel_param = step_eventdiff_dt.parallel_param;
-                    var step_diff_ltlt = step_eventdiff_dt.step_eventdiff;
-                    var diff_index = 0;
+                .then(function (filecontent) {
+                    var current_face_num = filecontent.face_num;
+                    var parallel_param = filecontent.parallel_param;
+                    var step_event_exceptions = filecontent.step_event_exceptions;
+                    var exception_index = 0;
                     var step = 1;
                     while (current_face_num > 1) {
-                        var max_parallel = Math.ceil(current_face_num * parallel_param);
-                        var event_diff = 0;
-                        if (diff_index < step_diff_ltlt.length && step_diff_ltlt[diff_index][0] == step) {
-                            event_diff = step_diff_ltlt[diff_index][1];
-                            diff_index += 1;
+                        var eventnum = Math.ceil(current_face_num * parallel_param);
+                        if (exception_index < step_event_exceptions.length && step_event_exceptions[exception_index][0] == step) {
+                            eventnum = step_event_exceptions[exception_index][1];
+                            exception_index += 1;
                         }
-                        var eventnum = max_parallel - event_diff;                        
+                            
                         step_highs.push(step_highs[step_highs.length - 1] + eventnum);
 
                         step += 1;
                         current_face_num -= eventnum;
                     } 
 
-                    //console.log('tiles.js step_diff_ltlt.length:', step_diff_ltlt.length)
-
-
-                    ////eventdiff_ltlt = eventdiff_dt.eventdiff
-                    //step_eventdiff_dt.step_eventdiff.forEach(eventdiff_rep_lt => {
-                    //for (var i = 0; i < eventdiff_rep_lt[1]; i++) {
-                    //    var max_parallel = Math.ceil(current_face_num * parallel_param)
-                    //    var merged_num = max_parallel - eventdiff_rep_lt[0]
-                    //    current_face_num -= merged_num
-                    //    step_highs.push(step_highs[step_highs.length - 1] + merged_num)
-                    //    //console.log('step_highs[step_highs.length - 1]:', step_highs[step_highs.length - 1])
-                    //    //console.log('step_highs.length - 1:', step_highs.length - 1)
-
-                    //}
-                    //})
-
-
-                    //eventdiff_dt.eventdiff.forEach(function (eventdiff_lt) {
-                    //for (let index = 0; index < eventdiff_lt[1]; ++index) {
-                    //    step_highs.push(step_highs[step_highs.length - 1] + eventdiff_lt[0])
-                    //}
-                    //})
+                    //console.log('ssctree.js step_diff_ltlt.length:', step_diff_ltlt.length)
                 })
                 .then(function () {
                     this$1.step_highs = step_highs;
                     //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('tiles.js step_highs:', step_highs);
+                    console.log('ssctree.js step_highs:', step_highs);
                 })
                 .catch(function () {
                     this$1.step_highs = null;
                 });
         }
-            
 
-
-        fetch(this.settings.tree_root_href + this.settings.tree_root_file_nm)
+        fetch(this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
             .then(function (r) {
                 return r.json()
             })
-            .then(function (tree) {
+            .then(function (tree) {  //tree: the content in the json file
                 this$1.tree = tree;
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
@@ -2041,7 +2356,8 @@
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = this$1.settings.tile_root_href + element.href;
+                    element.url = this$1.tree_setting.tile_root_href + element.href;  //e.g., element.href: node02145.obj
+                    console.log('ssctree.js element.href:', element.href);
                     element.loaded = false;
                 });
             })
@@ -2053,13 +2369,16 @@
             .catch(function (err) {
                 console.error(err);
             });
+
+        return if_snap
     };
 
+    // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
+    // when we have made new tree serialization for tiles, we should change the code here!
     SSCTree.prototype.load_subtree = function load_subtree (node) {
             var this$1 = this;
 
-        //console.log(this.settings.tree_root_href + node.href)
-        fetch(this.settings.tree_root_href + node.href)
+        fetch(this.tree_setting.tree_root_href + node.uri) // FIXME: was: node.href
             .then(function (r) {
                 return r.json()
             })
@@ -2070,7 +2389,9 @@
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = this$1.settings.tile_root_href + element.href;
+                    //e.g., element.info: 10/502/479.json
+                    element.url = this$1.tree_setting.tile_root_href + element.info; // FIXME:  was: element.href
+                    //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 });
 
@@ -2080,20 +2401,23 @@
                 console.error(err);
             });
     };
-        
-
 
     SSCTree.prototype.fetch_tiles = function fetch_tiles (box3d, gl) {
             var this$1 = this;
 
         if (this.tree === null) { return }
-
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm 1:', this.tree_setting.tree_root_file_nm)
+        //console.log('')
+        //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
+        //console.log('ssctree.js fetch_tiles, box3d:', box3d)
+        //e.g., this.tree: the content in file tree_smooth.json
         var subtrees = obtain_overlapped_subtrees(this.tree, box3d);
         subtrees.map(function (node) {
             this$1.load_subtree(node);
         });
 
         var overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d);
+
         var to_retrieve = [];
         overlapped_dataelements.map(function (elem) {
             if (elem.loaded === false) {
@@ -2120,11 +2444,23 @@
             function (elem) {return elem[1]}
         );
 
+
+        //this.tree_setting
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm:', this.tree_setting.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, to_retrieve:', to_retrieve)
+
         // schedule tiles for retrieval
         to_retrieve.map(function (elem) {
             this$1.helper_idx_current = (this$1.helper_idx_current + 1) % this$1.worker_helpers.length;
-            var content = new TileContent(this$1.msgbus, this$1.settings.texture_root_href, this$1.worker_helpers[this$1.helper_idx_current]);
+            var content = new TileContent(
+                this$1.msgbus,
+                this$1.tree_setting.texture_root_href,
+                this$1.worker_helpers[this$1.helper_idx_current]
+            );
             content.load(elem.url, gl); //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
+            //console.log('ssctree.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
+            //console.log('ssctree.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
+                
             elem.content = content;
             elem.loaded = true;
             elem.last_touched = _now();
@@ -2153,7 +2489,7 @@
         // FIXME: these 2 variables should be adjusted
         //     based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
-        //     and be kept there (for every dataset visualized on the map)
+        //     and be kept there (for every tree_setting visualized on the map)
         // FIXME: should use this.getScaleDenominator()
 
         // let Sb = 48000  // (start scale denominator)
@@ -2166,9 +2502,11 @@
         {
              return 0
         }
+        //console.log('')
 
         // reduction in percentage
         var reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2);
+        //console.log('ssctree.js reductionf:', reductionf)
         var step = this.tree.metadata.no_of_objects_Nb * reductionf; //step is not necessarily an integer
         var snapped_step = step;
         var step_highs = this.step_highs;
@@ -2177,8 +2515,8 @@
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js step:', step)
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js step:', step)
                 
 
             var current_step_index = snap_to_existing_stephigh(current_step, step_highs);
@@ -2190,9 +2528,9 @@
             //if we scroll too little, the map doesn't zoom because of the snapping.
             //we force snapping for at least one step. 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js current_step:', current_step)
-            //console.log('tiles.js step_highs[step_index]:', step_highs[step_index])
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js current_step:', current_step)
+            //console.log('ssctree.js step_highs[step_index]:', step_highs[step_index])
             var snapped_index = snap_to_existing_stephigh(step, step_highs);
             snapped_step = step_highs[snapped_index];
 
@@ -2211,11 +2549,15 @@
 
             snapped_step = step_highs[snapped_index];
 
-            //console.log('tiles.js new step:', step)
+            //console.log('ssctree.js new step:', step)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
         }
+
             
+        console.log('ssctree.js new step:', step);
+        console.log('ssctree.js snapped_step:', snapped_step);
+
         //return Math.max(0, step)
         return snapped_step
     };
@@ -2241,9 +2583,9 @@
             && step > step_highs[0] - 0.001
             && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('tiles.js --------------------------------------')
-            //console.log('tiles.js step_highs:', step_highs)
-            //console.log('tiles.js current_step:', current_step)
+            //console.log('ssctree.js --------------------------------------')
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js current_step:', current_step)
             var current_step_index = snap_to_existing_stephigh(current_step, step_highs);
             if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
                 current_step = step_highs[current_step_index];
@@ -2251,10 +2593,10 @@
 
 
 
-            //console.log('tiles.js current_step_index:', current_step_index)
+            //console.log('ssctree.js current_step_index:', current_step_index)
 
-            //console.log('tiles.js step:', step)
-            //console.log('tiles.js step_highs[current_step_index]:', step_highs[current_step_index])
+            //console.log('ssctree.js step:', step)
+            //console.log('ssctree.js step_highs[current_step_index]:', step_highs[current_step_index])
             var normal_step_diff = Math.abs(step - current_step);
 
             var snapped_index = snap_to_existing_stephigh(step, step_highs);
@@ -2264,10 +2606,10 @@
             //we force snapping for at least one step. 
 
             //let snapped_St = this.get_St_from_step(step_highs[step_index])
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js snapped_index:', snapped_index)
-            //console.log('tiles.js step_highs[snapped_index]:', step_highs[snapped_index])
-            //console.log('tiles.js zoom_factor:', zoom_factor)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js snapped_index:', snapped_index)
+            //console.log('ssctree.js step_highs[snapped_index]:', step_highs[snapped_index])
+            //console.log('ssctree.js zoom_factor:', zoom_factor)
             //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
             //if (zoom_factor > 1) { //zooming in 
             //    snapped_index -= 1
@@ -2291,7 +2633,7 @@
                 }
             }
             snapped_step = step_highs[snapped_index];
-            //console.log('tiles.js snapped_step:', snapped_step)
+            //console.log('ssctree.js snapped_step:', snapped_step)
 
             var adjusted_step_diff = Math.abs(snapped_step - current_step);
 
@@ -2299,11 +2641,11 @@
                 time_factor = adjusted_step_diff / normal_step_diff;
             }
 
-            //console.log('tiles.js adjusted_step_diff:', adjusted_step_diff)
-            //console.log('tiles.js normal_step_diff:', normal_step_diff)
-            //console.log('tiles.js time_factor:', time_factor)
+            //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
+            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+            //console.log('ssctree.js time_factor:', time_factor)
 
-            //console.log('tiles.js snapped_step:', step)
+            //console.log('ssctree.js snapped_step:', step)
         }
 
         //return Math.max(0, step)
@@ -2338,7 +2680,7 @@
                 { end = mid - 1; }
         }
 
-        //console.log('tiles.js start and end:', start, end)
+        //console.log('ssctree.js start and end:', start, end)
         //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
         //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
         if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
@@ -2396,7 +2738,7 @@
                     {
                         stack.push(child);
                     }
-                    else if (child.hasOwnProperty('href') && !child.hasOwnProperty('loaded')
+                    else if (child.hasOwnProperty('uri') && !child.hasOwnProperty('loaded')
                         && overlaps3d(child.box, box3d)) {
                         result.push(child);
                         child.loaded = true;
@@ -2452,6 +2794,9 @@
 
     function overlaps3d(one, other) {
         // Separating axes theorem, nD -> 3D
+        // e.g., one: [182000, 308000, 0, 191000, 317000, 7]
+        // e.g., other: [185210.15625, 311220.96875, 0, 187789.84375, 313678.9375, 0]
+
         var dims = 3;
         var are_overlapping = true;
         for (var min = 0; min < dims; min++) {
@@ -2461,309 +2806,53 @@
                 break
             }
         }
+        //console.log('ssctree.js are_overlapping:', are_overlapping)
         return are_overlapping
     }
 
-    var isPowerOf2 = (function (value) { return (value & (value - 1)) == 0 });
+    function center2d(box3d) {
+        // 2D center of bottom of box
+        var xmin = box3d[0];
+        var ymin = box3d[1];
+        var xmax = box3d[3];
+        var ymax = box3d[4];
+        return [xmin + 0.5 * (xmax - xmin),
+        ymin + 0.5 * (ymax - ymin)]
+    }
+
+    function distance2d(target, against) {
+        // find projected distance between 2 box3d objects
+        var ctr_t = center2d(target);
+        var ctr_a = center2d(against);
+        var dx2 = Math.pow(ctr_a[0] - ctr_t[0], 2);
+        var dy2 = Math.pow(ctr_a[1] - ctr_t[1], 2);
+        return Math.sqrt(dx2 + dy2)
+    }
 
 
 
 
+    var WorkerHelper = function WorkerHelper() {
+        var this$1 = this;
 
-
-
-    // FIXME: UNIFY TileContent and ImageTileContent by branching inside load()-method
-    // on the file extension to be retrieved... (not super elegant)
-
-    // This makes TileContent quite big class -> split in subclasses?
-
-    var TileContent = function TileContent(msgbus, texture_root_href, worker_helper) {
-        this.msgbus = msgbus;
-        this.worker_helper = worker_helper;
-
-        // image tiles
-        this.texture_root_href = texture_root_href;
-        this.buffer = null;
-        this.texture = null;
-        this.textureCoordBuffer = null;
-
-        // ssc tiles
-        this.polygon_triangleVertexPosBufr = null;
-        this.line_triangleVertexPosBufr = null;
-        this.displacementBuffer = null;
-        this.foreground_triangleVertexPosBufr = null;
-
-
+        this.tasks = {};
+        this.worker = new Worker('worker.js');
+        this.worker.onmessage = function (evt) { this$1.receive(evt); }; //evt: {id: id, msg: arrays}, arrays; see worker.js
     };
 
-    TileContent.prototype.load = function load (url, gl) {
-        if (url.endsWith('obj') == true) 
-        {
-            this.load_ssc_tile(url, gl); 
-        }
-        else if (url.endsWith('json') == true) 
-        {
-            this.load_image_tile(url, gl);
-        }
-        else
-        {
-            console.error('unknown url type: '+ url);
-        }
-    };
-
-    TileContent.prototype.load_ssc_tile = function load_ssc_tile (url, gl)
+    WorkerHelper.prototype.send = function send (url, callback) //e.g., callback: the function of makeBuffers
     {
-            var this$1 = this;
-
-        this.worker_helper.send(
-            url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
-            function (data) { //I call the function makeBuffers
-
-                // upload received data to GPU
-
-                // buffer for triangles of polygons
-                // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
-                this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
-
-                // buffer for triangles of boundaries
-                // itemSize = 4: x, y, z (step_low), w (step_high); e.g., start (see parse.js)
-                this$1.line_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[1]), 4);
-
-                // buffer for displacements of boundaries
-                // itemSize = 2: x and y; e.g., startl (see parse.js)
-                this$1.displacementBuffer = create_data_buffer(gl, new Float32Array(data[2]), 2);
-
-                var foreground_data_array = new Float32Array([
-                    186500, 312600, 0, 1, 0, 0, 0.5,
-                    186700, 311800, 0, 0, 0, 1, 0.5,
-                    186200, 311800, 0, 0, 1, 0, 0.5]); //clockwise
-                this$1.foreground_triangleVertexPosBufr = create_data_buffer(gl, foreground_data_array, 7);
-
-
-                // notify we are ready
-                this$1.msgbus.publish('data.tile.loaded', 'tile.ready');
-
-                function create_data_buffer(gl, data_array, itemSize) {
-                    var data_buffer = gl.createBuffer();
-                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer);
-                    gl.bufferData(gl.ARRAY_BUFFER, data_array, gl.STATIC_DRAW);
-                    data_buffer.itemSize = itemSize; //x, y, z, r_frac, g_frac, b_frac
-                    data_buffer.numItems = data_array.length / itemSize;
-                    return data_buffer;
-                }
-                    
-            }
-        );
+        // use a random id
+        var id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10);
+        this.tasks[id] = callback;
+        this.worker.postMessage({ id: id, msg: url }); //parse the data of the obj file specified by the url
     };
 
-
-
-    TileContent.prototype.load_image_tile = function load_image_tile (href, gl) {
-            var this$1 = this;
-
-        var f = function () {
-
-            // setup texture as placeholder for texture to be retrieved later
-            this$1.texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
-            // Because images have to be download over the internet
-            // they might take a moment until they are ready.
-            // Until then put a single pixel in the texture so we can
-            // use it immediately. When the image has finished downloading
-            // we'll update the texture with the contents of the image.
-            var level = 0;
-            var internalFormat = gl.RGBA;
-            var width = 1;
-            var height = 1;
-            var border = 0;
-            var srcFormat = gl.RGBA;
-            var srcType = gl.UNSIGNED_BYTE;
-            var pixel = new Uint8Array([255, 255, 255, 255]);  // opaque blue
-            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                            width, height, border, srcFormat, srcType,
-                            pixel);
-
-            this$1.textureCoordBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this$1.textureCoordBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                0.0, 0.0, 
-                0.0, 1.0,
-                1.0, 1.0,
-                0.0, 0.0,
-                1.0, 1.0,
-                1.0, 0.0
-            ]), gl.STATIC_DRAW);
-
-            fetch(href).then(function (r) { return r.json() })
-            .then(function (mesh) { 
-                this$1._process_image_tile(mesh, gl);
-                // this.msgbus.publish('data', 'tile.loaded.triangles')
-            })
-            .catch(function (err) { console.error(err); }); };
-
-        f();
-        // q.add(f)
-
-        // let image = new Image()
-        // let now = performance.now()
-        // image.crossOrigin = ""
-        // image.src = 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/0/0/0.png'
-        // image.addEventListener('load', () => {
-        // this.texture = gl.createTexture();
-        // gl.bindTexture(gl.TEXTURE_2D, this.texture);         
-        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        // console.log(performance.now() - now)
-        // if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
-        // {
-        //     gl.generateMipmap(gl.TEXTURE_2D);
-        // }
-        // else
-        // {
-        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        // }
-        // })
-    /*
-    this.texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-
-    var now = performance.now();
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    */
-        // let scope = this;
-        // let client = new XMLHttpRequest();
-        // client.open('GET', this.url, true);
-        // "text", "", "arraybuffer", "json" -- https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType
-        // client.responseType = "text";  
-        // client.onreadystatechange = function()
-        // {
-        // if (client.readyState === XMLHttpRequest.DONE && client.status === 200)
-        // {
-        //     console.log('loaded tile ' + scope.url)
-        //     scope._process(client.response);
-        //     // var buf = new ArrayBuffer(client.response.length);
-        //     // buf = client.response;
-        //     // // Here we do transfer the buffer in a way that does not involve
-        //     // // copying the ArrayBuffer
-        //     // // Note, we do assume that this works, but as it has been added
-        //     // // to the spec later, this could not be implemented in a browser!
-        //     // postMessage(buf, [buf]);
-        // }
-        // // we close the worker process
-        // // close();
-        // }
-        // client.send(null);
-    };
-
-    TileContent.prototype._process_image_tile = function _process_image_tile (response, gl) {
-            var this$1 = this;
-
-        var result = [];
-            
-        response.points.forEach(
-            function (point) { return result.push.apply(result, point); }
-        );
-        // could also be: response.points.flat(1); ???
-        this._upload_image_tile_mesh(gl, new Float32Array(result));
-
-        /* // using image object to retrieve the texture
-        let image = new Image()
-        image.crossOrigin = ""
-        image.src = this.texture_root_href + response.texture_href
-        image.addEventListener('load', 
-            () => {
-                this.texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, this.texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-                if (isPowerOf2(image.width) && isPowerOf2(image.height)) 
-                {
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                }
-                else
-                {
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                }
-                this.msgbus.publish('data.tile.loaded', 'tile.loaded.texture')
-            }
-        )
-        */
-
-        // using createImageBitmap and fetch to retrieve the texture
-        fetch(this.texture_root_href + response.texture_href, {mode: 'cors'})
-            .then(function (response) {
-                if (!response.ok) {
-                    throw response;
-                }
-                    
-                return response.blob();
-            })
-            .then(function (blob) {
-                // Giving options does not work for Firefox (do we need to give all option fields?)
-                return createImageBitmap(blob
-                    // , 
-                    // {
-                    // premultiplyAlpha: 'none',
-                    // colorSpaceConversion: 'none',
-                    // }
-                    );
-            }).then(function (bitmap) {
-                this$1.texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-                if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) 
-                {
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                }
-                else
-                {
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                }
-                this$1.msgbus.publish('data.tile.loaded', 'tile.loaded.texture');
-            }).catch(function(e) {
-                console.error(e);
-            });
-    };
-
-    TileContent.prototype._upload_image_tile_mesh = function _upload_image_tile_mesh (gl, mesh) {
-        this.buffer = gl.createBuffer();  //buffer is an object with a reference to the memory location on the GPU
-        // bind buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-        // upload content to the GPU
-        gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
-        // remember number of triangles for this buffer
-        this.buffer.numItems = (mesh.length) / 3;
-        // do not keep the floatarray object alive
-        // now we have uploaded the triangles to the GPU
-        // FIXME: is this needed?
-        // this.buffer.buffer = null
-    };
-
-    TileContent.prototype.destroy = function destroy (gl) {
-        // clear buffers / textures
-        var buffers = [this.buffer, this.textureCoordBuffer, this.line_triangleVertexPosBufr,
-                       this.displacementBuffer, this.polygon_triangleVertexPosBufr];
-        buffers.forEach(
-            function (buffer) {
-                if (buffer !== null)
-                {
-                    gl.deleteBuffer(buffer);
-                    buffer = null;
-                }
-            }
-        );
-        var textures = [this.texture];
-        textures.forEach(
-            function (texture) {
-                gl.deleteTexture(texture);
-                texture = null;
-            }
-        );
-
+    WorkerHelper.prototype.receive = function receive (evt) {
+        var id = evt.data.id;
+        var msg = evt.data.msg; // e.g., arrays = parse_obj(data_text)
+        this.tasks[id](msg); // execute the callback that was registered while sending
+        delete this.tasks[id];
     };
 
 
@@ -2810,7 +2899,7 @@
             tile.last_touched = null;
             tile.loaded = false;
         });
-        // when we have removed tiles, let's clear the screen
+        // when we have removed tiles, let's clear the screen (both color and depth buffer)
         if (to_evict.length > 0 )
         {
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -2923,12 +3012,13 @@
         return instance.subscribe(topic, func)
     };
 
-    var Map = function Map(map_settings) {
+    var Map = function Map(map_setting) {
         var this$1 = this;
 
         //console.log('map.js test:')
-        //console.log('map.js map_settings:', map_settings)
-        var container = map_settings['canvas_nm'];
+        //console.log('map.js map_setting:', map_setting)
+        this.ssctrees = [];
+        var container = map_setting['canvas_nm'];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
         }
@@ -2943,9 +3033,9 @@
     //    this._should_broadcast_move = true;
 
         this._abort = null;
-        this._transform = new Transform(map_settings.initialization.center2d,
+        this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
-                                        map_settings.initialization.scale_den);
+                                        map_setting.initialization.scale_den);
 
         /* settings for zooming and panning */
         this._interaction_settings = {
@@ -2954,7 +3044,7 @@
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-        this.if_snap = true;
+        this.if_snap = false;
 
         this.msgbus = new MessageBusConnector();
 
@@ -2996,9 +3086,17 @@
         });
 
 
+        map_setting.tree_settings.forEach(function (tree_setting) {
+            //console.log('map.js tree_setting:', tree_setting)
+            this$1.ssctrees.push(new SSCTree(this$1.msgbus, tree_setting));
+        });
+
+
         // data load
-        this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0]);
-        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree);
+        //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
+
+        this.ssctree = this.ssctrees[0];
+        this.renderer = new Renderer(this.getWebGLContext(), this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height);
 
@@ -3038,7 +3136,17 @@
     };
 
     Map.prototype.loadTree = function loadTree () {
-        this.ssctree.load();
+            var this$1 = this;
+
+        //this.ssctree.load()
+
+        this.ssctrees.forEach(function (ssctree) {
+            //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
+            var if_snap = ssctree.load();
+            if (if_snap == true) {
+                this$1.if_snap = true;
+            }
+        });
     };
 
     Map.prototype.getCanvasContainer = function getCanvasContainer () {
@@ -3046,8 +3154,8 @@
     };
 
     Map.prototype.getWebGLContext = function getWebGLContext () {
-        return this.getCanvasContainer().getContext("webgl",
-            { antialias: true, alpha: false, premultipliedAlpha: false })
+        return this.getCanvasContainer().getContext('webgl', 
+            { antialias: true, alpha: false, premultipliedAlpha: false})
     };
 
     Map.prototype.getTransform = function getTransform () {
@@ -3070,6 +3178,7 @@
         }
         else {
             St = this.getTransform().getScaleDenominator();
+            //console.log('map.js render, test')
             step = this.ssctree.get_step_from_St(St);
         }
 
@@ -3081,6 +3190,7 @@
         if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
             last_step = this.ssctree.tree.metadata.no_of_steps_Ns;
         }
+        //console.log('map.js render, last_step:', last_step)
 
         //var step = this.ssctree.get_step_from_St(St) //+ 0.001
         //console.log('map.js, step before snapping:', step)
@@ -3090,11 +3200,8 @@
         //    step = snapped_step
         //}
         //}
-
-        //step -= 0.001
-
-        //var step = this.ssctree.get_step_from_St(St) //- 0.001
-        //console.log('map.js, step:', step)
+            
+            
 
         if (step < 0) {
             step = 0;
@@ -3118,7 +3225,8 @@
         var box2d = this.getTransform().getVisibleWorld();
         var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
         var gl = this.getWebGLContext();
-        this.ssctree.fetch_tiles(box3d, gl);
+        this.ssctrees.forEach(function (ssctree) { ssctree.fetch_tiles(box3d, gl);});
+        //this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     };
 

@@ -27,10 +27,10 @@ import { TileContent } from "./tilecontent"
 
 
 export class SSCTree {
-    constructor(msgbus, dataset) {
+    constructor(msgbus, tree_setting) {
         this.msgbus = msgbus
         this.tree = null
-        this.dataset = dataset
+        this.tree_setting = tree_setting
         this.step_highs = null
         // FIXME: as the pool of workers is owned by the ssctree, adding a new SSCTree makes again (many) more workers
         // There should be just 1 pool of workers, e.g. in the map object, that is used by all
@@ -46,11 +46,11 @@ export class SSCTree {
         console.log(pool_size + ' workers made')
         this.helper_idx_current = -1
 
-        // FIXME: theses should be put in settings *per* SSCTree ?
-        this.bln_glfront = false  //by default, draw the front faces
-        this.bln_depth_test = true //by default, do depth test
-        this.bln_blend = false
-        this.opacity = 1 //by default, opaque (not transparent)
+        //// FIXME: theses should be put in settings *per* SSCTree ?
+        //this.draw_cw_faces = true  
+        //this.do_depth_test = true //by default, do depth test
+        //this.do_blend = false
+        //this.opacity = 1 //by default, opaque (not transparent)
 
     }
 
@@ -65,35 +65,34 @@ export class SSCTree {
 //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        //console.log('fetching root' + this.dataset.tree_root_href + this.dataset.tree_root_file_nm)
+        //console.log('fetching root' + this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
 
-        //e.g., this.dataset.tree_root_href: '/data/'
-        //e.g., this.dataset.tree_root_file_nm: 'tree.json'
-        //e.g., this.dataset.eventdiff_nm: 'eventdiff.json'
+        //e.g., this.tree_setting.tree_root_href: '/data/'
+        //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
+        //e.g., this.tree_setting.step_event_nm: 'step_event.json'
         var step_highs = null
         var if_snap = false
-        var eventdiff_nm = 'eventdiff_nm'
-        if (eventdiff_nm in this.dataset) {
+        var step_event_nm = 'step_event_nm'
+        if (step_event_nm in this.tree_setting) {
             if_snap = true
-            fetch(this.dataset.tree_root_href + this.dataset[eventdiff_nm])
+            fetch(this.tree_setting.tree_root_href + this.tree_setting[step_event_nm])
                 .then(r => {
                     step_highs = [0] //if the file exists, we will do parallel merging
                     return r.json()
                 })
-                .then(step_eventdiff_dt => {
-                    var current_face_num = step_eventdiff_dt.face_num
-                    var parallel_param = step_eventdiff_dt.parallel_param
-                    var step_diff_ltlt = step_eventdiff_dt.step_eventdiff
-                    var diff_index = 0
+                .then(filecontent => {
+                    var current_face_num = filecontent.face_num
+                    var parallel_param = filecontent.parallel_param
+                    var step_event_exceptions = filecontent.step_event_exceptions
+                    var exception_index = 0
                     var step = 1
                     while (current_face_num > 1) {
-                        var max_parallel = Math.ceil(current_face_num * parallel_param)
-                        var event_diff = 0
-                        if (diff_index < step_diff_ltlt.length && step_diff_ltlt[diff_index][0] == step) {
-                            event_diff = step_diff_ltlt[diff_index][1]
-                            diff_index += 1
+                        var eventnum = Math.ceil(current_face_num * parallel_param)
+                        if (exception_index < step_event_exceptions.length && step_event_exceptions[exception_index][0] == step) {
+                            eventnum = step_event_exceptions[exception_index][1]
+                            exception_index += 1
                         }
-                        var eventnum = max_parallel - event_diff
+                        
                         step_highs.push(step_highs[step_highs.length - 1] + eventnum)
 
                         step += 1
@@ -112,7 +111,7 @@ export class SSCTree {
                 })
         }
 
-        fetch(this.dataset.tree_root_href + this.dataset.tree_root_file_nm)
+        fetch(this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
             .then(r => {
                 return r.json()
             })
@@ -124,7 +123,7 @@ export class SSCTree {
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
-                    element.url = this.dataset.tile_root_href + element.href  //e.g., element.href: node02145.obj
+                    element.url = this.tree_setting.tile_root_href + element.href  //e.g., element.href: node02145.obj
                     console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 })
@@ -144,7 +143,7 @@ export class SSCTree {
     // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
     // when we have made new tree serialization for tiles, we should change the code here!
     load_subtree(node) {
-        fetch(this.dataset.tree_root_href + node.uri) // FIXME: was: node.href
+        fetch(this.tree_setting.tree_root_href + node.uri) // FIXME: was: node.href
             .then(r => {
                 return r.json()
             })
@@ -156,7 +155,7 @@ export class SSCTree {
                     element.content = null
                     element.last_touched = null
                     //e.g., element.info: 10/502/479.json
-                    element.url = this.dataset.tile_root_href + element.info // FIXME:  was: element.href
+                    element.url = this.tree_setting.tile_root_href + element.info // FIXME:  was: element.href
                     //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 })
@@ -170,7 +169,7 @@ export class SSCTree {
 
     fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
-        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm 1:', this.tree_setting.tree_root_file_nm)
         //console.log('')
         //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
         //console.log('ssctree.js fetch_tiles, box3d:', box3d)
@@ -209,8 +208,8 @@ export class SSCTree {
         )
 
 
-        //this.dataset
-        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
+        //this.tree_setting
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm:', this.tree_setting.tree_root_file_nm)
         //console.log('ssctree.js fetch_tiles, to_retrieve:', to_retrieve)
 
         // schedule tiles for retrieval
@@ -218,7 +217,7 @@ export class SSCTree {
             this.helper_idx_current = (this.helper_idx_current + 1) % this.worker_helpers.length
             let content = new TileContent(
                 this.msgbus,
-                this.dataset.texture_root_href,
+                this.tree_setting.texture_root_href,
                 this.worker_helpers[this.helper_idx_current]
             )
             content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
@@ -249,7 +248,7 @@ export class SSCTree {
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
-        //         and be kept there (for every dataset visualized on the map)
+        //         and be kept there (for every tree_setting visualized on the map)
         // FIXME: should use this.getScaleDenominator()
 
         // let Sb = 48000  // (start scale denominator)
@@ -266,7 +265,7 @@ export class SSCTree {
 
         // reduction in percentage
         let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        console.log('ssctree.js reductionf:', reductionf)
+        //console.log('ssctree.js reductionf:', reductionf)
         let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
         let snapped_step = step
         let step_highs = this.step_highs

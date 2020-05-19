@@ -320,7 +320,7 @@ void main()
     }
 
 
-    draw_tile(matrix, tile, ssctree) {
+    draw_tile(matrix, tile, tree_setting) {
         // guard: if no data in the tile, we will skip rendering
         let triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {
@@ -344,26 +344,34 @@ void main()
             gl.uniformMatrix4fv(M_location, false, matrix);
 
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-            gl.uniform1f(opacity_location, ssctree.opacity);
+            gl.uniform1f(opacity_location, tree_setting.opacity);
         }
 
         gl.enable(gl.CULL_FACE);
         //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        //bln_glback = true
-        gl.cullFace(gl.FRONT); //by default, draw the front faces
-        if (ssctree.bln_glfront == false) {
-            gl.cullFace(gl.BACK);
+        
+               
+        if (tree_setting.draw_cw_faces == true) {
+            gl.cullFace(gl.BACK); //triangles from FME are clock wise
+        }
+        else {
+            gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
         }
 
-        gl.enable(gl.DEPTH_TEST); //by default, do depth test
-        if (ssctree.bln_depth_test == false) {
+        if (tree_setting.do_depth_test == true) {
+            gl.enable(gl.DEPTH_TEST);
+        }
+        else {            
             gl.disable(gl.DEPTH_TEST);
         }
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-        gl.enable(gl.BLEND)
-        if (ssctree.bln_blend == false) {
+        
+        if (tree_setting.do_blend == true) {
+            gl.enable(gl.BLEND)
+        }
+        else {
             gl.disable(gl.BLEND)
         }
 
@@ -441,9 +449,9 @@ void main()
 
 
 export class Renderer {
-    constructor(gl, ssctree_lt) {
+    constructor(gl, ssctrees) {
         this.gl = gl
-        this.ssctree_lt = ssctree_lt
+        this.ssctrees = ssctrees
         this.settings = { boundary_width: 0.2 }
 
         // construct programs once, at init time
@@ -480,7 +488,7 @@ export class Renderer {
 
         this._clearColor()
 
-        this.ssctree_lt.forEach(ssctree => {
+        this.ssctrees.forEach(ssctree => {
 
             this._clearDepth()
             if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
@@ -496,7 +504,7 @@ export class Renderer {
 //                return
 //            }
 
-            //console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
+            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
             //console.log('render.js box3d:', box3d)
             //console.log('render.js near_St:', near_St)
 
@@ -504,8 +512,8 @@ export class Renderer {
             if (tiles.length > 0) {                
                 var polygon_draw_program = this.programs[0];
                 tiles.forEach(tile => {
-                    //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                        polygon_draw_program.draw_tile(matrix, tile, ssctree);
+                        //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
                     })
 
                 var image_tile_draw_program = this.programs[2];

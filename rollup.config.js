@@ -49,9 +49,9 @@ var dist_folder = 'dist_top10nl_9x9/';
 // dist_folder += '0.01';
 // dist_folder += '0.001';
 // dist_folder += 'single-event';
-// dist_folder += '7';
+dist_folder += '7';
 // dist_folder += 'one-triangle';
-dist_folder += 'one-polygon';
+// dist_folder += 'one-polygon';
 
 
 
