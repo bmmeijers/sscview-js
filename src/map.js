@@ -37,6 +37,7 @@ class Map {
         // FIXME: to not circle map updates (can this be done more elegantly?)
 //        this._should_broadcast_move = true;
 
+        this._action = 'zoomAnimated' //if we are zooming, we may want to snap to a valid state
         this._abort = null
         this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
@@ -166,13 +167,13 @@ class Map {
     }
 
     render(k = 0) {
-
+        //k=0
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
         let St = 0
         let step = 0
         let snapped_step = this.getTransform().snapped_step
-        if (k == 1 && this.if_snap == true &&
+        if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
             St = this.getTransform().snapped_St
             step = snapped_step
@@ -375,6 +376,7 @@ class Map {
             //console.log('map.js test1')
             this._abort();
         }
+        this._action = 'zoomAnimated'
         //console.log('map.js test2')
         //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
         //console.log('map.js zoom_factor:', zoom_factor)
@@ -392,9 +394,11 @@ class Map {
 
     panAnimated(dx, dy) {
         if (this._abort !== null) {
+            //console.log('map.js this._abort !== null')
             this._abort();
         }
         // FIXME: settings
+        this._action = 'panAnimated'
         var interpolator = this.animatePan(dx, dy);
         this._abort = timed(interpolator, this._interaction_settings.pan_duration, this);
     }

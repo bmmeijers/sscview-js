@@ -139,6 +139,7 @@
             canvas.removeEventListener("mousedown", doMouseDown, { passive: false });
             canvas.addEventListener("mousemove", doMouseDrag, { passive: false });
             canvas.addEventListener("mouseup", doMouseUp, { passive: false });
+            
 
             // canvas.removeEventListener("touchstart", doMouseDown, { capture: true, passive: false });
             // canvas.addEventListener("touchmove", doMouseDrag, { capture: true, passive: false });
@@ -155,6 +156,7 @@
 
             _trace = new Trace([x, y]);
             map.panBy(0, 0); // to cancel on going animations
+            
         }
 
         function doMouseDrag(evt) {
@@ -1728,72 +1730,6 @@
     }(DrawProgram));
 
 
-    //class ForegroundDrawProgram extends DrawProgram {
-    //    constructor(gl) {
-    //        let vertexShaderText = `
-    //precision highp float;
-
-    //attribute vec3 vertexPosition_modelspace;
-    //attribute vec4 vertexColor;
-    //uniform mat4 M;
-    //varying vec4 fragColor;
-
-    //void main()
-    //{
-    //    fragColor = vertexColor;
-    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
-    //}
-    //`;
-    //        let fragmentShaderText = `
-    //precision mediump float;
-
-    //varying vec4 fragColor;
-    //void main()
-    //{
-    //    gl_FragColor = vec4(fragColor);
-    //}
-    //`;
-    //        super(gl, vertexShaderText, fragmentShaderText)
-    //    }
-
-    //    draw_tile(matrix, tile) {
-    //        // guard: if no data in the tile, we will skip rendering
-    //        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
-    //        if (triangleVertexPosBufr === null) {
-    //            return;
-    //        }
-    //        // render
-    //        let gl = this.gl;
-    //        let shaderProgram = this.shaderProgram;
-    //        gl.useProgram(shaderProgram);
-    //        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-
-    //        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
-    //        //itemSize = 3: x, y, z;   
-    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
-    //        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
-    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
-
-    //        {
-    //            let M_location = gl.getUniformLocation(shaderProgram, 'M');
-    //            gl.uniformMatrix4fv(M_location, false, matrix);
-    //        }
-
-    //        gl.enable(gl.CULL_FACE);
-    //        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
-
-    //        //gl.cullFace(gl.BACK);
-    //        gl.cullFace(gl.FRONT);
-    //        // gl.cullFace(gl.FRONT_AND_BACK);
-
-    //        gl.enable(gl.BLEND)
-    //        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-    //        //gl.disable(gl.BLEND);
-    //        //gl.enable(gl.DEPTH_TEST);
-    //        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-    //    }
-    //}
-
 
     var Renderer = function Renderer(gl, ssctrees) {
         this.gl = gl;
@@ -2555,8 +2491,8 @@
         }
 
             
-        console.log('ssctree.js new step:', step);
-        console.log('ssctree.js snapped_step:', snapped_step);
+        //console.log('ssctree.js new step:', step)
+        //console.log('ssctree.js snapped_step:', snapped_step)
 
         //return Math.max(0, step)
         return snapped_step
@@ -3032,6 +2968,7 @@
         // FIXME: to not circle map updates (can this be done more elegantly?)
     //    this._should_broadcast_move = true;
 
+        this._action = 'zoomAnimated'; //if we are zooming, we may want to snap to a valid state
         this._abort = null;
         this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
@@ -3165,13 +3102,13 @@
     Map.prototype.render = function render (k) {
             if ( k === void 0 ) k = 0;
 
-
+        //k=0
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
         var St = 0;
         var step = 0;
         var snapped_step = this.getTransform().snapped_step;
-        if (k == 1 && this.if_snap == true &&
+        if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
             St = this.getTransform().snapped_St;
             step = snapped_step;
@@ -3378,6 +3315,7 @@
             //console.log('map.js test1')
             this._abort();
         }
+        this._action = 'zoomAnimated';
         //console.log('map.js test2')
         //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
         //console.log('map.js zoom_factor:', zoom_factor)
@@ -3395,9 +3333,11 @@
 
     Map.prototype.panAnimated = function panAnimated (dx, dy) {
         if (this._abort !== null) {
+            //console.log('map.js this._abort !== null')
             this._abort();
         }
         // FIXME: settings
+        this._action = 'panAnimated';
         var interpolator = this.animatePan(dx, dy);
         this._abort = timed(interpolator, this._interaction_settings.pan_duration, this);
     };

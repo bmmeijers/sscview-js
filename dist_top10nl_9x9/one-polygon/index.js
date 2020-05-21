@@ -1272,7 +1272,7 @@
 
 
         //console.log('transform.js St_current:', St_current)
-        console.log('transform.js St:', St);
+        //console.log('transform.js St:', St)
         //console.log('transform.js St_current / St:', St_current / St)
         //console.log('transform.js zoom_factor:', zoom_factor)
 
@@ -1289,8 +1289,8 @@
 
         //this.current_step = snapped_step
 
-        console.log('transform.js snapped_step:', snapped_step);
-        console.log('transform.js snapped_St:', snapped_St);
+        //console.log('transform.js snapped_step:', snapped_step)
+        //console.log('transform.js snapped_St:', snapped_St)
         //console.log('transform.js St / snapped_St:', St / snapped_St)
         this.compute_zoom_parameters(St / snapped_St, x, y);
         //let final_St = this.getScaleDenominator()
@@ -1665,7 +1665,7 @@
         PolygonDrawProgram.prototype.constructor = PolygonDrawProgram;
 
 
-        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, ssctree) {
+        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, tree_setting) {
             // guard: if no data in the tile, we will skip rendering
             var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
             if (triangleVertexPosBufr === null) {
@@ -1689,26 +1689,34 @@
                 gl.uniformMatrix4fv(M_location, false, matrix);
 
                 var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-                gl.uniform1f(opacity_location, ssctree.opacity);
+                gl.uniform1f(opacity_location, tree_setting.opacity);
             }
 
             gl.enable(gl.CULL_FACE);
             //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-            //bln_glback = true
-            gl.cullFace(gl.FRONT); //by default, draw the front faces
-            if (ssctree.bln_glfront == false) {
-                gl.cullFace(gl.BACK);
+            
+                   
+            if (tree_setting.draw_cw_faces == true) {
+                gl.cullFace(gl.BACK); //triangles from FME are clock wise
+            }
+            else {
+                gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
             }
 
-            gl.enable(gl.DEPTH_TEST); //by default, do depth test
-            if (ssctree.bln_depth_test == false) {
+            if (tree_setting.do_depth_test == true) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {            
                 gl.disable(gl.DEPTH_TEST);
             }
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-            gl.enable(gl.BLEND);
-            if (ssctree.bln_blend == false) {
+            
+            if (tree_setting.do_blend == true) {
+                gl.enable(gl.BLEND);
+            }
+            else {
                 gl.disable(gl.BLEND);
             }
 
@@ -1787,9 +1795,9 @@
     //}
 
 
-    var Renderer = function Renderer(gl, ssctree_lt) {
+    var Renderer = function Renderer(gl, ssctrees) {
         this.gl = gl;
-        this.ssctree_lt = ssctree_lt;
+        this.ssctrees = ssctrees;
         this.settings = { boundary_width: 0.2 };
 
         // construct programs once, at init time
@@ -1828,7 +1836,7 @@
 
         this._clearColor();
 
-        this.ssctree_lt.forEach(function (ssctree) {
+        this.ssctrees.forEach(function (ssctree) {
 
             this$1._clearDepth();
             if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
@@ -1844,7 +1852,7 @@
     //            return
     //        }
 
-            //console.log('render.js ssctree.dataset.tree_root_file_nm:', ssctree.dataset.tree_root_file_nm)
+            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
             //console.log('render.js box3d:', box3d)
             //console.log('render.js near_St:', near_St)
 
@@ -1852,8 +1860,8 @@
             if (tiles.length > 0) {                
                 var polygon_draw_program = this$1.programs[0];
                 tiles.forEach(function (tile) {
-                    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                        polygon_draw_program.draw_tile(matrix, tile, ssctree);
+                        //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
                     });
 
                 var image_tile_draw_program = this$1.programs[2];
@@ -2250,10 +2258,10 @@
 
 
 
-    var SSCTree = function SSCTree(msgbus, dataset) {
+    var SSCTree = function SSCTree(msgbus, tree_setting) {
         this.msgbus = msgbus;
         this.tree = null;
-        this.dataset = dataset;
+        this.tree_setting = tree_setting;
         this.step_highs = null;
         // FIXME: as the pool of workers is owned by the ssctree, adding a new SSCTree makes again (many) more workers
         // There should be just 1 pool of workers, e.g. in the map object, that is used by all
@@ -2269,11 +2277,11 @@
         console.log(pool_size + ' workers made');
         this.helper_idx_current = -1;
 
-        // FIXME: theses should be put in settings *per* SSCTree ?
-        this.bln_glfront = false;  //by default, draw the front faces
-        this.bln_depth_test = true; //by default, do depth test
-        this.bln_blend = false;
-        this.opacity = 1; //by default, opaque (not transparent)
+        //// FIXME: theses should be put in settings *per* SSCTree ?
+        //this.draw_cw_faces = true  
+        //this.do_depth_test = true //by default, do depth test
+        //this.do_blend = false
+        //this.opacity = 1 //by default, opaque (not transparent)
 
     };
 
@@ -2290,35 +2298,34 @@
     //    let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
-        //console.log('fetching root' + this.dataset.tree_root_href + this.dataset.tree_root_file_nm)
+        //console.log('fetching root' + this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
 
-        //e.g., this.dataset.tree_root_href: '/data/'
-        //e.g., this.dataset.tree_root_file_nm: 'tree.json'
-        //e.g., this.dataset.step_event_nm: 'step_event.json'
+        //e.g., this.tree_setting.tree_root_href: '/data/'
+        //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
+        //e.g., this.tree_setting.step_event_nm: 'step_event.json'
         var step_highs = null;
         var if_snap = false;
         var step_event_nm = 'step_event_nm';
-        if (step_event_nm in this.dataset) {
+        if (step_event_nm in this.tree_setting) {
             if_snap = true;
-            fetch(this.dataset.tree_root_href + this.dataset[step_event_nm])
+            fetch(this.tree_setting.tree_root_href + this.tree_setting[step_event_nm])
                 .then(function (r) {
                     step_highs = [0]; //if the file exists, we will do parallel merging
                     return r.json()
                 })
-                .then(function (step_eventdiff_dt) {
-                    var current_face_num = step_eventdiff_dt.face_num;
-                    var parallel_param = step_eventdiff_dt.parallel_param;
-                    var step_diff_ltlt = step_eventdiff_dt.step_eventdiff;
-                    var diff_index = 0;
+                .then(function (filecontent) {
+                    var current_face_num = filecontent.face_num;
+                    var parallel_param = filecontent.parallel_param;
+                    var step_event_exceptions = filecontent.step_event_exceptions;
+                    var exception_index = 0;
                     var step = 1;
                     while (current_face_num > 1) {
-                        var max_parallel = Math.ceil(current_face_num * parallel_param);
-                        var event_diff = 0;
-                        if (diff_index < step_diff_ltlt.length && step_diff_ltlt[diff_index][0] == step) {
-                            event_diff = step_diff_ltlt[diff_index][1];
-                            diff_index += 1;
+                        var eventnum = Math.ceil(current_face_num * parallel_param);
+                        if (exception_index < step_event_exceptions.length && step_event_exceptions[exception_index][0] == step) {
+                            eventnum = step_event_exceptions[exception_index][1];
+                            exception_index += 1;
                         }
-                        var eventnum = max_parallel - event_diff;
+                            
                         step_highs.push(step_highs[step_highs.length - 1] + eventnum);
 
                         step += 1;
@@ -2337,7 +2344,7 @@
                 });
         }
 
-        fetch(this.dataset.tree_root_href + this.dataset.tree_root_file_nm)
+        fetch(this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
             .then(function (r) {
                 return r.json()
             })
@@ -2349,7 +2356,7 @@
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
-                    element.url = this$1.dataset.tile_root_href + element.href;  //e.g., element.href: node02145.obj
+                    element.url = this$1.tree_setting.tile_root_href + element.href;  //e.g., element.href: node02145.obj
                     console.log('ssctree.js element.href:', element.href);
                     element.loaded = false;
                 });
@@ -2371,7 +2378,7 @@
     SSCTree.prototype.load_subtree = function load_subtree (node) {
             var this$1 = this;
 
-        fetch(this.dataset.tree_root_href + node.uri) // FIXME: was: node.href
+        fetch(this.tree_setting.tree_root_href + node.uri) // FIXME: was: node.href
             .then(function (r) {
                 return r.json()
             })
@@ -2383,7 +2390,7 @@
                     element.content = null;
                     element.last_touched = null;
                     //e.g., element.info: 10/502/479.json
-                    element.url = this$1.dataset.tile_root_href + element.info; // FIXME:  was: element.href
+                    element.url = this$1.tree_setting.tile_root_href + element.info; // FIXME:  was: element.href
                     //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 });
@@ -2399,7 +2406,7 @@
             var this$1 = this;
 
         if (this.tree === null) { return }
-        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm 1:', this.dataset.tree_root_file_nm)
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm 1:', this.tree_setting.tree_root_file_nm)
         //console.log('')
         //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
         //console.log('ssctree.js fetch_tiles, box3d:', box3d)
@@ -2438,8 +2445,8 @@
         );
 
 
-        //this.dataset
-        //console.log('ssctree.js fetch_tiles, this.dataset.tree_root_file_nm:', this.dataset.tree_root_file_nm)
+        //this.tree_setting
+        //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm:', this.tree_setting.tree_root_file_nm)
         //console.log('ssctree.js fetch_tiles, to_retrieve:', to_retrieve)
 
         // schedule tiles for retrieval
@@ -2447,7 +2454,7 @@
             this$1.helper_idx_current = (this$1.helper_idx_current + 1) % this$1.worker_helpers.length;
             var content = new TileContent(
                 this$1.msgbus,
-                this$1.dataset.texture_root_href,
+                this$1.tree_setting.texture_root_href,
                 this$1.worker_helpers[this$1.helper_idx_current]
             );
             content.load(elem.url, gl); //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
@@ -2482,7 +2489,7 @@
         // FIXME: these 2 variables should be adjusted
         //     based on which tGAP is used...
         // FIXME: this step mapping should move to the data side (the tiles)
-        //     and be kept there (for every dataset visualized on the map)
+        //     and be kept there (for every tree_setting visualized on the map)
         // FIXME: should use this.getScaleDenominator()
 
         // let Sb = 48000  // (start scale denominator)
@@ -2499,7 +2506,7 @@
 
         // reduction in percentage
         var reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2);
-        console.log('ssctree.js reductionf:', reductionf);
+        //console.log('ssctree.js reductionf:', reductionf)
         var step = this.tree.metadata.no_of_objects_Nb * reductionf; //step is not necessarily an integer
         var snapped_step = step;
         var step_highs = this.step_highs;
@@ -3005,13 +3012,13 @@
         return instance.subscribe(topic, func)
     };
 
-    var Map = function Map(map_settings) {
+    var Map = function Map(map_setting) {
         var this$1 = this;
 
         //console.log('map.js test:')
-        //console.log('map.js map_settings:', map_settings)
-        this.ssctree_lt = [];
-        var container = map_settings['canvas_nm'];
+        //console.log('map.js map_setting:', map_setting)
+        this.ssctrees = [];
+        var container = map_setting['canvas_nm'];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
         }
@@ -3026,9 +3033,9 @@
     //    this._should_broadcast_move = true;
 
         this._abort = null;
-        this._transform = new Transform(map_settings.initialization.center2d,
+        this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
-                                        map_settings.initialization.scale_den);
+                                        map_setting.initialization.scale_den);
 
         /* settings for zooming and panning */
         this._interaction_settings = {
@@ -3079,35 +3086,17 @@
         });
 
 
-        map_settings.datasets.forEach(function (dataset) {
-            //console.log('map.js dataset:', dataset)
-            this$1.ssctree_lt.push(new SSCTree(this$1.msgbus, dataset));
+        map_setting.tree_settings.forEach(function (tree_setting) {
+            //console.log('map.js tree_setting:', tree_setting)
+            this$1.ssctrees.push(new SSCTree(this$1.msgbus, tree_setting));
         });
-
-        if (this.ssctree_lt.length > 1) {
-            //for the data from FEM, we draw the back faces because the triangles are clockwise
-            //PLEASE check the directions of your triangles.
-
-            // FIXME: these settings should be specified per dataset in the *settings* property of the SSCtree
-            for (var i = 1; i < this.ssctree_lt.length; i++) {
-                this.ssctree_lt[i].bln_glfront = false;
-                this.ssctree_lt[i].bln_depth_test = false;
-                this.ssctree_lt[i].bln_blend = true;
-                this.ssctree_lt[i].opacity = 0.5;
-            }
-            //this.ssctree_lt[0].bln_glfront = true
-            //this.ssctree_lt[0].bln_depth_test = true
-            //this.ssctree_lt[0].bln_blend = false
-            //this.ssctree_lt[0].opacity = 0.5
-            //this.ssctree_lt[2].bln_glfront = true
-        }
 
 
         // data load
-        //this.ssctree = new SSCTree(this.msgbus, map_settings.datasets[0])
+        //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
-        this.ssctree = this.ssctree_lt[0];
-        this.renderer = new Renderer(this.getWebGLContext(), this.ssctree_lt);
+        this.ssctree = this.ssctrees[0];
+        this.renderer = new Renderer(this.getWebGLContext(), this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height);
 
@@ -3151,8 +3140,8 @@
 
         //this.ssctree.load()
 
-        this.ssctree_lt.forEach(function (ssctree) {
-            //console.log('map.js ssctree.dataset:', ssctree.dataset)
+        this.ssctrees.forEach(function (ssctree) {
+            //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
             var if_snap = ssctree.load();
             if (if_snap == true) {
                 this$1.if_snap = true;
@@ -3236,7 +3225,7 @@
         var box2d = this.getTransform().getVisibleWorld();
         var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
         var gl = this.getWebGLContext();
-        this.ssctree_lt.forEach(function (ssctree) { ssctree.fetch_tiles(box3d, gl);});
+        this.ssctrees.forEach(function (ssctree) { ssctree.fetch_tiles(box3d, gl);});
         //this.ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     };

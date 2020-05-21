@@ -290,19 +290,6 @@
             canvas.width = window.innerWidth - hGap;
             canvas.height = window.innerHeight - vGap;
 
-            
-
-
-            //            var map_settings = {
-            //                'initialization': {
-            //                    'scale_den': 500000,
-            //                    'center2d': [3555384.53, 5907745.81],
-            //                    'navigationBar_title': 'Test, Manual',
-            //                },
-            //                'canvas_nm': canvas_nm,
-            //                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
-            //                'interaction_defaults': []
-            //            }
 
             //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
             //window_location = /gpudemo/2020/03/merge/0.1/
@@ -313,14 +300,14 @@
             // console.log('window_location:', window_location)
 
 
-            let dataset1 = {
+            let tree_setting1 = {
                 'tree_root_file_nm': 'tree_smooth.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/'
             }
 
-            let dataset2 = {
+            let tree_setting2 = {
                 'tree_root_file_nm': 'Aanvoergebieden.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
@@ -328,33 +315,34 @@
             }
 
 
-            let dataset3 = {
+            let tree_setting3 = {
                 'tree_root_file_nm': 'watershappen2017.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/'
             }
 
-            let dataset4 = {
+            let tree_setting4 = {
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/'
             }
 
-            let dataset5 = {
+            let tree_setting5 = {
                 'tree_root_file_nm': 'tree.json',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
+                'do_blend': false,
+                'opacity': 1,
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/'
             }
 
 
-            // console.log('index.html, dataset_dt1:', dataset_dt1)
-            // console.log('index.html, dataset_dt2:', dataset_dt2)
-            // console.log('index.html, dataset_dt2:', dataset_dt3)
 
 
-            var map_settings = {
+            var map_setting = {
                 'initialization': {
                     'scale_den': 10000, //top10nl, start_scale
                     //'scale_den': 12500,
@@ -368,22 +356,22 @@
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
-                'datasets': [
-                    //dataset4,
-                    dataset5,
-                    // dataset1, 
-                    // dataset2, 
-                    // dataset3,
+                'tree_settings': [
+                    //tree_setting4,
+                    tree_setting5,
+                    // tree_setting1, 
+                    // tree_setting2, 
+                    // tree_setting3,
                 ],
                 'interaction_defaults': []
             }
-            // console.log('index.html, map_settings:', map_settings)
+            // console.log('index.html, map_setting:', map_setting)
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
-                map_settings.initialization.navigationBar_title
+                map_setting.initialization.navigationBar_title
 
             // Make a new map instance
-            var map = new varioscale.Map(map_settings);
+            var map = new varioscale.Map(map_setting);
             map.loadTree();
 
             let subscribe_scale = (map) => {

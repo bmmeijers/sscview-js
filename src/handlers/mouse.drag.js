@@ -19,6 +19,7 @@ export function dragHandler(map) {
         canvas.removeEventListener("mousedown", doMouseDown, { passive: false });
         canvas.addEventListener("mousemove", doMouseDrag, { passive: false });
         canvas.addEventListener("mouseup", doMouseUp, { passive: false });
+        
 
         // canvas.removeEventListener("touchstart", doMouseDown, { capture: true, passive: false });
         // canvas.addEventListener("touchmove", doMouseDrag, { capture: true, passive: false });
@@ -35,6 +36,7 @@ export function dragHandler(map) {
 
         _trace = new Trace([x, y]);
         map.panBy(0, 0); // to cancel on going animations
+        
     }
 
     function doMouseDrag(evt) {

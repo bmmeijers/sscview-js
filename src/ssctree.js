@@ -317,8 +317,8 @@ export class SSCTree {
         }
 
         
-        console.log('ssctree.js new step:', step)
-        console.log('ssctree.js snapped_step:', snapped_step)
+        //console.log('ssctree.js new step:', step)
+        //console.log('ssctree.js snapped_step:', snapped_step)
 
         //return Math.max(0, step)
         return snapped_step
