@@ -51,8 +51,8 @@ var dist_folder = 'dist_top10nl_9x9/';
 // dist_folder += 'single-event';
 // dist_folder += '7';
 // dist_folder += 'one-triangle';
-dist_folder += 'one-polygon';
-
+// dist_folder += 'one-polygon';
+dist_folder += 'drenthe';
 
 
 // var dist_folder = 'dist_top10nl_9x9_0.1';

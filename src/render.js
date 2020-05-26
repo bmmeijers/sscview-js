@@ -74,69 +74,81 @@ class ImageTileDrawProgram extends DrawProgram
     constructor(gl)
     {
         let vertexShaderText = `
-            precision highp float;
+precision highp float;
 
-            attribute vec3 vertexPosition_modelspace;
-            attribute vec2 aTextureCoord;
+attribute vec3 vertexPosition_modelspace;
+attribute vec2 aTextureCoord;
 
-            uniform mat4 M;
+uniform mat4 M;
 
-            varying highp vec2 vTextureCoord;
+varying highp vec2 vTextureCoord;
 
-            void main()
-            {
-              gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
-              vTextureCoord = aTextureCoord;
-            }
-        `
+
+void main()
+{
+    gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
+    vTextureCoord = aTextureCoord;
+}
+`
 
         let fragmentShaderText = `
-            precision highp float;
+precision highp float;
 
-            varying highp vec2 vTextureCoord;
+varying highp vec2 vTextureCoord;
 
-            uniform sampler2D uSampler;
+uniform sampler2D uSampler;
+uniform float opacity;
             
-            void main()
-            {
-              gl_FragColor = texture2D(uSampler, vTextureCoord);
-            }
-        `
+void main()
+{
+    vec4 color = texture2D(uSampler, vTextureCoord);
+    color.a = opacity;
+    gl_FragColor = color;
+}
+`
+        //uniform float opacity;
+        //vec4 color = texture2D(u_tex, v_texCoord);
+        //color.a = 0.5;
 
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
 //    draw(matrix, tilecontent)
-    draw_tile(matrix, tile) {
+    draw_tile(matrix, tile, tree_setting) {
         if (tile.content.buffer === null)
         {
             return;
         }
-
+        //console.log('render.js tree_setting.opacity 3:', tree_setting.opacity)
         let gl = this.gl;
-        gl.useProgram(this.shaderProgram);
+        let shaderProgram = this.shaderProgram;
+        gl.useProgram(shaderProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.buffer); 
 
         // FIXME: better to store with bucket how the layout of the mesh is?
-        const positionAttrib = gl.getAttribLocation(this.shaderProgram, 'vertexPosition_modelspace');
+        const positionAttrib = gl.getAttribLocation(shaderProgram, 'vertexPosition_modelspace');
         // gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
         gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(positionAttrib);
 
         {
-            let M = gl.getUniformLocation(this.shaderProgram, 'M');
+            let M = gl.getUniformLocation(shaderProgram, 'M');
             gl.uniformMatrix4fv(M, false, matrix);
+
+            let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+            
+            gl.uniform1f(opacity_location, tree_setting.opacity);
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.textureCoordBuffer)
-        const textureAttrib = gl.getAttribLocation(this.shaderProgram, 'aTextureCoord');
+        const textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
         gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(textureAttrib);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tile.content.texture);
 
-        const uSampler = gl.getUniformLocation(this.shaderProgram, 'uSampler');
+        const uSampler = gl.getUniformLocation(shaderProgram, 'uSampler');
         gl.uniform1i(uSampler, 0);
 
         gl.enable(gl.BLEND);
@@ -162,6 +174,7 @@ attribute vec4 vertexPosition_modelspace;
 uniform mat4 M;
 uniform float near;
 uniform float half_width_reality;
+uniform float opacity;
 
 void main()
 {
@@ -206,7 +219,7 @@ void main()
     }
 
 
-    draw_tile(matrix, tile, near_St, boundary_width_screen) {
+    draw_tile(matrix, tile, near_St, redering_settings, tree_setting) {
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         let triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
@@ -237,7 +250,8 @@ void main()
 //        let boundary_width_screen = 0.2;
         //var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
         // The unit of the map must be meter!!!
-        var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
+        // redering_settings.boundary_width: the width on screen
+        var half_width_reality = redering_settings.boundary_width * near_St[1] / 1000 / 2;
 //        if (width_increase > 0)
 //        {
 //            half_width_reality *= width_increase;
@@ -259,32 +273,67 @@ void main()
 //                c = [1.0, 1.0, 1.0]; // white
 //            }
             var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
-            gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
+            gl.uniform4f(color_location, c[0], c[1], c[2], tree_setting.opacity);
         }
 
-        // Set clear color to white, fully opaque
-        // gl.clearColor(1., 1., 1., 1.0);
-        // gl.clearDepth(1.0); // Clear everything
+        //// Set clear color to white, fully opaque
+        //// gl.clearColor(1., 1., 1., 1.0);
+        //// gl.clearDepth(1.0); // Clear everything
 
-        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-        // gl.clear(gl.COLOR_BUFFER_BIT)
+        //// gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+        //// gl.clear(gl.COLOR_BUFFER_BIT)
 
-        // gl.disable(gl.BLEND);
-        //gl.enable(gl.BLEND); // FIXME: needed?
-        gl.disable(gl.DEPTH_TEST);
+        //// gl.disable(gl.BLEND);
+        ////gl.enable(gl.BLEND); // FIXME: needed?
+        //gl.disable(gl.DEPTH_TEST);
 
-        // gl.enable(gl.CULL_FACE);
-         gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+        //// gl.enable(gl.CULL_FACE);
+        // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        // gl.cullFace(gl.BACK);
-        // gl.cullFace(gl.FRONT);
-        // gl.cullFace(gl.FRONT_AND_BACK);
+        //// gl.cullFace(gl.BACK);
+        //// gl.cullFace(gl.FRONT);
+        //// gl.cullFace(gl.FRONT_AND_BACK);
 
-        gl.drawArrays(
-            gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
-            0,            // Specifies the starting index in the enabled arrays.
-            triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
-        );
+        //gl.drawArrays(
+        //    gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
+        //    0,            // Specifies the starting index in the enabled arrays.
+        //    triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
+        //);
+
+
+        //gl.enable(gl.CULL_FACE);
+        gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+
+
+        //if (tree_setting.draw_cw_faces == true) {
+        //    gl.cullFace(gl.BACK); //triangles from FME are clock wise
+        //}
+        //else {
+        //    gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
+        //}
+
+        //gl.cullFace(gl.BACK);
+        //gl.cullFace(gl.FRONT);
+
+        if (tree_setting.do_depth_test == true) {
+            gl.enable(gl.DEPTH_TEST);
+        }
+        else {
+            gl.disable(gl.DEPTH_TEST);
+        }
+
+        //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+
+        if (tree_setting.do_blend == true) {
+            gl.enable(gl.BLEND)
+        }
+        else {
+            gl.disable(gl.BLEND)
+        }
+
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }
 
@@ -344,6 +393,7 @@ void main()
             gl.uniformMatrix4fv(M_location, false, matrix);
 
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+            //console.log('render.js tree_setting.opacity 2:', tree_setting.opacity)
             gl.uniform1f(opacity_location, tree_setting.opacity);
         }
 
@@ -386,7 +436,12 @@ export class Renderer {
     constructor(gl, ssctrees) {
         this.gl = gl
         this.ssctrees = ssctrees
-        this.settings = { boundary_width: 0.2 }
+        this.settings = {
+            boundary_width: 0.2,
+            backdrop_opacity: 1,
+            foreground_opacity: 0.5,
+            //layer_opacity: 0.5
+        }
 
         // construct programs once, at init time
         this.programs = [
@@ -426,6 +481,17 @@ export class Renderer {
         if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
             return
         }
+
+        let tree_setting = ssctree.tree_setting
+        tree_setting.opacity = this.settings.foreground_opacity
+        //console.log('render.js tree_setting.as_backdrop:', tree_setting.as_backdrop)
+        if (tree_setting.as_backdrop == true) {
+            tree_setting.opacity = this.settings.backdrop_opacity
+        }
+
+        //console.log('render.js tree_setting.opacity:', tree_setting.opacity)
+
+
         //console.log('')
         //console.log('render.js ssctree.tree:', ssctree.tree)
         //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
@@ -442,11 +508,11 @@ export class Renderer {
 
         var tiles = ssctree.get_relevant_tiles(box3d)
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
-        if (tiles.length > 0) {
+        if (tiles.length > 0 && tree_setting.opacity > 0) {
             var polygon_draw_program = this.programs[0];
             tiles.forEach(tile => {
                 //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+                polygon_draw_program.draw_tile(matrix, tile, tree_setting);
             })
 
             var image_tile_draw_program = this.programs[2];
@@ -456,7 +522,7 @@ export class Renderer {
                     return tile.texture !== null
                 })
                 .forEach(tile => {
-                    image_tile_draw_program.draw_tile(matrix, tile);
+                    image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
                 })
 
 
@@ -469,7 +535,7 @@ export class Renderer {
                     // bottom lines (black)
                     // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
                     // interior (color)
-                    line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
+                    line_draw_program.draw_tile(matrix, tile, near_St, this.settings, tree_setting);
                 })
             }
 

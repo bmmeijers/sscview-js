@@ -1545,7 +1545,7 @@
     var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function LineDrawProgram(gl) {
 
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\nuniform float opacity;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
 
             var fragmentShaderText = "\nprecision mediump float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
 
@@ -1569,7 +1569,7 @@
         LineDrawProgram.prototype.constructor = LineDrawProgram;
 
 
-        LineDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, near_St, boundary_width_screen) {
+        LineDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, near_St, redering_settings, tree_setting) {
             var gl = this.gl;
             var shaderProgram = this.shaderProgram;
             var triangleVertexPosBufr = tile.content.line_triangleVertexPosBufr;
@@ -1600,7 +1600,8 @@
     //        let boundary_width_screen = 0.2;
             //var boundary_width_screen = parseFloat(document.getElementById('boundary_width_slider').value);
             // The unit of the map must be meter!!!
-            var half_width_reality = boundary_width_screen * near_St[1] / 1000 / 2;
+            // redering_settings.boundary_width: the width on screen
+            var half_width_reality = redering_settings.boundary_width * near_St[1] / 1000 / 2;
     //        if (width_increase > 0)
     //        {
     //            half_width_reality *= width_increase;
@@ -1622,32 +1623,58 @@
     //                c = [1.0, 1.0, 1.0]; // white
     //            }
                 var color_location = gl.getUniformLocation(shaderProgram, 'uColor');
-                gl.uniform4f(color_location, c[0], c[1], c[2], 1.0);
+                gl.uniform4f(color_location, c[0], c[1], c[2], tree_setting.opacity);
             }
 
-            // Set clear color to white, fully opaque
-            // gl.clearColor(1., 1., 1., 1.0);
-            // gl.clearDepth(1.0); // Clear everything
+            //// Set clear color to white, fully opaque
+            //// gl.clearColor(1., 1., 1., 1.0);
+            //// gl.clearDepth(1.0); // Clear everything
 
-            // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
-            // gl.clear(gl.COLOR_BUFFER_BIT)
+            //// gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer with specified clear color
+            //// gl.clear(gl.COLOR_BUFFER_BIT)
 
-            // gl.disable(gl.BLEND);
-            //gl.enable(gl.BLEND); // FIXME: needed?
-            gl.disable(gl.DEPTH_TEST);
+            //// gl.disable(gl.BLEND);
+            ////gl.enable(gl.BLEND); // FIXME: needed?
+            //gl.disable(gl.DEPTH_TEST);
 
-            // gl.enable(gl.CULL_FACE);
-             gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+            //// gl.enable(gl.CULL_FACE);
+            // gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-            // gl.cullFace(gl.BACK);
-            // gl.cullFace(gl.FRONT);
-            // gl.cullFace(gl.FRONT_AND_BACK);
+            //// gl.cullFace(gl.BACK);
+            //// gl.cullFace(gl.FRONT);
+            //// gl.cullFace(gl.FRONT_AND_BACK);
 
-            gl.drawArrays(
-                gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
-                0,            // Specifies the starting index in the enabled arrays.
-                triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
-            );
+            //gl.drawArrays(
+            //    gl.TRIANGLES, // kind of primitives to render; e.g., POINTS, LINES
+            //    0,            // Specifies the starting index in the enabled arrays.
+            //    triangleVertexPosBufr.numItems // Specifies the number of indices to be rendered.
+            //);
+
+            if (tree_setting.draw_cw_faces == true) {
+                gl.cullFace(gl.BACK); //triangles from FME are clock wise
+            }
+            else {
+                gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
+            }
+
+            if (tree_setting.do_depth_test == true) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+
+            //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+
+            if (tree_setting.do_blend == true) {
+                gl.enable(gl.BLEND);
+            }
+            else {
+                gl.disable(gl.BLEND);
+            }
+
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
         };
 
         return LineDrawProgram;
@@ -1734,7 +1761,12 @@
     var Renderer = function Renderer(gl, ssctrees) {
         this.gl = gl;
         this.ssctrees = ssctrees;
-        this.settings = { boundary_width: 0.2 };
+        this.settings = {
+            boundary_width: 0.2,
+            backdrop_opacity: 1,
+            foreground_opacity: 0.5,
+            //layer_opacity: 0.5
+        };
 
         // construct programs once, at init time
         this.programs = [
@@ -1776,6 +1808,16 @@
         if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
             return
         }
+
+        var tree_setting = ssctree.tree_setting;
+        tree_setting.opacity = this.settings.foreground_opacity;
+        if (tree_setting.as_backdrop == true) {
+            tree_setting.opacity = this.settings.backdrop_opacity;
+        }
+
+
+
+
         //console.log('')
         //console.log('render.js ssctree.tree:', ssctree.tree)
         //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
@@ -1792,11 +1834,11 @@
 
         var tiles = ssctree.get_relevant_tiles(box3d);
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
-        if (tiles.length > 0) {
+        if (tiles.length > 0 && this.settings.layer_opacity > 0) {
             var polygon_draw_program = this.programs[0];
             tiles.forEach(function (tile) {
                 //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+                polygon_draw_program.draw_tile(matrix, tile, tree_setting);
             });
 
             var image_tile_draw_program = this.programs[2];
@@ -1819,7 +1861,7 @@
                     // bottom lines (black)
                     // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
                     // interior (color)
-                    line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
+                    line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings, tree_setting);
                 });
             }
 
@@ -2925,19 +2967,26 @@
             //console.log('number of loaded tiles: ' + dataelements.length)
             dataelements.forEach(
                 function (tile) {
-                    // remove tiles that were rendered more than 3 seconds ago
-                    // and that are currently not on the screen
-                    if (tile.last_touched !== null && (tile.last_touched + 3000) < _now()
-                        && !overlaps3d(box3ds[i], tile.box)) {
-                        to_evict.push(tile);
+                    try {
+                        // remove tiles that were rendered more than 3 seconds ago
+                        // and that are currently not on the screen
+                        if (tile.last_touched !== null && (tile.last_touched + 3000) < _now()
+                            && !overlaps3d(box3ds[i], tile.box)) {
+                            to_evict.push(tile);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        console.log('ssctree.js evict box3ds[i]:', box3ds[i]);
+                        console.log('ssctree.js evict tile.box:', tile.box);
                     }
 
-                    if (box3ds[i] == null) {
-                        console.log('ssctree.js evict box3ds[i] is null');
-                    }
-                    if (tile.box == null) {
-                        console.log('ssctree.js evict tile.box is null');
-                    }
+
+                    //if (box3ds[i] == null) {
+                    //console.log('ssctree.js evict box3ds[i] is null')
+                    //}
+                    //if (tile.box == null) {
+                    //console.log('ssctree.js evict tile.box is null')
+                    //}
                 }
             );
             //console.log('number of tiles for which memory will be released: ' + to_evict.length)
@@ -3119,10 +3168,20 @@
             this$1.panAnimated(0, 0); // animate for a small time, so that when new tiles are loaded, we are already rendering
         });
 
-        this.msgbus.subscribe("settings.render.boundary-width", function (topic, message, sender) { 
+        this.msgbus.subscribe("settings.rendering.boundary-width", function (topic, message, sender) { 
             this$1.renderer.settings.boundary_width = parseFloat(message);
             this$1.abortAndRender();
-        } );
+        });
+
+        this.msgbus.subscribe("settings.rendering.backdrop-opacity", function (topic, message, sender) {
+            this$1.renderer.settings.backdrop_opacity = parseFloat(message);
+            this$1.abortAndRender();
+        });
+
+        this.msgbus.subscribe("settings.rendering.foreground-opacity", function (topic, message, sender) {
+            this$1.renderer.settings.foreground_opacity = parseFloat(message);
+            this$1.abortAndRender();
+        });
 
         this.msgbus.subscribe("settings.interaction.zoom-factor", function (topic, message, sender) {
     //        console.log(message);

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1" height="242" width="210">
+<g fill-rule="evenodd">
+<path d="M105 11L10 66v110l95 55 95-55V66z" fill="#979581" stroke="#979581" stroke-width="19"/>
+<path d="M101 9L6 64v110l95-55z" fill="#da251d"/>
+<path d="M204 174l1-110-96-55v110z" fill="#009240"/>
+<path d="M10 180l95 55 95-55-95-55z" fill="#0093dd"/>
+</g>
+</svg>

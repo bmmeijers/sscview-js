@@ -74,10 +74,20 @@ class Map {
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
-        this.msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
+        this.msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => { 
             this.renderer.settings.boundary_width = parseFloat(message);
             this.abortAndRender();
-        } );
+        });
+
+        this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
+            this.renderer.settings.backdrop_opacity = parseFloat(message);
+            this.abortAndRender();
+        });
+
+        this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
+            this.renderer.settings.foreground_opacity = parseFloat(message);
+            this.abortAndRender();
+        });
 
         this.msgbus.subscribe("settings.interaction.zoom-factor", (topic, message, sender) => {
 //            console.log(message);
@@ -98,7 +108,7 @@ class Map {
 
 
         map_setting.tree_settings.forEach((tree_setting) => {
-            //console.log('map.js tree_setting:', tree_setting)
+            console.log('map.js tree_setting:', tree_setting)
             this.ssctrees.push(new SSCTree(this.msgbus, tree_setting))
         })
 
