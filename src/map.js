@@ -50,7 +50,7 @@ class Map {
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-        this.if_snap = false
+        this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
         this.msgbus = new MessageBusConnector()
 
@@ -63,9 +63,14 @@ class Map {
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
-            let St = this._transform.getScaleDenominator()
-            var step = this.ssctree.get_step_from_St(St, true)
-            this._prepare_active_tiles(step)
+            //let St = this._transform.getScaleDenominator()
+            //let ssctree = message[1]
+            //console.log('map.js ssctree:', ssctree)
+            //console.log('map.js ssctree.tree:', ssctree.tree)
+            //var step = ssctree.get_step_from_St(St, this.if_snap)
+            //this._prepare_active_tiles(step, ssctree)
+            //var step = this.ssctree.get_step_from_St(St, this.if_snap)
+            //this._prepare_active_tiles(step)
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
@@ -116,25 +121,32 @@ class Map {
 
         { 
             let St = this.getTransform().getScaleDenominator()
-            this.ssctree.get_step_from_St(St, true)
+            //this.ssctree.get_step_from_St(St, this.if_snap)
             this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]) 
         }
 
-        this.evictor = new Evictor(this.ssctree,
-                                   this.getWebGLContext())
+        this.evictor = new Evictor(this.ssctrees, this.getWebGLContext())
         // every 30 seconds release resources
         window.setInterval(
             () => {
-
                 let St = this.getTransform().getScaleDenominator()
-                var step = this.ssctree.get_step_from_St(St, true)
 
-                //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
-                //const near = near_St[0]
+                let box3ds = []
                 const box2d = this.getTransform().getVisibleWorld()
-                const box3d = [box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step]
-                this.evictor.evict(box3d)
-                this.render()
+                this.ssctrees.forEach((ssctree) => {
+                    var step = ssctree.get_step_from_St(St, this.if_snap)
+
+                    //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
+                    //const near = near_St[0]
+
+                    box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step])
+                    this.evictor.evict(box3ds)
+                    this.render()
+
+
+                })
+
+
             },
             60 * 1000 * 2.5 // every X mins (expressed in millisec)
         )
@@ -147,7 +159,7 @@ class Map {
         this.ssctrees.forEach((ssctree) => {
             //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
             var if_snap = ssctree.load()
-            if (if_snap == true) {
+            if (if_snap == true ) {
                 this.if_snap = true
             }
         })
@@ -167,59 +179,87 @@ class Map {
     }
 
     render(k = 0) {
-        //k=0
+        //console.log('')
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
         let St = 0
-        let step = 0
+        let steps = []
         let snapped_step = this.getTransform().snapped_step
+        //console.log('map.js render snapped_step:', snapped_step)
+        //let step = 
+        //FIXME: to cooperate with multiple snapped steps
         if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
             St = this.getTransform().snapped_St
-            step = snapped_step
+            steps.push(snapped_step)  //we only snap according to the first dataset
         }
         else {
             St = this.getTransform().getScaleDenominator()
             //console.log('map.js render, test')
-            step = this.ssctree.get_step_from_St(St)
+            this.ssctrees.forEach((ssctree) => {
+                steps.push(ssctree.get_step_from_St(St))
+            })
         }
 
-        step -= 0.001 //to compensate with the rounding problems
-        
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
 
-        let last_step = Number.MAX_SAFE_INTEGER
-        if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
-            last_step = this.ssctree.tree.metadata.no_of_steps_Ns
-        }
-        //console.log('map.js render, last_step:', last_step)
 
-        //var step = this.ssctree.get_step_from_St(St) //+ 0.001
-        //console.log('map.js, step before snapping:', step)
-        //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
-        //    var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
-        //    if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
-        //        step = snapped_step
-        //    }
-        //}
+        this.renderer._clearColor()
+        this.renderer._clearDepth()
+        //console.log('map.js steps.length:', steps.length)
         
-        
+        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
+        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
 
-        if (step < 0) {
-            step = 0
+        for (var i = 0; i < steps.length; i++) {
+            //console.log('map.js i:', i)
+            let ssctree = this.ssctrees[i]
+            //console.log('map.js render ssctree:', ssctree)
+            let step = steps[i] - 0.001 //to compensate with the rounding problems
+
+            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
+            let last_step = Number.MAX_SAFE_INTEGER
+            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+                last_step = ssctree.tree.metadata.no_of_steps_Ns
+                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
+            }
+
+
+            //console.log('map.js render, last_step:', last_step)
+
+            //var step = this.ssctree.get_step_from_St(St) //+ 0.001
+            //console.log('map.js, step before snapping:', step)
+            //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
+            //    var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
+            //    if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
+            //        step = snapped_step
+            //    }
+            //}
+
+            if (step < 0) {
+                step = 0
+            }
+            else if (step >= last_step) {
+                step = last_step
+            }
+            steps[i] = step
+
+
+
+
+
+
+
+            //console.log('map.js, step after snapping:', step)
+
+
+            var matrix_box3d = this._prepare_active_tiles(step, ssctree)
+            this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
         }
-        else if (step >= last_step) {
-            step = last_step
-        }
-
-        //console.log('map.js, step after snapping:', step)
-
-
-        var matrix_box3d = this._prepare_active_tiles(step)
-        this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], [step, St]);
     }
 
-    _prepare_active_tiles(near) {
+    // FIXME: Move this function to class SSCTree?
+    _prepare_active_tiles(near, ssctree) {
         let matrix = this.getTransform().world_square
         const far = -0.5
         matrix[10] = -2.0 / (near - far)
@@ -227,8 +267,9 @@ class Map {
         const box2d = this.getTransform().getVisibleWorld()
         const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
         let gl = this.getWebGLContext();
-        this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //this.ssctree.fetch_tiles(box3d, gl)
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        ssctree.fetch_tiles(box3d, gl)
         return [matrix, box3d]
     }
 
@@ -346,9 +387,9 @@ class Map {
         this.render();
     }
 
-    zoom(x, y, factor) {
+    zoom(x, y, zoom_factor) {
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     }
 

@@ -139,6 +139,7 @@
             canvas.removeEventListener("mousedown", doMouseDown, { passive: false });
             canvas.addEventListener("mousemove", doMouseDrag, { passive: false });
             canvas.addEventListener("mouseup", doMouseUp, { passive: false });
+            
 
             // canvas.removeEventListener("touchstart", doMouseDown, { capture: true, passive: false });
             // canvas.addEventListener("touchmove", doMouseDrag, { capture: true, passive: false });
@@ -155,6 +156,7 @@
 
             _trace = new Trace([x, y]);
             map.panBy(0, 0); // to cancel on going animations
+            
         }
 
         function doMouseDrag(evt) {
@@ -1728,72 +1730,6 @@
     }(DrawProgram));
 
 
-    //class ForegroundDrawProgram extends DrawProgram {
-    //    constructor(gl) {
-    //        let vertexShaderText = `
-    //precision highp float;
-
-    //attribute vec3 vertexPosition_modelspace;
-    //attribute vec4 vertexColor;
-    //uniform mat4 M;
-    //varying vec4 fragColor;
-
-    //void main()
-    //{
-    //    fragColor = vertexColor;
-    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
-    //}
-    //`;
-    //        let fragmentShaderText = `
-    //precision mediump float;
-
-    //varying vec4 fragColor;
-    //void main()
-    //{
-    //    gl_FragColor = vec4(fragColor);
-    //}
-    //`;
-    //        super(gl, vertexShaderText, fragmentShaderText)
-    //    }
-
-    //    draw_tile(matrix, tile) {
-    //        // guard: if no data in the tile, we will skip rendering
-    //        let triangleVertexPosBufr = tile.content.foreground_triangleVertexPosBufr;
-    //        if (triangleVertexPosBufr === null) {
-    //            return;
-    //        }
-    //        // render
-    //        let gl = this.gl;
-    //        let shaderProgram = this.shaderProgram;
-    //        gl.useProgram(shaderProgram);
-    //        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-
-    //        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
-    //        //itemSize = 3: x, y, z;   
-    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 28, 0);
-    //        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
-    //        this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 4, 28, 12);
-
-    //        {
-    //            let M_location = gl.getUniformLocation(shaderProgram, 'M');
-    //            gl.uniformMatrix4fv(M_location, false, matrix);
-    //        }
-
-    //        gl.enable(gl.CULL_FACE);
-    //        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
-
-    //        //gl.cullFace(gl.BACK);
-    //        gl.cullFace(gl.FRONT);
-    //        // gl.cullFace(gl.FRONT_AND_BACK);
-
-    //        gl.enable(gl.BLEND)
-    //        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-    //        //gl.disable(gl.BLEND);
-    //        //gl.enable(gl.DEPTH_TEST);
-    //        gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
-    //    }
-    //}
-
 
     var Renderer = function Renderer(gl, ssctrees) {
         this.gl = gl;
@@ -1821,9 +1757,7 @@
     // // }, 15000)
     // }
 
-
-
-    Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (matrix, box3d, near_St) {
+    Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (ssctree, matrix, box3d, near_St) {
             var this$1 = this;
 
         // FIXME: 
@@ -1834,77 +1768,158 @@
 
 
 
-        this._clearColor();
+        //this._clearColor()
 
-        this.ssctrees.forEach(function (ssctree) {
+        //this.ssctrees.forEach(ssctree => {
 
-            this$1._clearDepth();
-            if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
-                return
-            }
-            //console.log('')
-            //console.log('render.js ssctree.tree:', ssctree.tree)
-            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-    //        var z_low = ssctree.tree.box[2] - 0.001
-    //        var z_high = ssctree.tree.box[5] - 0.001
-    //        var z_plane = box3d[2]
-    //        if (z_plane < z_low || z_plane >= z_high) {
-    //            return
-    //        }
+        //this._clearDepth()
+        if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
+            return
+        }
+        //console.log('')
+        //console.log('render.js ssctree.tree:', ssctree.tree)
+        //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+        //        var z_low = ssctree.tree.box[2] - 0.001
+        //        var z_high = ssctree.tree.box[5] - 0.001
+        //        var z_plane = box3d[2]
+        //        if (z_plane < z_low || z_plane >= z_high) {
+        //            return
+        //        }
 
-            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-            //console.log('render.js box3d:', box3d)
-            //console.log('render.js near_St:', near_St)
+        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
+        //console.log('render.js box3d:', box3d)
+        //console.log('render.js near_St:', near_St)
 
-            var tiles = ssctree.get_relevant_tiles(box3d);
-            if (tiles.length > 0) {                
-                var polygon_draw_program = this$1.programs[0];
+        var tiles = ssctree.get_relevant_tiles(box3d);
+        //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
+        if (tiles.length > 0) {
+            var polygon_draw_program = this.programs[0];
+            tiles.forEach(function (tile) {
+                //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+            });
+
+            var image_tile_draw_program = this.programs[2];
+            tiles.filter(
+                // tile should have image data
+                function (tile) {
+                    return tile.texture !== null
+                })
+                .forEach(function (tile) {
+                    image_tile_draw_program.draw_tile(matrix, tile);
+                });
+
+
+            // If we want to draw lines twice -> thick line under / small line over
+            // we need to do this twice + move the code for determining line width here...
+            if (this.settings.boundary_width > 0) {
+                var line_draw_program = this.programs[1];
                 tiles.forEach(function (tile) {
-                        //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
-                    });
-
-                var image_tile_draw_program = this$1.programs[2];
-                tiles.filter(
-                        // tile should have image data
-                        function (tile) {
-                            return tile.texture !== null
-                        }
-                    )
-                    .forEach(function (tile) {
-                        image_tile_draw_program.draw_tile(matrix, tile);
-                    });
-
-
-                // If we want to draw lines twice -> thick line under / small line over
-                // we need to do this twice + move the code for determining line width here...
-                if (this$1.settings.boundary_width > 0) {
-                    var line_draw_program = this$1.programs[1];
-                    tiles.forEach(function (tile) {
-                            // FIXME: would be nice to specify width here in pixels.
-                            // bottom lines (black)
-                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                            // interior (color)
-                            line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
-                        });
-                }
-
-
-
+                    // FIXME: would be nice to specify width here in pixels.
+                    // bottom lines (black)
+                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                    // interior (color)
+                    line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings.boundary_width);
+                });
             }
 
-            // this.buckets.forEach(bucket => {
-            // this.programs[0].draw(matrix, bucket);
-            // })
-            // FIXME:
-            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-            // we should this.gl.clear()
 
 
-        });
+        }
+
+        // this.buckets.forEach(bucket => {
+        // this.programs[0].draw(matrix, bucket);
+        // })
+        // FIXME:
+        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+        // we should this.gl.clear()
+
+
+        //})
 
 
     };
+
+    //render_relevant_tiles(matrix, box3d, near_St) {
+    //    // FIXME: 
+    //    // should a bucket have a method to 'draw' itself?
+    //    // e.g. by associating multiple programs with a bucket
+    //    // when the bucket is constructed?
+
+
+
+
+    //    this._clearColor()
+
+    //    this.ssctrees.forEach(ssctree => {
+
+    //        this._clearDepth()
+    //        if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
+    //            return
+    //        }
+    //        //console.log('')
+    //        //console.log('render.js ssctree.tree:', ssctree.tree)
+    //        //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+    ////        var z_low = ssctree.tree.box[2] - 0.001
+    ////        var z_high = ssctree.tree.box[5] - 0.001
+    ////        var z_plane = box3d[2]
+    ////        if (z_plane < z_low || z_plane >= z_high) {
+    ////            return
+    ////        }
+
+    //        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
+    //        //console.log('render.js box3d:', box3d)
+    //        //console.log('render.js near_St:', near_St)
+
+    //        var tiles = ssctree.get_relevant_tiles(box3d)
+    //        if (tiles.length > 0) {                
+    //            var polygon_draw_program = this.programs[0];
+    //            tiles.forEach(tile => {
+    //                    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
+    //                    polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+    //                })
+
+    //            var image_tile_draw_program = this.programs[2];
+    //            tiles.filter(
+    //                    // tile should have image data
+    //                    tile => {
+    //                        return tile.texture !== null
+    //                    }
+    //                )
+    //                .forEach(tile => {
+    //                    image_tile_draw_program.draw_tile(matrix, tile);
+    //                })
+
+
+    //            // If we want to draw lines twice -> thick line under / small line over
+    //            // we need to do this twice + move the code for determining line width here...
+    //            if (this.settings.boundary_width > 0) {
+    //                var line_draw_program = this.programs[1];
+    //                tiles.forEach(tile => {
+    //                        // FIXME: would be nice to specify width here in pixels.
+    //                        // bottom lines (black)
+    //                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+    //                        // interior (color)
+    //                        line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
+    //                    })
+    //            }
+
+
+
+    //        }
+
+    //        // this.buckets.forEach(bucket => {
+    //        // this.programs[0].draw(matrix, bucket);
+    //        // })
+    //        // FIXME:
+    //        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+    //        // we should this.gl.clear()
+
+
+    //    })
+
+
+    //}
 
     Renderer.prototype._clearDepth = function _clearDepth ()
     {
@@ -2357,14 +2372,14 @@
                     element.content = null;
                     element.last_touched = null;
                     element.url = this$1.tree_setting.tile_root_href + element.href;  //e.g., element.href: node02145.obj
-                    console.log('ssctree.js element.href:', element.href);
+                    //console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 });
             })
             .then(function () {
                 // Notify via PubSub that tree has loaded 
                 // (this re-renders the map if not already rendering)
-                this$1.msgbus.publish('data.tree.loaded', 'tree.ready');
+                this$1.msgbus.publish('data.tree.loaded', ['tree.ready', this$1]);
             })
             .catch(function (err) {
                 console.error(err);
@@ -2555,8 +2570,8 @@
         }
 
             
-        console.log('ssctree.js new step:', step);
-        console.log('ssctree.js snapped_step:', snapped_step);
+        //console.log('ssctree.js new step:', step)
+        //console.log('ssctree.js snapped_step:', snapped_step)
 
         //return Math.max(0, step)
         return snapped_step
@@ -2696,6 +2711,8 @@
         // console.log(box)
         var result = [];
         var stack = [node];
+        //console.log('ssctree.js, obtain_overlapped_dataelements node:', node)
+        //console.log('ssctree.js, obtain_overlapped_dataelements box3d:', box3d)
         var loop = function () {
             var node$1 = stack.pop();
 
@@ -2705,6 +2722,13 @@
                 node$1.children.forEach(function (child) {
                     if (overlaps3d(node$1.box, box3d)) {
                         stack.push(child);
+                    }
+
+                    if (node$1.box == null) {
+                        console.log('ssctree.js obtain_overlapped_dataelements node.box is null');
+                    }
+                    if (box3d == null) {
+                        console.log('ssctree.js obtain_overlapped_dataelements box3d 1 is null');
                     }
                 });
             }
@@ -2716,11 +2740,20 @@
                     if (overlaps3d(element.box, box3d)) {
                         result.push(element);
                     }
+
+
+                    if (element.box == null) {
+                        console.log('ssctree.js obtain_overlapped_dataelements element.box is null');
+                    }
+                    if (box3d == null) {
+                        console.log('ssctree.js obtain_overlapped_dataelements box3d 2 is null');
+                    }
                 });
             }
         };
 
         while (stack.length > 0) loop();
+        //console.log('ssctree.js, obtain_overlapped_dataelements result.length:', result.length)
         return result
     }
 
@@ -2742,6 +2775,13 @@
                         && overlaps3d(child.box, box3d)) {
                         result.push(child);
                         child.loaded = true;
+                    }
+
+                    if (child.box == null) {
+                        console.log('ssctree.js obtain_overlapped_subtrees child.box is null');
+                    }
+                    if (box3d == null) {
+                        console.log('ssctree.js obtain_overlapped_subtrees box3d is null');
                     }
                 });
             }
@@ -2857,9 +2897,9 @@
 
 
 
-    var Evictor = function Evictor(ssctree, gl)
+    var Evictor = function Evictor(ssctrees, gl)
     {
-        this.ssctree = ssctree;
+        this.ssctrees = ssctrees;
         this.gl = gl;
     };
 
@@ -2874,36 +2914,46 @@
     // - is it currently displayed
     // - ... ?
     */
-    Evictor.prototype.evict = function evict (box3d)
+    Evictor.prototype.evict = function evict (box3ds)
     {
         var gl = this.gl;
         var to_evict = [];
-        if (this.ssctree.tree === null) { return; }
-        var dataelements = obtain_dataelements(this.ssctree.tree).filter(function (elem) { return elem.loaded });
-        console.log('number of loaded tiles: ' + dataelements.length);
-        dataelements.forEach(
-            function (tile) {
-                // remove tiles that were rendered more than 3 seconds ago
-                // and that are currently not on the screen
-                if (tile.last_touched !== null && (tile.last_touched + 3000) < _now() 
-                    && !overlaps3d(box3d, tile.box))
-                {
-                    to_evict.push(tile);
+        if (this.ssctrees.length == 0) { return; }
+
+        for (var i = 0; i < this.ssctrees.length; i++) {
+            var dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(function (elem) { return elem.loaded });
+            //console.log('number of loaded tiles: ' + dataelements.length)
+            dataelements.forEach(
+                function (tile) {
+                    // remove tiles that were rendered more than 3 seconds ago
+                    // and that are currently not on the screen
+                    if (tile.last_touched !== null && (tile.last_touched + 3000) < _now()
+                        && !overlaps3d(box3ds[i], tile.box)) {
+                        to_evict.push(tile);
+                    }
+
+                    if (box3ds[i] == null) {
+                        console.log('ssctree.js evict box3ds[i] is null');
+                    }
+                    if (tile.box == null) {
+                        console.log('ssctree.js evict tile.box is null');
+                    }
                 }
+            );
+            //console.log('number of tiles for which memory will be released: ' + to_evict.length)
+            to_evict.forEach(function (tile) {
+                tile.content.destroy(gl);
+                tile.content = null;
+                tile.last_touched = null;
+                tile.loaded = false;
+            });
+            // when we have removed tiles, let's clear the screen (both color and depth buffer)
+            if (to_evict.length > 0) {
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             }
-        );
-        console.log('number of tiles for which memory will be released: ' + to_evict.length);
-        to_evict.forEach(function (tile) {
-            tile.content.destroy(gl);
-            tile.content = null;
-            tile.last_touched = null;
-            tile.loaded = false;
-        });
-        // when we have removed tiles, let's clear the screen (both color and depth buffer)
-        if (to_evict.length > 0 )
-        {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         }
+
+
     };
 
     // from https://github.com/kelektiv/node-uuid
@@ -3032,6 +3082,7 @@
         // FIXME: to not circle map updates (can this be done more elegantly?)
     //    this._should_broadcast_move = true;
 
+        this._action = 'zoomAnimated'; //if we are zooming, we may want to snap to a valid state
         this._abort = null;
         this._transform = new Transform(map_setting.initialization.center2d,
                                         [this.getCanvasContainer().width, this.getCanvasContainer().height],
@@ -3044,7 +3095,7 @@
             time_factor: 1, //we prolong the time because we merge parallelly
             pan_duration: 1000
         };
-        this.if_snap = false;
+        this.if_snap = false; //if we want to snap, then we only snap according to the first dataset
 
         this.msgbus = new MessageBusConnector();
 
@@ -3057,9 +3108,14 @@
         });
 
         this.msgbus.subscribe('data.tree.loaded', function (topic, message, sender) {
-            var St = this$1._transform.getScaleDenominator();
-            var step = this$1.ssctree.get_step_from_St(St, true);
-            this$1._prepare_active_tiles(step);
+            //let St = this._transform.getScaleDenominator()
+            //let ssctree = message[1]
+            //console.log('map.js ssctree:', ssctree)
+            //console.log('map.js ssctree.tree:', ssctree.tree)
+            //var step = ssctree.get_step_from_St(St, this.if_snap)
+            //this._prepare_active_tiles(step, ssctree)
+            //var step = this.ssctree.get_step_from_St(St, this.if_snap)
+            //this._prepare_active_tiles(step)
             this$1.panAnimated(0, 0); // animate for a small time, so that when new tiles are loaded, we are already rendering
         });
 
@@ -3110,25 +3166,32 @@
 
         { 
             var St = this.getTransform().getScaleDenominator();
-            this.ssctree.get_step_from_St(St, true);
+            //this.ssctree.get_step_from_St(St, this.if_snap)
             this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]); 
         }
 
-        this.evictor = new Evictor(this.ssctree,
-                                   this.getWebGLContext());
+        this.evictor = new Evictor(this.ssctrees, this.getWebGLContext());
         // every 30 seconds release resources
         window.setInterval(
             function () {
-
                 var St = this$1.getTransform().getScaleDenominator();
-                var step = this$1.ssctree.get_step_from_St(St, true);
 
-                //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
-                //const near = near_St[0]
+                var box3ds = [];
                 var box2d = this$1.getTransform().getVisibleWorld();
-                var box3d = [box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step];
-                this$1.evictor.evict(box3d);
-                this$1.render();
+                this$1.ssctrees.forEach(function (ssctree) {
+                    var step = ssctree.get_step_from_St(St, this$1.if_snap);
+
+                    //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
+                    //const near = near_St[0]
+
+                    box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step]);
+                    this$1.evictor.evict(box3ds);
+                    this$1.render();
+
+
+                });
+
+
             },
             60 * 1000 * 2.5 // every X mins (expressed in millisec)
         );
@@ -3143,7 +3206,7 @@
         this.ssctrees.forEach(function (ssctree) {
             //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
             var if_snap = ssctree.load();
-            if (if_snap == true) {
+            if (if_snap == true ) {
                 this$1.if_snap = true;
             }
         });
@@ -3165,59 +3228,87 @@
     Map.prototype.render = function render (k) {
             if ( k === void 0 ) k = 0;
 
-
+        //console.log('')
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
         var St = 0;
-        var step = 0;
+        var steps = [];
         var snapped_step = this.getTransform().snapped_step;
-        if (k == 1 && this.if_snap == true &&
+        //console.log('map.js render snapped_step:', snapped_step)
+        //let step = 
+        //FIXME: to cooperate with multiple snapped steps
+        if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
             St = this.getTransform().snapped_St;
-            step = snapped_step;
+            steps.push(snapped_step);  //we only snap according to the first dataset
         }
         else {
             St = this.getTransform().getScaleDenominator();
             //console.log('map.js render, test')
-            step = this.ssctree.get_step_from_St(St);
+            this.ssctrees.forEach(function (ssctree) {
+                steps.push(ssctree.get_step_from_St(St));
+            });
         }
 
-        step -= 0.001; //to compensate with the rounding problems
-            
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
 
-        var last_step = Number.MAX_SAFE_INTEGER;
-        if (this.ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
-            last_step = this.ssctree.tree.metadata.no_of_steps_Ns;
-        }
-        //console.log('map.js render, last_step:', last_step)
 
-        //var step = this.ssctree.get_step_from_St(St) //+ 0.001
-        //console.log('map.js, step before snapping:', step)
-        //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
-        //var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
-        //if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
-        //    step = snapped_step
-        //}
-        //}
+        this.renderer._clearColor();
+        this.renderer._clearDepth();
+        //console.log('map.js steps.length:', steps.length)
             
-            
+        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
+        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
 
-        if (step < 0) {
-            step = 0;
+        for (var i = 0; i < steps.length; i++) {
+            //console.log('map.js i:', i)
+            var ssctree = this.ssctrees[i];
+            //console.log('map.js render ssctree:', ssctree)
+            var step = steps[i] - 0.001; //to compensate with the rounding problems
+
+            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
+            var last_step = Number.MAX_SAFE_INTEGER;
+            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+                last_step = ssctree.tree.metadata.no_of_steps_Ns;
+                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
+            }
+
+
+            //console.log('map.js render, last_step:', last_step)
+
+            //var step = this.ssctree.get_step_from_St(St) //+ 0.001
+            //console.log('map.js, step before snapping:', step)
+            //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
+            //var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
+            //if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
+            //    step = snapped_step
+            //}
+            //}
+
+            if (step < 0) {
+                step = 0;
+            }
+            else if (step >= last_step) {
+                step = last_step;
+            }
+            steps[i] = step;
+
+
+
+
+
+
+
+            //console.log('map.js, step after snapping:', step)
+
+
+            var matrix_box3d = this._prepare_active_tiles(step, ssctree);
+            this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
         }
-        else if (step >= last_step) {
-            step = last_step;
-        }
-
-        //console.log('map.js, step after snapping:', step)
-
-
-        var matrix_box3d = this._prepare_active_tiles(step);
-        this.renderer.render_relevant_tiles(matrix_box3d[0], matrix_box3d[1], [step, St]);
     };
 
-    Map.prototype._prepare_active_tiles = function _prepare_active_tiles (near) {
+    // FIXME: Move this function to class SSCTree?
+    Map.prototype._prepare_active_tiles = function _prepare_active_tiles (near, ssctree) {
         var matrix = this.getTransform().world_square;
         var far = -0.5;
         matrix[10] = -2.0 / (near - far);
@@ -3225,8 +3316,9 @@
         var box2d = this.getTransform().getVisibleWorld();
         var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
         var gl = this.getWebGLContext();
-        this.ssctrees.forEach(function (ssctree) { ssctree.fetch_tiles(box3d, gl);});
-        //this.ssctree.fetch_tiles(box3d, gl)
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        ssctree.fetch_tiles(box3d, gl);
         return [matrix, box3d]
     };
 
@@ -3348,9 +3440,9 @@
         this.render();
     };
 
-    Map.prototype.zoom = function zoom (x, y, factor) {
+    Map.prototype.zoom = function zoom (x, y, zoom_factor) {
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     };
 
@@ -3378,6 +3470,7 @@
             //console.log('map.js test1')
             this._abort();
         }
+        this._action = 'zoomAnimated';
         //console.log('map.js test2')
         //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
         //console.log('map.js zoom_factor:', zoom_factor)
@@ -3395,9 +3488,11 @@
 
     Map.prototype.panAnimated = function panAnimated (dx, dy) {
         if (this._abort !== null) {
+            //console.log('map.js this._abort !== null')
             this._abort();
         }
         // FIXME: settings
+        this._action = 'panAnimated';
         var interpolator = this.animatePan(dx, dy);
         this._abort = timed(interpolator, this._interaction_settings.pan_duration, this);
     };

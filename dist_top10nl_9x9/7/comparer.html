@@ -477,7 +477,7 @@
             tree_setting2.tree_root_href =  window_location + 'data/'
             tree_setting2.tile_root_href =  window_location + 'data/'
 
-            var map_settings1 = {
+            var map_setting1 = {
                 'initialization': {
                     'scale_den': 10000, //top10nl, start_scale
                     'center2d': [186500.0, 312450.0],     //top10nl, center
@@ -490,16 +490,16 @@
                 'interaction_defaults': []
             }
 
-            var map_setting2 = Object.assign({}, map_settings1)  //just a shallow copy 
+            var map_setting2 = Object.assign({}, map_setting1)  //just a shallow copy 
             map_setting2.canvas_nm = canvas_nm2
             map_setting2.tree_settings = [tree_setting2]
 
 
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
-                map_settings1.initialization.navigationBar_title
+                map_setting1.initialization.navigationBar_title
 
-            let map1 = new varioscale.Map(map_settings1);
+            let map1 = new varioscale.Map(map_setting1);
             map1.loadTree();
 
             let map2 = new varioscale.Map(map_setting2);

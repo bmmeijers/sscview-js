@@ -409,9 +409,7 @@ export class Renderer {
     //     // }, 15000)
     // }
 
-
-
-    render_relevant_tiles(matrix, box3d, near_St) {
+    render_relevant_tiles(ssctree, matrix, box3d, near_St) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
@@ -420,77 +418,158 @@ export class Renderer {
 
 
 
-        this._clearColor()
+        //this._clearColor()
 
-        this.ssctrees.forEach(ssctree => {
+        //this.ssctrees.forEach(ssctree => {
 
-            this._clearDepth()
-            if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
-                return
-            }
-            //console.log('')
-            //console.log('render.js ssctree.tree:', ssctree.tree)
-            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-//            var z_low = ssctree.tree.box[2] - 0.001
-//            var z_high = ssctree.tree.box[5] - 0.001
-//            var z_plane = box3d[2]
-//            if (z_plane < z_low || z_plane >= z_high) {
-//                return
-//            }
+        //this._clearDepth()
+        if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
+            return
+        }
+        //console.log('')
+        //console.log('render.js ssctree.tree:', ssctree.tree)
+        //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+        //            var z_low = ssctree.tree.box[2] - 0.001
+        //            var z_high = ssctree.tree.box[5] - 0.001
+        //            var z_plane = box3d[2]
+        //            if (z_plane < z_low || z_plane >= z_high) {
+        //                return
+        //            }
 
-            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-            //console.log('render.js box3d:', box3d)
-            //console.log('render.js near_St:', near_St)
+        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
+        //console.log('render.js box3d:', box3d)
+        //console.log('render.js near_St:', near_St)
 
-            var tiles = ssctree.get_relevant_tiles(box3d)
-            if (tiles.length > 0) {                
-                var polygon_draw_program = this.programs[0];
+        var tiles = ssctree.get_relevant_tiles(box3d)
+        //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
+        if (tiles.length > 0) {
+            var polygon_draw_program = this.programs[0];
+            tiles.forEach(tile => {
+                //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+            })
+
+            var image_tile_draw_program = this.programs[2];
+            tiles.filter(
+                // tile should have image data
+                tile => {
+                    return tile.texture !== null
+                })
+                .forEach(tile => {
+                    image_tile_draw_program.draw_tile(matrix, tile);
+                })
+
+
+            // If we want to draw lines twice -> thick line under / small line over
+            // we need to do this twice + move the code for determining line width here...
+            if (this.settings.boundary_width > 0) {
+                var line_draw_program = this.programs[1];
                 tiles.forEach(tile => {
-                        //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
-                    })
-
-                var image_tile_draw_program = this.programs[2];
-                tiles.filter(
-                        // tile should have image data
-                        tile => {
-                            return tile.texture !== null
-                        }
-                    )
-                    .forEach(tile => {
-                        image_tile_draw_program.draw_tile(matrix, tile);
-                    })
-
-
-                // If we want to draw lines twice -> thick line under / small line over
-                // we need to do this twice + move the code for determining line width here...
-                if (this.settings.boundary_width > 0) {
-                    var line_draw_program = this.programs[1];
-                    tiles.forEach(tile => {
-                            // FIXME: would be nice to specify width here in pixels.
-                            // bottom lines (black)
-                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                            // interior (color)
-                            line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
-                        })
-                }
-
-
-
+                    // FIXME: would be nice to specify width here in pixels.
+                    // bottom lines (black)
+                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                    // interior (color)
+                    line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
+                })
             }
 
-            // this.buckets.forEach(bucket => {
-            //     this.programs[0].draw(matrix, bucket);
-            // })
-            // FIXME:
-            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-            // we should this.gl.clear()
 
 
-        })
+        }
+
+        // this.buckets.forEach(bucket => {
+        //     this.programs[0].draw(matrix, bucket);
+        // })
+        // FIXME:
+        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+        // we should this.gl.clear()
+
+
+        //})
 
 
     }
+
+//    render_relevant_tiles(matrix, box3d, near_St) {
+//        // FIXME: 
+//        // should a bucket have a method to 'draw' itself?
+//        // e.g. by associating multiple programs with a bucket
+//        // when the bucket is constructed?
+
+
+
+
+//        this._clearColor()
+
+//        this.ssctrees.forEach(ssctree => {
+
+//            this._clearDepth()
+//            if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
+//                return
+//            }
+//            //console.log('')
+//            //console.log('render.js ssctree.tree:', ssctree.tree)
+//            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
+////            var z_low = ssctree.tree.box[2] - 0.001
+////            var z_high = ssctree.tree.box[5] - 0.001
+////            var z_plane = box3d[2]
+////            if (z_plane < z_low || z_plane >= z_high) {
+////                return
+////            }
+
+//            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
+//            //console.log('render.js box3d:', box3d)
+//            //console.log('render.js near_St:', near_St)
+
+//            var tiles = ssctree.get_relevant_tiles(box3d)
+//            if (tiles.length > 0) {                
+//                var polygon_draw_program = this.programs[0];
+//                tiles.forEach(tile => {
+//                        //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
+//                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
+//                    })
+
+//                var image_tile_draw_program = this.programs[2];
+//                tiles.filter(
+//                        // tile should have image data
+//                        tile => {
+//                            return tile.texture !== null
+//                        }
+//                    )
+//                    .forEach(tile => {
+//                        image_tile_draw_program.draw_tile(matrix, tile);
+//                    })
+
+
+//                // If we want to draw lines twice -> thick line under / small line over
+//                // we need to do this twice + move the code for determining line width here...
+//                if (this.settings.boundary_width > 0) {
+//                    var line_draw_program = this.programs[1];
+//                    tiles.forEach(tile => {
+//                            // FIXME: would be nice to specify width here in pixels.
+//                            // bottom lines (black)
+//                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+//                            // interior (color)
+//                            line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
+//                        })
+//                }
+
+
+
+//            }
+
+//            // this.buckets.forEach(bucket => {
+//            //     this.programs[0].draw(matrix, bucket);
+//            // })
+//            // FIXME:
+//            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
+//            // we should this.gl.clear()
+
+
+//        })
+
+
+//    }
 
     _clearDepth()
     {

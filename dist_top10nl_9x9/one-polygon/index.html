@@ -304,14 +304,22 @@
                 'tree_root_file_nm': 'tree_smooth.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
-                'tile_root_href': window_location + 'data/'
+                'tile_root_href': window_location + 'data/',
+                'draw_cw_faces': false, //draw counterclockwise 
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 1,
             }
 
             let tree_setting2 = {
                 'tree_root_file_nm': 'Aanvoergebieden.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
-                'tile_root_href': window_location + 'data/'
+                'tile_root_href': window_location + 'data/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 1,
             }
 
 
@@ -319,27 +327,34 @@
                 'tree_root_file_nm': 'watershappen2017.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
-                'tile_root_href': window_location + 'data/'
+                'tile_root_href': window_location + 'data/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 1,
             }
 
-            let tree_setting4 = {
+
+            let tree_setting4 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
+                'tree_root_file_nm': 'tree.json',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
+                'do_blend': true, //we must do blending so that the dataset will be transparent
+                'opacity': 0.2,
+            }
+
+            let tree_setting5 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
-                'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/'
-            }
-
-            let tree_setting5 = {
-                'tree_root_file_nm': 'tree.json',
+                'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
                 'draw_cw_faces': true,
                 'do_depth_test': false,                    
                 'do_blend': false,
                 'opacity': 1,
-                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
-                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/'
             }
-
-
 
 
             var map_setting = {
@@ -350,15 +365,15 @@
 
                     //'center2d': [233520.3, 556776.9],
                     // POINT(257148.828 533408.562)
-                    'center2d': [257148.828, 533408.562],
-                    //'center2d': [186500.0, 312450.0],     //top10nl
+                    'center2d': [257148.828, 533408.562],   //Drenthe
+                    // 'center2d': [186500.0, 312450.0],     //top10nl
                     //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
                 'tree_settings': [
-                    //tree_setting4,
                     tree_setting5,
+                    tree_setting4,
                     // tree_setting1, 
                     // tree_setting2, 
                     // tree_setting3,

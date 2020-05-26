@@ -124,14 +124,14 @@ export class SSCTree {
                     element.content = null
                     element.last_touched = null
                     element.url = this.tree_setting.tile_root_href + element.href  //e.g., element.href: node02145.obj
-                    console.log('ssctree.js element.href:', element.href)
+                    //console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 })
             })
             .then(() => {
                 // Notify via PubSub that tree has loaded 
                 // (this re-renders the map if not already rendering)
-                this.msgbus.publish('data.tree.loaded', 'tree.ready')
+                this.msgbus.publish('data.tree.loaded', ['tree.ready', this])
             })
             .catch(err => {
                 console.error(err)
@@ -456,6 +456,8 @@ function obtain_overlapped_dataelements(node, box3d) {
     // console.log(box)
     let result = []
     let stack = [node]
+    //console.log('ssctree.js, obtain_overlapped_dataelements node:', node)
+    //console.log('ssctree.js, obtain_overlapped_dataelements box3d:', box3d)
     while (stack.length > 0) {
         let node = stack.pop()
 
@@ -465,6 +467,13 @@ function obtain_overlapped_dataelements(node, box3d) {
             node.children.forEach(child => {
                 if (overlaps3d(node.box, box3d)) {
                     stack.push(child)
+                }
+
+                if (node.box == null) {
+                    console.log('ssctree.js obtain_overlapped_dataelements node.box is null')
+                }
+                if (box3d == null) {
+                    console.log('ssctree.js obtain_overlapped_dataelements box3d 1 is null')
                 }
             });
         }
@@ -476,9 +485,18 @@ function obtain_overlapped_dataelements(node, box3d) {
                 if (overlaps3d(element.box, box3d)) {
                     result.push(element)
                 }
+
+
+                if (element.box == null) {
+                    console.log('ssctree.js obtain_overlapped_dataelements element.box is null')
+                }
+                if (box3d == null) {
+                    console.log('ssctree.js obtain_overlapped_dataelements box3d 2 is null')
+                }
             });
         }
     }
+    //console.log('ssctree.js, obtain_overlapped_dataelements result.length:', result.length)
     return result
 }
 
@@ -500,6 +518,13 @@ function obtain_overlapped_subtrees(node, box3d) {
                     && overlaps3d(child.box, box3d)) {
                     result.push(child)
                     child.loaded = true;
+                }
+
+                if (child.box == null) {
+                    console.log('ssctree.js obtain_overlapped_subtrees child.box is null')
+                }
+                if (box3d == null) {
+                    console.log('ssctree.js obtain_overlapped_subtrees box3d is null')
                 }
             });
         }
@@ -616,9 +641,9 @@ class WorkerHelper {
 
 
 export class Evictor {
-    constructor(ssctree, gl)
+    constructor(ssctrees, gl)
     {
-        this.ssctree = ssctree
+        this.ssctrees = ssctrees
         this.gl = gl
     }
 
@@ -633,37 +658,53 @@ export class Evictor {
     // - is it currently displayed
     // - ... ?
     */
-    evict(box3d)
+    evict(box3ds)
     {
         let gl = this.gl
         let to_evict = []
-        if (this.ssctree.tree === null) { return; }
-        let dataelements = obtain_dataelements(this.ssctree.tree).filter(elem => { return elem.loaded })
-        console.log('number of loaded tiles: ' + dataelements.length)
-        dataelements.forEach(
-            tile =>
-            {
-                // remove tiles that were rendered more than 3 seconds ago
-                // and that are currently not on the screen
-                if (tile.last_touched !== null && (tile.last_touched + 3000) < now() 
-                    && !overlaps3d(box3d, tile.box))
-                {
-                    to_evict.push(tile)
+        if (this.ssctrees.length == 0) { return; }
+
+        for (var i = 0; i < this.ssctrees.length; i++) {
+            let dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(elem => { return elem.loaded })
+            //console.log('number of loaded tiles: ' + dataelements.length)
+            dataelements.forEach(
+                tile => {
+                    try {
+                        // remove tiles that were rendered more than 3 seconds ago
+                        // and that are currently not on the screen
+                        if (tile.last_touched !== null && (tile.last_touched + 3000) < now()
+                            && !overlaps3d(box3ds[i], tile.box)) {
+                            to_evict.push(tile)
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        console.log('ssctree.js evict box3ds[i]:', box3ds[i])
+                        console.log('ssctree.js evict tile.box:', tile.box)
+                    }
+
+
+                    //if (box3ds[i] == null) {
+                    //    console.log('ssctree.js evict box3ds[i] is null')
+                    //}
+                    //if (tile.box == null) {
+                    //    console.log('ssctree.js evict tile.box is null')
+                    //}
                 }
+            )
+            //console.log('number of tiles for which memory will be released: ' + to_evict.length)
+            to_evict.forEach(tile => {
+                tile.content.destroy(gl)
+                tile.content = null
+                tile.last_touched = null
+                tile.loaded = false
+            })
+            // when we have removed tiles, let's clear the screen (both color and depth buffer)
+            if (to_evict.length > 0) {
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
             }
-        )
-        console.log('number of tiles for which memory will be released: ' + to_evict.length)
-        to_evict.forEach(tile => {
-            tile.content.destroy(gl)
-            tile.content = null
-            tile.last_touched = null
-            tile.loaded = false
-        })
-        // when we have removed tiles, let's clear the screen (both color and depth buffer)
-        if (to_evict.length > 0 )
-        {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         }
+
+
     }
 }
 

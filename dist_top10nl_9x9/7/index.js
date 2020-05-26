@@ -2293,7 +2293,7 @@
                     element.content = null;
                     element.last_touched = null;
                     element.url = this$1.tree_setting.tile_root_href + element.href;  //e.g., element.href: node02145.obj
-                    console.log('ssctree.js element.href:', element.href);
+                    //console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 });
             })
