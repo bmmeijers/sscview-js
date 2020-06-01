@@ -483,11 +483,11 @@ export class Renderer {
         }
 
         let tree_setting = ssctree.tree_setting
-        tree_setting.opacity = this.settings.foreground_opacity
+        //tree_setting.opacity = this.settings.foreground_opacity
         //console.log('render.js tree_setting.as_backdrop:', tree_setting.as_backdrop)
-        if (tree_setting.as_backdrop == true) {
-            tree_setting.opacity = this.settings.backdrop_opacity
-        }
+        //if (tree_setting.as_backdrop == true) {
+        //    tree_setting.opacity = this.settings.backdrop_opacity
+        //}
 
         //console.log('render.js tree_setting.opacity:', tree_setting.opacity)
 
@@ -508,7 +508,7 @@ export class Renderer {
 
         var tiles = ssctree.get_relevant_tiles(box3d)
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
-        if (tiles.length > 0 && tree_setting.opacity > 0) {
+        if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
             var polygon_draw_program = this.programs[0];
             tiles.forEach(tile => {
                 //            .filter(tile => {tile.}) // FIXME tile should only have polygon data

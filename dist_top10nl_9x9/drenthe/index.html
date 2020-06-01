@@ -98,7 +98,7 @@
     </style>
 </head>
 
-
+<!-- <p hidden id="myP"></p> -->
 
 <body class="w3-white prevent-pull-to-refresh">
     <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
@@ -182,14 +182,14 @@
     <!-- The Settings Modal -->
     <div id="settingsModal" class="w3-modal">
         <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content">
+        <div class="w3-modal-content" id= 'modal-content'>
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
             <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
 
             <div class="w3-container w3-padding">
 
-                <div class="setting">
+                <div class="setting" id = "interaction-setting">
                     <fieldset>
                         <legend> zooming factor </legend>
                         <div class="w3-margin">
@@ -222,8 +222,8 @@
             </div>
 
             <header class="w3-container w3-light-grey w3-padding"><h2>Rendering settings</h2></header>
-            <div class="w3-container w3-padding">
-                <div class="setting">
+            <div class="w3-container w3-padding" id = 'container-rendering'>
+                <div class="setting" id="fieldsets-rendering">
                     <fieldset>
                         <legend> boundary width</legend>
                         <div>
@@ -235,7 +235,7 @@
                     </fieldset>
                 </div>
             </div>
-            <div class="w3-container w3-padding">
+            <!-- <div class="w3-container w3-padding">
                 <div class="setting">
                     <fieldset>
                         <legend> opacity of backdrop layer</legend>
@@ -260,7 +260,7 @@
                         </div>
                     </fieldset>
                 </div>
-            </div>
+            </div> -->
             <!--
                 zoom factor
                 <div>
@@ -268,7 +268,7 @@
                 </div>
             -->
 
-            <footer class="w3-container w3-light-grey w3-padding">
+            <footer class="w3-container w3-light-grey w3-padding" id="container-close">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
                     Close
                 </button>
@@ -303,6 +303,12 @@
 
 
     <script type="text/javascript">
+        function toggle_layer(cb){
+            let msgbus = new varioscale.MessageBusConnector();
+            let topic = cb.value;
+            msgbus.publish(topic, cb.checked);
+        }
+
         window.addEventListener('DOMContentLoaded', function () {
 
             // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
@@ -326,20 +332,22 @@
 
 
             let tree_setting1 = {
+                'layer_nm' : 'example-7',
                 'tree_root_file_nm': 'tree_smooth.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
-                'do_blend': true,
+                'do_blend': true,                
                 'as_backdrop' : false,
                 'opacity': 0.5,
+                'do_draw': true,
             }
 
             let tree_setting2 = {
+                'layer_nm' : 'Aanvoergebieden',
                 'tree_root_file_nm': 'Aanvoergebieden.json',
-                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': true,
@@ -347,12 +355,13 @@
                 'do_blend': false,
                 'as_backdrop' : false,
                 'opacity': 0.5,
+                'do_draw': true,
             }
 
 
             let tree_setting3 = {
+                'layer_nm' : 'watershappen2017',
                 'tree_root_file_nm': 'watershappen2017.json',
-                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': true,
@@ -360,10 +369,12 @@
                 'do_blend': false,
                 'as_backdrop' : false,
                 'opacity': 0.5,
+                'do_draw': true,
             }
 
 
             let tree_setting4 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
+                'layer_nm' : 'Drenthe',    
                 'tree_root_file_nm': 'tree.json',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
@@ -372,9 +383,11 @@
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'as_backdrop' : false,
                 'opacity': 0.5,
+                'do_draw': true,
             }
 
             let tree_setting5 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
+                'layer_nm' : 'NL-raster', 
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
@@ -384,6 +397,7 @@
                 'do_blend': true,
                 'as_backdrop' : true,
                 'opacity': 1,
+                'do_draw': true,
             }
 
 
@@ -402,8 +416,8 @@
                 },
                 'canvas_nm': canvas_nm,
                 'tree_settings': [
-                    tree_setting5,
                     tree_setting4,
+                    tree_setting5,                    
                     // tree_setting1, 
                     // tree_setting2, 
                     // tree_setting3,
@@ -468,61 +482,83 @@
             init_boundary_width_slider();
             /* -- end of slider -- */
 
-            /* -- start slider -- */
-            // widgetid: the object for tuning the value of a widget
-            // displayid: the object for displaying the value of the widget
-            let init_displaying_slider = (widgetid, displayid) => {
-                let msgbus = new varioscale.MessageBusConnector();
-                let topic = "settings.rendering." + widgetid
-                msgbus.subscribe(topic, (topic, message, sender) => {
-                    let el = document.getElementById(displayid);
-                    el.innerHTML = message;
-                });                
-                let slider = document.getElementById(widgetid);
-                slider.addEventListener('input',
-                    () => {
-                        msgbus.publish(topic, parseFloat(slider.value));
-                        // map.abortAndRender();
-                    }
-                );
-                msgbus.publish(topic, parseFloat(slider.value));
+
+            function add_layer_settings(tree_settings){
+
+                // var container_close = document.getElementById("container-close");
+                // container_close.parentNode.insertBefore(newheader, container_close)
+                // var newcontainer = document.createElement("div");
+                // newcontainer.class = 'w3-container w3-padding'
+                
+                var fieldsets_rendering = document.getElementById("fieldsets-rendering")
+
+                tree_settings.forEach(tree_setting => {
+                    let layer_nm = tree_setting.layer_nm
+
+                    // create a new div element 
+                    var newfieldset = document.createElement("fieldset");
+                    fieldsets_rendering.append(newfieldset)
 
 
+                    //make the legend of the layer
+                    var newlegend = document.createElement("legend");
+                    newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+                    
+                    let id_cb = layer_nm + '_cb'
+                    let topic_cb = 'setting.layer.' + layer_nm + '_cb' 
+                    newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggle_layer(this)"> ` + layer_nm
+                    cb = document.getElementById(id_cb)
+                    cb.checked = tree_setting.do_draw
+                    cb.value = topic_cb
 
-            };
-            init_displaying_slider("backdrop-opacity", "backdrop-opacity-value");
-            init_displaying_slider("foreground-opacity", "foreground-opacity-value");
-            /* -- end of slider -- */
-
-            // <div class="w3-container w3-padding">
-            //     <div class="setting">
-            //         <fieldset>
-            //             <legend> opacity of backdrop layer</legend>
-            //             <div>
-            //                 opacity value: <span id="backdrop-opacity-value"></span>
-            //             </div>
-            //             <div>
-            //                 trasparent <input type="range" value="0.5" step="0.025" min="0" max="1" id="backdrop-opacity" style="margin: 0 16px 0 16px;"> opaque
-            //             </div>
-            //         </fieldset>
-            //     </div>
-            // </div>
-            // <div class="w3-container w3-padding">
-            //     <div class="setting">
-            //         <fieldset>
-            //             <legend> opacity of foreground layer</legend>
-            //             <div>
-            //                 opacity value: <span id="foreground-opacity-value"></span>
-            //             </div>
-            //             <div>
-            //                 trasparent <input type="range" value="0.5" step="0.025" min="0" max="1" id="foreground-opacity" style="margin: 0 16px 0 16px;"> opaque
-            //             </div>
-            //         </fieldset>
-            //     </div>
-            // </div>
+                    map.msgbus.subscribe(topic_cb, (topic_cb, message, sender) => {
+                        tree_setting.do_draw = message
+                        map.abortAndRender();
+                    });
 
 
+                    //make the slider for the opacity
+                    var opacity_div = document.createElement("div");
+                    opacity_div.id = layer_nm + '_opacity-value'
 
+                    // var slider_div = document.createElement("div");
+                    var slider = document.createElement("input")
+                    // slider.id = layer_nm + '_opacity-slider';
+                    slider.type = 'range';
+                    slider.min = 0;
+                    slider.max = 1;
+                    slider.step = 0.025;
+                    slider.value = tree_setting.opacity; //we must set the value after setting the step; otherwise, uneffective
+
+                    newfieldset.append(opacity_div, slider)
+
+
+                    let msgbus = new varioscale.MessageBusConnector();
+                    let topic = 'setting.layer.' + layer_nm + '_opacity-slider' 
+                    msgbus.subscribe(topic, (topic, message, sender) => {
+                        // let el = document.getElementById(displayid);
+                        opacity_div.innerHTML = 'opacity value: ' + message;
+                    });                
+                    // let slider = document.getElementById(widgetid);
+                    slider.addEventListener('input',
+                        () => {
+                            // console.log('index.html slider.value:', slider.value)
+                            
+                            msgbus.publish(topic, parseFloat(slider.value));
+                            // tree_setting.opacity = parseFloat(slider.value);
+                            map.abortAndRender();
+                        }
+                    );
+                    msgbus.publish(topic, parseFloat(slider.value));
+
+                    map.msgbus.subscribe(topic, (topic, message, sender) => {
+                        tree_setting.opacity = parseFloat(message);
+                        map.abortAndRender();
+                    });
+                });
+            }
+
+            add_layer_settings(map_setting.tree_settings)
 
 
 

@@ -1504,7 +1504,7 @@
             {
                 return;
             }
-            console.log('render.js tree_setting.opacity 3:', tree_setting.opacity);
+            //console.log('render.js tree_setting.opacity 3:', tree_setting.opacity)
             var gl = this.gl;
             var shaderProgram = this.shaderProgram;
             gl.useProgram(shaderProgram);
@@ -1828,11 +1828,11 @@
         }
 
         var tree_setting = ssctree.tree_setting;
-        tree_setting.opacity = this.settings.foreground_opacity;
+        //tree_setting.opacity = this.settings.foreground_opacity
         //console.log('render.js tree_setting.as_backdrop:', tree_setting.as_backdrop)
-        if (tree_setting.as_backdrop == true) {
-            tree_setting.opacity = this.settings.backdrop_opacity;
-        }
+        //if (tree_setting.as_backdrop == true) {
+        //tree_setting.opacity = this.settings.backdrop_opacity
+        //}
 
         //console.log('render.js tree_setting.opacity:', tree_setting.opacity)
 
@@ -1853,7 +1853,7 @@
 
         var tiles = ssctree.get_relevant_tiles(box3d);
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
-        if (tiles.length > 0 && tree_setting.opacity > 0) {
+        if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
             var polygon_draw_program = this.programs[0];
             tiles.forEach(function (tile) {
                 //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
@@ -3192,15 +3192,15 @@
             this$1.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.rendering.backdrop-opacity", function (topic, message, sender) {
-            this$1.renderer.settings.backdrop_opacity = parseFloat(message);
-            this$1.abortAndRender();
-        });
+        //this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
+        //this.renderer.settings.backdrop_opacity = parseFloat(message);
+        //this.abortAndRender();
+        //});
 
-        this.msgbus.subscribe("settings.rendering.foreground-opacity", function (topic, message, sender) {
-            this$1.renderer.settings.foreground_opacity = parseFloat(message);
-            this$1.abortAndRender();
-        });
+        //this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
+        //this.renderer.settings.foreground_opacity = parseFloat(message);
+        //this.abortAndRender();
+        //});
 
         this.msgbus.subscribe("settings.interaction.zoom-factor", function (topic, message, sender) {
     //        console.log(message);
@@ -3334,11 +3334,11 @@
         this.renderer._clearColor();
         this.renderer._clearDepth();
         //console.log('map.js steps.length:', steps.length)
-            
+
         //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
         //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
 
-        for (var i = 0; i < steps.length; i++) {
+        for (var i = steps.length - 1; i >= 0; i--) { //draw from the last layer to the first layer; first layer will be on top
             //console.log('map.js i:', i)
             var ssctree = this.ssctrees[i];
             //console.log('map.js render ssctree:', ssctree)

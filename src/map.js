@@ -79,15 +79,15 @@ class Map {
             this.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
-            this.renderer.settings.backdrop_opacity = parseFloat(message);
-            this.abortAndRender();
-        });
+        //this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
+        //    this.renderer.settings.backdrop_opacity = parseFloat(message);
+        //    this.abortAndRender();
+        //});
 
-        this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
-            this.renderer.settings.foreground_opacity = parseFloat(message);
-            this.abortAndRender();
-        });
+        //this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
+        //    this.renderer.settings.foreground_opacity = parseFloat(message);
+        //    this.abortAndRender();
+        //});
 
         this.msgbus.subscribe("settings.interaction.zoom-factor", (topic, message, sender) => {
 //            console.log(message);
@@ -217,11 +217,11 @@ class Map {
         this.renderer._clearColor()
         this.renderer._clearDepth()
         //console.log('map.js steps.length:', steps.length)
-        
+
         //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
         //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
 
-        for (var i = 0; i < steps.length; i++) {
+        for (var i = steps.length - 1; i >= 0; i--) { //draw from the last layer to the first layer; first layer will be on top
             //console.log('map.js i:', i)
             let ssctree = this.ssctrees[i]
             //console.log('map.js render ssctree:', ssctree)
