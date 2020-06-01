@@ -3219,6 +3219,8 @@
             this$1.abortAndRender();
         });
 
+        this.subscribe_scale();
+        this.add_layer_settings(map_setting.tree_settings);
 
         map_setting.tree_settings.forEach(function (tree_setting) {
             console.log('map.js tree_setting:', tree_setting);
@@ -3226,6 +3228,8 @@
         });
 
 
+
+            
         // data load
         //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
@@ -3584,6 +3588,94 @@
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight);
+    };
+
+    Map.prototype.subscribe_scale = function subscribe_scale () {
+        var msgbus = this.msgbus;
+        msgbus.subscribe('map.scale', function (topic, message, sender) {
+            if (sender !== msgbus.id) { return; }
+            var scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            var el = document.getElementById("scale-denominator");
+            el.textContent = " 1:" + scale;
+        });
+    };
+
+    Map.prototype.add_layer_settings = function add_layer_settings (tree_settings) {
+            var this$1 = this;
+
+
+        // var container_close = document.getElementById("container-close");
+        // container_close.parentNode.insertBefore(newheader, container_close)
+        // var newcontainer = document.createElement("div");
+        // newcontainer.class = 'w3-container w3-padding'
+        var msgbus = this.msgbus;
+        var fieldsets_rendering = document.getElementById("fieldsets-rendering");
+
+        tree_settings.forEach(function (tree_setting) {
+                
+            var layer_nm = tree_setting.layer_nm;
+            console.log('map.js layer_nm:', layer_nm);
+            // create a new div element 
+            var newfieldset = document.createElement("fieldset");
+            fieldsets_rendering.append(newfieldset);
+
+
+            //make the legend of the layer
+            var newlegend = document.createElement("legend");
+            newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+
+            var id_cb = layer_nm + '_cb';
+            var topic_cb = 'setting.layer.' + layer_nm + '_cb';
+            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + layer_nm;
+            var cb = document.getElementById(id_cb);
+            cb.checked = tree_setting.do_draw;
+            cb.value = topic_cb;
+
+            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {
+                tree_setting.do_draw = message; //if we want to draw the layer or not
+                this$1.abortAndRender();
+            });
+
+
+            //make the slider for the opacity
+            var opacity_div = document.createElement("div");
+            opacity_div.id = layer_nm + '_opacity-value';
+
+            // var slider_div = document.createElement("div");
+            var slider = document.createElement("input");
+            // slider.id = layer_nm + '_opacity-slider';
+            slider.type = 'range';
+            slider.min = 0;
+            slider.max = 1;
+            slider.step = 0.025;
+            slider.value = tree_setting.opacity; //we must set the value after setting the step; otherwise, uneffective
+
+            newfieldset.append(opacity_div, slider);
+
+
+                
+            var topic = 'setting.layer.' + layer_nm + '_opacity-slider';
+            msgbus.subscribe(topic, function (topic, message, sender) {
+                // let el = document.getElementById(displayid);
+                opacity_div.innerHTML = 'opacity value: ' + message;
+            });
+            // let slider = document.getElementById(widgetid);
+            slider.addEventListener('input',
+                function () {
+                    // console.log('index.html slider.value:', slider.value)
+
+                    msgbus.publish(topic, parseFloat(slider.value));
+                    // tree_setting.opacity = parseFloat(slider.value);
+                    this$1.abortAndRender();
+                }
+            );
+            msgbus.publish(topic, parseFloat(slider.value));
+
+            msgbus.subscribe(topic, function (topic, message, sender) {
+                tree_setting.opacity = parseFloat(message);
+                this$1.abortAndRender();
+            });
+        });
     };
 
     // import  Rectangle from "./rect"

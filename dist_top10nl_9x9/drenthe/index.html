@@ -303,7 +303,7 @@
 
 
     <script type="text/javascript">
-        function toggle_layer(cb){
+        function toggle_layer(cb){ //better to put this function into map.js if we can
             let msgbus = new varioscale.MessageBusConnector();
             let topic = cb.value;
             msgbus.publish(topic, cb.checked);
@@ -433,16 +433,6 @@
             var map = new varioscale.Map(map_setting);
             map.loadTree();
 
-            let subscribe_scale = (map) => {
-                let msgbus = new varioscale.MessageBusConnector();
-                msgbus.subscribe('map.scale', (topic, message, sender) => {
-                    if (sender !== map.msgbus.id) return;
-                    const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-                    let el = document.getElementById("scale-denominator");
-                    el.textContent = " 1:" + scale;
-                });
-            }
-            subscribe_scale(map);
 
 
             // Resize the canvas to span complete screen, when the screen is resized
@@ -481,85 +471,6 @@
             };
             init_boundary_width_slider();
             /* -- end of slider -- */
-
-
-            function add_layer_settings(tree_settings){
-
-                // var container_close = document.getElementById("container-close");
-                // container_close.parentNode.insertBefore(newheader, container_close)
-                // var newcontainer = document.createElement("div");
-                // newcontainer.class = 'w3-container w3-padding'
-                
-                var fieldsets_rendering = document.getElementById("fieldsets-rendering")
-
-                tree_settings.forEach(tree_setting => {
-                    let layer_nm = tree_setting.layer_nm
-
-                    // create a new div element 
-                    var newfieldset = document.createElement("fieldset");
-                    fieldsets_rendering.append(newfieldset)
-
-
-                    //make the legend of the layer
-                    var newlegend = document.createElement("legend");
-                    newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
-                    
-                    let id_cb = layer_nm + '_cb'
-                    let topic_cb = 'setting.layer.' + layer_nm + '_cb' 
-                    newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggle_layer(this)"> ` + layer_nm
-                    cb = document.getElementById(id_cb)
-                    cb.checked = tree_setting.do_draw
-                    cb.value = topic_cb
-
-                    map.msgbus.subscribe(topic_cb, (topic_cb, message, sender) => {
-                        tree_setting.do_draw = message
-                        map.abortAndRender();
-                    });
-
-
-                    //make the slider for the opacity
-                    var opacity_div = document.createElement("div");
-                    opacity_div.id = layer_nm + '_opacity-value'
-
-                    // var slider_div = document.createElement("div");
-                    var slider = document.createElement("input")
-                    // slider.id = layer_nm + '_opacity-slider';
-                    slider.type = 'range';
-                    slider.min = 0;
-                    slider.max = 1;
-                    slider.step = 0.025;
-                    slider.value = tree_setting.opacity; //we must set the value after setting the step; otherwise, uneffective
-
-                    newfieldset.append(opacity_div, slider)
-
-
-                    let msgbus = new varioscale.MessageBusConnector();
-                    let topic = 'setting.layer.' + layer_nm + '_opacity-slider' 
-                    msgbus.subscribe(topic, (topic, message, sender) => {
-                        // let el = document.getElementById(displayid);
-                        opacity_div.innerHTML = 'opacity value: ' + message;
-                    });                
-                    // let slider = document.getElementById(widgetid);
-                    slider.addEventListener('input',
-                        () => {
-                            // console.log('index.html slider.value:', slider.value)
-                            
-                            msgbus.publish(topic, parseFloat(slider.value));
-                            // tree_setting.opacity = parseFloat(slider.value);
-                            map.abortAndRender();
-                        }
-                    );
-                    msgbus.publish(topic, parseFloat(slider.value));
-
-                    map.msgbus.subscribe(topic, (topic, message, sender) => {
-                        tree_setting.opacity = parseFloat(message);
-                        map.abortAndRender();
-                    });
-                });
-            }
-
-            add_layer_settings(map_setting.tree_settings)
-
 
 
 
