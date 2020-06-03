@@ -235,38 +235,6 @@
                     </fieldset>
                 </div>
             </div>
-            <!-- <div class="w3-container w3-padding">
-                <div class="setting">
-                    <fieldset>
-                        <legend> opacity of backdrop layer</legend>
-                        <div>
-                            opacity value: <span id="backdrop-opacity-value"></span>
-                        </div>
-                        <div>
-                            trasparent <input type="range" value="1" step="0.025" min="0" max="1" id="backdrop-opacity" style="margin: 0 16px 0 16px;"> opaque
-                        </div>
-                    </fieldset>
-                </div>
-            </div>
-            <div class="w3-container w3-padding">
-                <div class="setting">
-                    <fieldset>
-                        <legend> opacity of foreground layer</legend>
-                        <div>
-                            opacity value: <span id="foreground-opacity-value"></span>
-                        </div>
-                        <div>
-                            trasparent <input type="range" value="0.5" step="0.025" min="0" max="1" id="foreground-opacity" style="margin: 0 16px 0 16px;"> opaque
-                        </div>
-                    </fieldset>
-                </div>
-            </div> -->
-            <!--
-                zoom factor
-                <div>
-                    small <input type="range" value="0.2" step="0.025" min="0" max="5" id="zoom-factor" style="margin: 0 16px 0 16px;"> large
-                </div>
-            -->
 
             <footer class="w3-container w3-light-grey w3-padding" id="container-close">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
@@ -323,25 +291,24 @@
 
 
             //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
-            //window_location = /gpudemo/2020/03/merge/0.1/
-            //more information: https://stackoverflow.com/q/1368264
-            //https://stackoverflow.com/questions/30863164
+            //window_location = https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/questions/30863164
             var href = window.location.href;
             var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
-            // console.log('window_location:', window_location)
+            console.log('window_location:', window_location)
 
 
             let tree_setting1 = {
                 'layer_nm' : 'example-7',
                 'tree_root_file_nm': 'tree_smooth.json',
-                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
+                // 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
                 'do_blend': true,                
                 'as_backdrop' : false,
-                'opacity': 0.5,
+                'opacity': 0.8,
                 'do_draw': true,
             }
 
@@ -403,21 +370,20 @@
 
             var map_setting = {
                 'initialization': {
-                    'scale_den': 10000, //top10nl, start_scale
-                    //'scale_den': 12500,
-                    // BOX(204914.35 514637.283,270231.624 580203.629)
 
-                    //'center2d': [233520.3, 556776.9],
-                    // POINT(257148.828 533408.562)
-                    'center2d': [257148.828, 533408.562],   //Drenthe
-                    // 'center2d': [186500.0, 312450.0],     //top10nl
-                    //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
+                    'scale_den': 12000, //top10nl, start_scale
+                    'center2d': [186500.0, 312450.0],     //top10nl
+
+                    // 'scale_den': 1000000, //Drenthe
+                    // 'center2d': [257148.828, 533408.562],   //Drenthe
+
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': canvas_nm,
-                'tree_settings': [
-                    tree_setting4,
-                    tree_setting5,                    
+                'tree_settings': [ //we will draw from the                 
+                    tree_setting1, 
+                    tree_setting5,
+                    // tree_setting4,                                        
                     // tree_setting1, 
                     // tree_setting2, 
                     // tree_setting3,

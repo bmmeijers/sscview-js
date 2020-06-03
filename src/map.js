@@ -110,7 +110,7 @@ class Map {
         this.add_layer_settings(map_setting.tree_settings)
 
         map_setting.tree_settings.forEach((tree_setting) => {
-            console.log('map.js tree_setting:', tree_setting)
+            //console.log('map.js tree_setting:', tree_setting)
             this.ssctrees.push(new SSCTree(this.msgbus, tree_setting))
         })
 
@@ -491,7 +491,7 @@ class Map {
         tree_settings.forEach(tree_setting => {
             
             let layer_nm = tree_setting.layer_nm
-            console.log('map.js layer_nm:', layer_nm)
+            //console.log('map.js layer_nm:', layer_nm)
             // create a new div element 
             var newfieldset = document.createElement("fieldset");
             fieldsets_rendering.append(newfieldset)

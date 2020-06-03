@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "start_scale_Sb": 10000,
+    "start_scale_Sb": 12000,
     "start_scale_Sb_comment": "scale denominator of base map (according to dataset)",
     "no_of_objects_Nb": 7,
     "no_of_objects_Nb_comment": "number of objects on base map (according to dataset)",

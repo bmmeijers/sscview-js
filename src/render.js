@@ -174,7 +174,6 @@ attribute vec4 vertexPosition_modelspace;
 uniform mat4 M;
 uniform float near;
 uniform float half_width_reality;
-uniform float opacity;
 
 void main()
 {
@@ -349,22 +348,93 @@ attribute vec3 vertexColor;
 uniform mat4 M;
 varying vec4 fragColor;
 uniform float opacity;
+varying vec3 vertexColor2;
+varying float opacity2;
 
 void main()
 {
-    fragColor = vec4(vertexColor, opacity);
+    vertexColor2 = vertexColor;
+    opacity2 = opacity;
+    
     gl_Position = M * vec4(vertexPosition_modelspace, 1);
 }
 `;
         let fragmentShaderText = `
 precision mediump float;
 
-varying vec4 fragColor;
+uniform vec4 fragColor2;
+varying vec3 vertexColor2;
+varying float opacity2;
+
 void main()
 {
-    gl_FragColor = vec4(fragColor);
+    gl_FragColor = vec4(vertexColor2,opacity2);
 }
 `;
+
+        //gl_FragColor = vec4(1.0, 0.0, 1.0, 0.5);
+        //fragColor = vec4(vertexColor2, opacity2);
+        //fragColor = vec4(vertexColor, opacity);
+
+//        let vertexShaderText = `
+//precision highp float;
+
+//attribute vec3 vertexPosition_modelspace;
+//attribute vec3 vertexColor;
+//uniform mat4 M;
+//varying vec4 fragColor;
+//uniform float opacity;
+//varying vec3 vertexColor2;
+//varying float opacity2;
+
+//void main()
+//{
+//    vertexColor2 = vertexColor;
+//    opacity2 = opacity;
+    
+//    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+//}
+//`;
+//        let fragmentShaderText = `
+//precision mediump float;
+
+//varying vec4 fragColor;
+//varying vec3 vertexColor2;
+//varying float opacity2;
+
+//void main()
+//{
+//    fragColor = vec4(vertexColor2, opacity2);
+//    gl_FragColor = vec4(fragColor);
+//}
+//`;
+
+
+//        let vertexShaderText = `
+//precision highp float;
+
+//attribute vec3 vertexPosition_modelspace;
+//attribute vec3 vertexColor;
+//uniform mat4 M;
+//varying vec4 fragColor;
+//uniform float opacity;
+
+//void main()
+//{
+//    fragColor = vec4(vertexColor, opacity);
+//    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+//}
+//`;
+//        let fragmentShaderText = `
+//precision mediump float;
+
+//varying vec4 fragColor;
+//void main()
+//{
+//    gl_FragColor = vec4(fragColor);
+//}
+//`;
+
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
@@ -397,17 +467,19 @@ void main()
             gl.uniform1f(opacity_location, tree_setting.opacity);
         }
 
-        gl.enable(gl.CULL_FACE);
-        //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+        //gl.enable(gl.CULL_FACE);
+        ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
         
                
-        if (tree_setting.draw_cw_faces == true) {
-            gl.cullFace(gl.BACK); //triangles from FME are clock wise
-        }
-        else {
-            gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
-        }
+        //if (tree_setting.draw_cw_faces == true) {
+        //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
+        //}
+        //else {
+        //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+        //}
+        //gl.cullFace(gl.BACK);
+        //gl.cullFace(gl.FRONT);
 
         if (tree_setting.do_depth_test == true) {
             gl.enable(gl.DEPTH_TEST);
@@ -415,6 +487,9 @@ void main()
         else {            
             gl.disable(gl.DEPTH_TEST);
         }
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
         
@@ -424,8 +499,17 @@ void main()
         else {
             gl.disable(gl.BLEND)
         }
+        gl.enable(gl.BLEND);
 
+        //gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
+        //gl.blendFunc(gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA)
+        //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA)
+        //gl.blendFunc(gl.SRC_ALPHA, gl.ZERO) //make it transparent according to alpha value
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        //gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA) //make it transparent according to alpha value
+
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }

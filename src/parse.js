@@ -3,18 +3,17 @@
 
 function parse_obj(txt)
 {
-    let f_color = null
+    let fcolor = null  //feature color
     let step_high = null
     let class_color = generate_class_color()
 
-    let output = {
-        vertices: [],
-        triangles: [],
-        boundaries: {
-            triangles: [],
-            deltas: []
-        }
-    }
+    let vertices = []
+    //we will reverse the order of the groups to avoid drawing all the lower ssc levels 
+    //(we only draw the immediate-lower level, useful for the case when we want to draw a level with transparency).
+    let trianglegroups = [] 
+    let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
+    let btriangles = [] //triangles of boundaries
+    let deltas = [] //deltas of boundaries
 
     txt.split('\n').forEach(line => {
         let words = line.split(' ');
@@ -26,17 +25,19 @@ function parse_obj(txt)
         switch (words[0])
         {
             case 'v': {
-                output.vertices.push([parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3])])
+                vertices.push([parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3])])
                 break
             }
 
             case 'g': {
+                trianglegroups.push(grouped_triangles)
+                grouped_triangles = []
                 let feature_class = parseInt(words[1].split('_')[0]);
-                f_color = class_color[feature_class];
-                if (f_color === undefined) 
+                fcolor = class_color[feature_class];
+                if (fcolor === undefined) 
                 {
                     console.error('color not defined for feature class ' + feature_class);
-                    f_color = { r_frac: 1., g_frac: 0, b_frac: 0 };
+                    fcolor = { r_frac: 1., g_frac: 0, b_frac: 0 };
                 }
                 break
             }
@@ -44,8 +45,8 @@ function parse_obj(txt)
             case 'f': {
                 // 3 vertex indentifiers make a triangle; add coordinates and colors
                 for (let i = 1; i <= 3; i++) {
-                    let vertex = output.vertices[parseInt(words[i]) - 1];
-                    output.triangles.push([vertex[0], vertex[1], vertex[2], f_color.r_frac, f_color.g_frac, f_color.b_frac])
+                    let vertex = vertices[parseInt(words[i]) - 1];
+                    grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
                 }
                 break
             }
@@ -63,7 +64,7 @@ function parse_obj(txt)
                 //console.log('words:', words)
                 //console.log('step_high:', step_high)
                 for (let i = 1; i < words.length; i++) {
-                    polyline.push(output.vertices[words[i] - 1]);
+                    polyline.push(vertices[words[i] - 1]);
                 }
 
                 let point_records = [];
@@ -90,8 +91,8 @@ function parse_obj(txt)
 
                         //start consists of x, y, z (step_low), step_high, while
                         //startl consists of only x, y
-                        output.boundaries.triangles.push(start, start, end, start, end, end);
-                        output.boundaries.deltas.push(startl, startr, endl, startr, endr, endl);
+                        btriangles.push(start, start, end, start, end, end);
+                        deltas.push(startl, startr, endl, startr, endr, endl);
                     }
                 }
                 break;
@@ -100,45 +101,51 @@ function parse_obj(txt)
             default: {
                 break
             }
-
         }
-
     })
 
-    //if
+    trianglegroups.push(grouped_triangles)
+    let trianglegroup_dts = [] //a list of dictionaries; each dictionary stores a group of triangles
+    for (var i = 1; i < trianglegroups.length; i++) {
+        let minz = Number.MAX_VALUE
+        let maxz = - Number.MAX_VALUE        
+        for (var j = 0; j < trianglegroups[i].length; j++) {
+            let tri = trianglegroups[i][j]
+            if (tri[2] < minz) {
+                minz = tri[2]
+            }
+            if (tri[2] > maxz) {
+                maxz = tri[2]
+            }
+        }
+        let avgz = (maxz + minz) / 2
+        trianglegroup_dts.push({ 'avgz': avgz, 'trianglegroup': trianglegroups[i]})
+    }
 
+    let original_triangles = []
+    trianglegroup_dts.forEach(trianglegroup_dt =>
+        trianglegroup_dt.trianglegroup.forEach(triangle =>
+            original_triangles.push(triangle)
+        )
+    )
+    
+    trianglegroup_dts.sort((a, b) => b.avgz - a.avgz) //in descending order    
+    let triangles = []
+    trianglegroup_dts.forEach(trianglegroup_dt =>
+        trianglegroup_dt.trianglegroup.forEach(triangle =>
+            triangles.push(triangle)
+        )
+    ) 
 
+    let triangles32 = new Float32Array(triangles.flat(1))
+    let btriangles32 = new Float32Array(btriangles.flat(1))
+    let deltas32 = new Float32Array(deltas.flat(1))
 
-    //console.log('parse.js output.boundaries.triangles:', output.boundaries.triangles)
-    //console.log('parse.js output.boundaries.deltas:', output.boundaries.deltas)
-
-    let flattened = flatten_output(output)
-    //console.log('parse.js flattened:', flattened)
-    return flattened
-
-
-    // flatten nested lists to single lists as Float32Array
-    //return flatten_output(output)
+    //we must return buffers intead of triangles32; see file worker.js for the reason
+    return [triangles32.buffer, btriangles32.buffer, deltas32.buffer]
 }
 
 
-function flatten_output(output)
-{
-//    output.vertices = new Float32Array(output.vertices.flat(1))
-//    output.triangles = new Float32Array(output.triangles.flat(1))
-//    output.boundaries.triangles = new Float32Array(output.boundaries.triangles.flat(1))
-//    output.boundaries.deltas = new Float32Array(output.boundaries.deltas.flat(1))
-
-    return [
-
-
-//        new Float32Array(output.vertices.flat(1)).buffer,
-        new Float32Array(output.triangles.flat(1)).buffer,
-        new Float32Array(output.boundaries.triangles.flat(1)).buffer,
-        new Float32Array(output.boundaries.deltas.flat(1)).buffer
-    ]
-//    return output
-}
 
 
 //#region vector computation

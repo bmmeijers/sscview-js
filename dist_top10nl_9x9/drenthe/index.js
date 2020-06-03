@@ -1553,7 +1553,7 @@
     var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function LineDrawProgram(gl) {
 
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\nuniform float opacity;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
 
             var fragmentShaderText = "\nprecision mediump float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
 
@@ -1701,8 +1701,72 @@
 
     var PolygonDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function PolygonDrawProgram(gl) {
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\n\nvoid main()\n{\n    fragColor = vec4(vertexColor, opacity);\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
-            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\nvarying vec3 vertexColor2;\nvarying float opacity2;\n\nvoid main()\n{\n    vertexColor2 = vertexColor;\n    opacity2 = opacity;\n    \n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
+            var fragmentShaderText = "\nprecision mediump float;\n\nuniform vec4 fragColor2;\nvarying vec3 vertexColor2;\nvarying float opacity2;\n\nvoid main()\n{\n    gl_FragColor = vec4(vertexColor2,opacity2);\n}\n";
+
+            //gl_FragColor = vec4(1.0, 0.0, 1.0, 0.5);
+            //fragColor = vec4(vertexColor2, opacity2);
+            //fragColor = vec4(vertexColor, opacity);
+
+    //        let vertexShaderText = `
+    //precision highp float;
+
+    //attribute vec3 vertexPosition_modelspace;
+    //attribute vec3 vertexColor;
+    //uniform mat4 M;
+    //varying vec4 fragColor;
+    //uniform float opacity;
+    //varying vec3 vertexColor2;
+    //varying float opacity2;
+
+    //void main()
+    //{
+    //    vertexColor2 = vertexColor;
+    //    opacity2 = opacity;
+        
+    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+    //}
+    //`;
+    //        let fragmentShaderText = `
+    //precision mediump float;
+
+    //varying vec4 fragColor;
+    //varying vec3 vertexColor2;
+    //varying float opacity2;
+
+    //void main()
+    //{
+    //    fragColor = vec4(vertexColor2, opacity2);
+    //    gl_FragColor = vec4(fragColor);
+    //}
+    //`;
+
+
+    //        let vertexShaderText = `
+    //precision highp float;
+
+    //attribute vec3 vertexPosition_modelspace;
+    //attribute vec3 vertexColor;
+    //uniform mat4 M;
+    //varying vec4 fragColor;
+    //uniform float opacity;
+
+    //void main()
+    //{
+    //    fragColor = vec4(vertexColor, opacity);
+    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
+    //}
+    //`;
+    //        let fragmentShaderText = `
+    //precision mediump float;
+
+    //varying vec4 fragColor;
+    //void main()
+    //{
+    //    gl_FragColor = vec4(fragColor);
+    //}
+    //`;
+
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
         }
 
@@ -1739,17 +1803,19 @@
                 gl.uniform1f(opacity_location, tree_setting.opacity);
             }
 
-            gl.enable(gl.CULL_FACE);
-            //gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+            //gl.enable(gl.CULL_FACE);
+            ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
             
                    
-            if (tree_setting.draw_cw_faces == true) {
-                gl.cullFace(gl.BACK); //triangles from FME are clock wise
-            }
-            else {
-                gl.cullFace(gl.FRONT); //triangles from SSC are counter-clock wise; 
-            }
+            //if (tree_setting.draw_cw_faces == true) {
+            //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
+            //}
+            //else {
+            //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+            //}
+            //gl.cullFace(gl.BACK);
+            //gl.cullFace(gl.FRONT);
 
             if (tree_setting.do_depth_test == true) {
                 gl.enable(gl.DEPTH_TEST);
@@ -1757,6 +1823,9 @@
             else {            
                 gl.disable(gl.DEPTH_TEST);
             }
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
             
@@ -1766,8 +1835,17 @@
             else {
                 gl.disable(gl.BLEND);
             }
+            gl.enable(gl.BLEND);
 
+            //gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
+            //gl.blendFunc(gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA)
+            //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA)
+            //gl.blendFunc(gl.SRC_ALPHA, gl.ZERO) //make it transparent according to alpha value
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            //gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+            //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+            //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA) //make it transparent according to alpha value
+
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
         };
 
@@ -2056,6 +2134,7 @@
 
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
+                //console.log('tilecontent.js data[0]:', data[0])
                 this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
                 //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
                 //if (this.polygon_triangleVertexPosBufr == null) {
@@ -3223,7 +3302,7 @@
         this.add_layer_settings(map_setting.tree_settings);
 
         map_setting.tree_settings.forEach(function (tree_setting) {
-            console.log('map.js tree_setting:', tree_setting);
+            //console.log('map.js tree_setting:', tree_setting)
             this$1.ssctrees.push(new SSCTree(this$1.msgbus, tree_setting));
         });
 
@@ -3614,7 +3693,7 @@
         tree_settings.forEach(function (tree_setting) {
                 
             var layer_nm = tree_setting.layer_nm;
-            console.log('map.js layer_nm:', layer_nm);
+            //console.log('map.js layer_nm:', layer_nm)
             // create a new div element 
             var newfieldset = document.createElement("fieldset");
             fieldsets_rendering.append(newfieldset);
