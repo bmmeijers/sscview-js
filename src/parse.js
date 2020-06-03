@@ -107,29 +107,25 @@ function parse_obj(txt)
     trianglegroups.push(grouped_triangles)
     let trianglegroup_dts = [] //a list of dictionaries; each dictionary stores a group of triangles
     for (var i = 1; i < trianglegroups.length; i++) {
-        let minz = Number.MAX_VALUE
         let maxz = - Number.MAX_VALUE        
         for (var j = 0; j < trianglegroups[i].length; j++) {
             let tri = trianglegroups[i][j]
-            if (tri[2] < minz) {
-                minz = tri[2]
-            }
+
             if (tri[2] > maxz) {
                 maxz = tri[2]
             }
         }
-        let avgz = (maxz + minz) / 2
-        trianglegroup_dts.push({ 'avgz': avgz, 'trianglegroup': trianglegroups[i]})
+        trianglegroup_dts.push({ 'maxz': maxz, 'trianglegroup': trianglegroups[i]})
     }
 
-    let original_triangles = []
-    trianglegroup_dts.forEach(trianglegroup_dt =>
-        trianglegroup_dt.trianglegroup.forEach(triangle =>
-            original_triangles.push(triangle)
-        )
-    )
+    //let original_triangles = []
+    //trianglegroup_dts.forEach(trianglegroup_dt =>
+    //    trianglegroup_dt.trianglegroup.forEach(triangle =>
+    //        original_triangles.push(triangle)
+    //    )
+    //)
     
-    trianglegroup_dts.sort((a, b) => b.avgz - a.avgz) //in descending order    
+    trianglegroup_dts.sort((a, b) => b.maxz - a.maxz) //in descending order    
     let triangles = []
     trianglegroup_dts.forEach(trianglegroup_dt =>
         trianglegroup_dt.trianglegroup.forEach(triangle =>
