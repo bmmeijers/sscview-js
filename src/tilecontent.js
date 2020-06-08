@@ -42,7 +42,7 @@ export class TileContent {
     }
 
     load_ssc_tile(url, gl) {
-        this.worker_helper.send( //send is a function of class WorkerHelper (see above)
+        this.worker_helper.send( //send is a function of class WorkerHelper (see ssctree.js)
             url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             (data) => { //I call the function makeBuffers, this is a function used as a parameter
                 //console.log('')

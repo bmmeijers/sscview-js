@@ -46,6 +46,7 @@ function parse_obj(txt)
                 // 3 vertex indentifiers make a triangle; add coordinates and colors
                 for (let i = 1; i <= 3; i++) {
                     let vertex = vertices[parseInt(words[i]) - 1];
+                    //the vertices of all the triangles are saved in the same list
                     grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
                 }
                 break
@@ -106,13 +107,13 @@ function parse_obj(txt)
 
     trianglegroups.push(grouped_triangles)
     let trianglegroup_dts = [] //a list of dictionaries; each dictionary stores a group of triangles
-    for (var i = 1; i < trianglegroups.length; i++) {
+    for (var i = 1; i < trianglegroups.length; i++) { //trianglegroups[0] is empty
         let maxz = - Number.MAX_VALUE        
         for (var j = 0; j < trianglegroups[i].length; j++) {
-            let tri = trianglegroups[i][j]
+            let vt = trianglegroups[i][j]
 
-            if (tri[2] > maxz) {
-                maxz = tri[2]
+            if (vt[2] > maxz) {
+                maxz = vt[2]
             }
         }
         trianglegroup_dts.push({ 'maxz': maxz, 'trianglegroup': trianglegroups[i]})

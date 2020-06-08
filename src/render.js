@@ -498,18 +498,9 @@ void main()
         }
         else {
             gl.disable(gl.BLEND)
-        }
-        gl.enable(gl.BLEND);
-
-        //gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
-        //gl.blendFunc(gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA)
-        //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA)
-        //gl.blendFunc(gl.SRC_ALPHA, gl.ZERO) //make it transparent according to alpha value
+        }        
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-        //gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-        //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-        //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA) //make it transparent according to alpha value
-
+        //renderer._clearDepth()
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }
@@ -547,6 +538,48 @@ export class Renderer {
     //     //     })
     //     // }, 15000)
     // }
+
+
+    render_ssctrees(steps, transform, St) {
+
+        this._clearColor()
+        //this.renderer._clearDepth()
+        //console.log('map.js steps.length:', steps.length)
+
+        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
+        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
+
+        //draw from the last layer to the first layer; first layer will be on top
+        for (var i = steps.length - 1; i >= 0; i--) {
+            //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
+            this._clearDepth()
+            let ssctree = this.ssctrees[i]
+            //console.log('map.js render ssctree:', ssctree)
+            let step = steps[i] - 0.001 //to compensate with the rounding problems
+
+            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
+            let last_step = Number.MAX_SAFE_INTEGER
+            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+                last_step = ssctree.tree.metadata.no_of_steps_Ns
+                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
+            }
+
+            if (step < 0) {
+                step = 0
+            }
+            else if (step >= last_step) {
+                step = last_step
+            }
+            steps[i] = step
+            //console.log('map.js, step after snapping:', step)
+
+
+            var matrix_box3d = ssctree.prepare_active_tiles(step, transform, this.gl)
+            this.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
+        }
+
+
+    }
 
     render_relevant_tiles(ssctree, matrix, box3d, near_St) {
         // FIXME: 
@@ -639,87 +672,6 @@ export class Renderer {
 
 
     }
-
-//    render_relevant_tiles(matrix, box3d, near_St) {
-//        // FIXME: 
-//        // should a bucket have a method to 'draw' itself?
-//        // e.g. by associating multiple programs with a bucket
-//        // when the bucket is constructed?
-
-
-
-
-//        this._clearColor()
-
-//        this.ssctrees.forEach(ssctree => {
-
-//            this._clearDepth()
-//            if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
-//                return
-//            }
-//            //console.log('')
-//            //console.log('render.js ssctree.tree:', ssctree.tree)
-//            //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-////            var z_low = ssctree.tree.box[2] - 0.001
-////            var z_high = ssctree.tree.box[5] - 0.001
-////            var z_plane = box3d[2]
-////            if (z_plane < z_low || z_plane >= z_high) {
-////                return
-////            }
-
-//            //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-//            //console.log('render.js box3d:', box3d)
-//            //console.log('render.js near_St:', near_St)
-
-//            var tiles = ssctree.get_relevant_tiles(box3d)
-//            if (tiles.length > 0) {                
-//                var polygon_draw_program = this.programs[0];
-//                tiles.forEach(tile => {
-//                        //            .filter(tile => {tile.}) // FIXME tile should only have polygon data
-//                        polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
-//                    })
-
-//                var image_tile_draw_program = this.programs[2];
-//                tiles.filter(
-//                        // tile should have image data
-//                        tile => {
-//                            return tile.texture !== null
-//                        }
-//                    )
-//                    .forEach(tile => {
-//                        image_tile_draw_program.draw_tile(matrix, tile);
-//                    })
-
-
-//                // If we want to draw lines twice -> thick line under / small line over
-//                // we need to do this twice + move the code for determining line width here...
-//                if (this.settings.boundary_width > 0) {
-//                    var line_draw_program = this.programs[1];
-//                    tiles.forEach(tile => {
-//                            // FIXME: would be nice to specify width here in pixels.
-//                            // bottom lines (black)
-//                            // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-//                            // interior (color)
-//                            line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
-//                        })
-//                }
-
-
-
-//            }
-
-//            // this.buckets.forEach(bucket => {
-//            //     this.programs[0].draw(matrix, bucket);
-//            // })
-//            // FIXME:
-//            // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-//            // we should this.gl.clear()
-
-
-//        })
-
-
-//    }
 
     _clearDepth()
     {

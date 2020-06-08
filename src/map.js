@@ -217,75 +217,10 @@ class Map {
 
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
 
-
-        this.renderer._clearColor()
-        this.renderer._clearDepth()
-        //console.log('map.js steps.length:', steps.length)
-
-        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
-        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
-
-        for (var i = steps.length - 1; i >= 0; i--) { //draw from the last layer to the first layer; first layer will be on top
-            //console.log('map.js i:', i)
-            let ssctree = this.ssctrees[i]
-            //console.log('map.js render ssctree:', ssctree)
-            let step = steps[i] - 0.001 //to compensate with the rounding problems
-
-            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
-            let last_step = Number.MAX_SAFE_INTEGER
-            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
-                last_step = ssctree.tree.metadata.no_of_steps_Ns
-                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
-            }
-
-
-            //console.log('map.js render, last_step:', last_step)
-
-            //var step = this.ssctree.get_step_from_St(St) //+ 0.001
-            //console.log('map.js, step before snapping:', step)
-            //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
-            //    var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
-            //    if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
-            //        step = snapped_step
-            //    }
-            //}
-
-            if (step < 0) {
-                step = 0
-            }
-            else if (step >= last_step) {
-                step = last_step
-            }
-            steps[i] = step
-
-
-
-
-
-
-
-            //console.log('map.js, step after snapping:', step)
-
-
-            var matrix_box3d = this._prepare_active_tiles(step, ssctree)
-            this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
-        }
+        this.renderer.render_ssctrees(steps, this.getTransform(), St)
     }
 
-    // FIXME: Move this function to class SSCTree?
-    _prepare_active_tiles(near, ssctree) {
-        let matrix = this.getTransform().world_square
-        const far = -0.5
-        matrix[10] = -2.0 / (near - far)
-        matrix[14] = (near + far) / (near - far)
-        const box2d = this.getTransform().getVisibleWorld()
-        const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-        let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
-        ssctree.fetch_tiles(box3d, gl)
-        return [matrix, box3d]
-    }
+
 
     doEaseNone(start, end) {
         let interpolate = ((k) => {
@@ -525,7 +460,7 @@ class Map {
             slider.min = 0;
             slider.max = 1;
             slider.step = 0.025;
-            slider.value = tree_setting.opacity; //we must set the value after setting the step; otherwise, uneffective
+            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
 
             newfieldset.append(opacity_div, slider)
 

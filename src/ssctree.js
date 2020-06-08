@@ -39,19 +39,15 @@ export class SSCTree {
 
         // pool of workers
         let pool_size = window.navigator.hardwareConcurrency || 2;
+
+        //console.log('ssctree.js window.navigator.hardwareConcurrency:', window.navigator.hardwareConcurrency)
+        //console.log('ssctree.js pool_size:', pool_size)
         this.worker_helpers = []
         for (let i = 0; i< pool_size+1; i++) {
             this.worker_helpers.push(new WorkerHelper())
         }
         console.log(pool_size + ' workers made')
         this.helper_idx_current = -1
-
-        //// FIXME: theses should be put in settings *per* SSCTree ?
-        //this.draw_cw_faces = true  
-        //this.do_depth_test = true //by default, do depth test
-        //this.do_blend = false
-        //this.opacity = 1 //by default, opaque (not transparent)
-
     }
 
     load() {
@@ -119,7 +115,7 @@ export class SSCTree {
                 this.tree = tree
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-                let dataelements = obtain_dataelements(this.tree)  //dataelements recorded in .json file
+                let dataelements = obtain_dataelements(this.tree)  //all the dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
@@ -150,12 +146,14 @@ export class SSCTree {
             .then(j => {
 
                 node.children = j.children;
-                let dataelements = obtain_dataelements(node)  //dataelements recorded in .json file
+                let dataelements = obtain_dataelements(node)  //all the dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
                     //e.g., element.info: 10/502/479.json
+                    
                     element.url = this.tree_setting.tile_root_href + element.info // FIXME:  was: element.href
+                    //console.log('ssctree.js element.url:', element.url)
                     //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 })
@@ -241,6 +239,20 @@ export class SSCTree {
                 elem.last_touched = now();
                 return elem
             })
+    }
+
+    prepare_active_tiles(near, transform, gl) {
+        let matrix = transform.world_square
+        const far = -0.5
+        matrix[10] = -2.0 / (near - far)
+        matrix[14] = (near + far) / (near - far)
+        const box2d = transform.getVisibleWorld()
+        const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+        //let gl = this.getWebGLContext();
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        this.fetch_tiles(box3d, gl)
+        return [matrix, box3d]
     }
 
     get_step_from_St(St, if_snap = false, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
@@ -417,6 +429,7 @@ export class SSCTree {
         //console.log('transform.js step, Nb, Sb, St:', step, Nb, this.tree.metadata.start_scale_Sb, St)
         return St
     }
+
 
 }
 
@@ -622,7 +635,7 @@ class WorkerHelper {
         this.worker.onmessage = (evt) => { this.receive(evt) } //evt: {id: id, msg: arrays}, arrays; see worker.js
     }
 
-    send(url, callback) //e.g., callback: the function of makeBuffers
+    send(url, callback) //e.g., callback: the function of makeBuffers in TileContent.load_ssc_tile(url, gl)
     {
         // use a random id
         const id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)

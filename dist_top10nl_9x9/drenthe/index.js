@@ -1834,18 +1834,9 @@
             }
             else {
                 gl.disable(gl.BLEND);
-            }
-            gl.enable(gl.BLEND);
-
-            //gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA)
-            //gl.blendFunc(gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA)
-            //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA)
-            //gl.blendFunc(gl.SRC_ALPHA, gl.ZERO) //make it transparent according to alpha value
+            }        
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
-            //gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-            //gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-            //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA) //make it transparent according to alpha value
-
+            //renderer._clearDepth()
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
         };
 
@@ -1884,6 +1875,48 @@
     // // })
     // // }, 15000)
     // }
+
+
+    Renderer.prototype.render_ssctrees = function render_ssctrees (steps, transform, St) {
+
+        this._clearColor();
+        //this.renderer._clearDepth()
+        //console.log('map.js steps.length:', steps.length)
+
+        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
+        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
+
+        //draw from the last layer to the first layer; first layer will be on top
+        for (var i = steps.length - 1; i >= 0; i--) {
+            //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
+            this._clearDepth();
+            var ssctree = this.ssctrees[i];
+            //console.log('map.js render ssctree:', ssctree)
+            var step = steps[i] - 0.001; //to compensate with the rounding problems
+
+            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
+            var last_step = Number.MAX_SAFE_INTEGER;
+            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+                last_step = ssctree.tree.metadata.no_of_steps_Ns;
+                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
+            }
+
+            if (step < 0) {
+                step = 0;
+            }
+            else if (step >= last_step) {
+                step = last_step;
+            }
+            steps[i] = step;
+            //console.log('map.js, step after snapping:', step)
+
+
+            var matrix_box3d = ssctree.prepare_active_tiles(step, transform, this.gl);
+            this.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
+        }
+
+
+    };
 
     Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (ssctree, matrix, box3d, near_St) {
             var this$1 = this;
@@ -1979,87 +2012,6 @@
 
     };
 
-    //render_relevant_tiles(matrix, box3d, near_St) {
-    //    // FIXME: 
-    //    // should a bucket have a method to 'draw' itself?
-    //    // e.g. by associating multiple programs with a bucket
-    //    // when the bucket is constructed?
-
-
-
-
-    //    this._clearColor()
-
-    //    this.ssctrees.forEach(ssctree => {
-
-    //        this._clearDepth()
-    //        if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
-    //            return
-    //        }
-    //        //console.log('')
-    //        //console.log('render.js ssctree.tree:', ssctree.tree)
-    //        //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-    ////        var z_low = ssctree.tree.box[2] - 0.001
-    ////        var z_high = ssctree.tree.box[5] - 0.001
-    ////        var z_plane = box3d[2]
-    ////        if (z_plane < z_low || z_plane >= z_high) {
-    ////            return
-    ////        }
-
-    //        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-    //        //console.log('render.js box3d:', box3d)
-    //        //console.log('render.js near_St:', near_St)
-
-    //        var tiles = ssctree.get_relevant_tiles(box3d)
-    //        if (tiles.length > 0) {                
-    //            var polygon_draw_program = this.programs[0];
-    //            tiles.forEach(tile => {
-    //                    //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-    //                    polygon_draw_program.draw_tile(matrix, tile, ssctree.tree_setting);
-    //                })
-
-    //            var image_tile_draw_program = this.programs[2];
-    //            tiles.filter(
-    //                    // tile should have image data
-    //                    tile => {
-    //                        return tile.texture !== null
-    //                    }
-    //                )
-    //                .forEach(tile => {
-    //                    image_tile_draw_program.draw_tile(matrix, tile);
-    //                })
-
-
-    //            // If we want to draw lines twice -> thick line under / small line over
-    //            // we need to do this twice + move the code for determining line width here...
-    //            if (this.settings.boundary_width > 0) {
-    //                var line_draw_program = this.programs[1];
-    //                tiles.forEach(tile => {
-    //                        // FIXME: would be nice to specify width here in pixels.
-    //                        // bottom lines (black)
-    //                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-    //                        // interior (color)
-    //                        line_draw_program.draw_tile(matrix, tile, near_St, this.settings.boundary_width);
-    //                    })
-    //            }
-
-
-
-    //        }
-
-    //        // this.buckets.forEach(bucket => {
-    //        // this.programs[0].draw(matrix, bucket);
-    //        // })
-    //        // FIXME:
-    //        // in case there is no active buckets (i.e. all buckets are destroy()'ed )
-    //        // we should this.gl.clear()
-
-
-    //    })
-
-
-    //}
-
     Renderer.prototype._clearDepth = function _clearDepth ()
     {
         var gl = this.gl;
@@ -2125,7 +2077,7 @@
     TileContent.prototype.load_ssc_tile = function load_ssc_tile (url, gl) {
             var this$1 = this;
 
-        this.worker_helper.send( //send is a function of class WorkerHelper (see above)
+        this.worker_helper.send( //send is a function of class WorkerHelper (see ssctree.js)
             url, //e.g. /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             function (data) { //I call the function makeBuffers, this is a function used as a parameter
                 //console.log('')
@@ -2425,19 +2377,15 @@
 
         // pool of workers
         var pool_size = window.navigator.hardwareConcurrency || 2;
+
+        //console.log('ssctree.js window.navigator.hardwareConcurrency:', window.navigator.hardwareConcurrency)
+        //console.log('ssctree.js pool_size:', pool_size)
         this.worker_helpers = [];
         for (var i = 0; i< pool_size+1; i++) {
             this.worker_helpers.push(new WorkerHelper());
         }
         console.log(pool_size + ' workers made');
         this.helper_idx_current = -1;
-
-        //// FIXME: theses should be put in settings *per* SSCTree ?
-        //this.draw_cw_faces = true  
-        //this.do_depth_test = true //by default, do depth test
-        //this.do_blend = false
-        //this.opacity = 1 //by default, opaque (not transparent)
-
     };
 
     SSCTree.prototype.load = function load () {
@@ -2507,7 +2455,7 @@
                 this$1.tree = tree;
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-                var dataelements = obtain_dataelements(this$1.tree);  //dataelements recorded in .json file
+                var dataelements = obtain_dataelements(this$1.tree);  //all the dataelements recorded in .json file
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
@@ -2540,12 +2488,14 @@
             .then(function (j) {
 
                 node.children = j.children;
-                var dataelements = obtain_dataelements(node);  //dataelements recorded in .json file
+                var dataelements = obtain_dataelements(node);  //all the dataelements recorded in .json file
                 dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
                     element.content = null;
                     element.last_touched = null;
                     //e.g., element.info: 10/502/479.json
+                        
                     element.url = this$1.tree_setting.tile_root_href + element.info; // FIXME:  was: element.href
+                    //console.log('ssctree.js element.url:', element.url)
                     //console.log('ssctree.js element.info:', element.info)
                     element.loaded = false;
                 });
@@ -2815,6 +2765,21 @@
         return St
     };
 
+    // FIXME: Move this function to class SSCTree?
+    SSCTree.prototype.prepare_active_tiles = function prepare_active_tiles (near, transform, gl) {
+        var matrix = transform.world_square;
+        var far = -0.5;
+        matrix[10] = -2.0 / (near - far);
+        matrix[14] = (near + far) / (near - far);
+        var box2d = transform.getVisibleWorld();
+        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
+        //let gl = this.getWebGLContext();
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        this.fetch_tiles(box3d, gl);
+        return [matrix, box3d]
+    };
+
 
     function snap_to_existing_stephigh(step, step_highs) {
 
@@ -3020,7 +2985,7 @@
         this.worker.onmessage = function (evt) { this$1.receive(evt); }; //evt: {id: id, msg: arrays}, arrays; see worker.js
     };
 
-    WorkerHelper.prototype.send = function send (url, callback) //e.g., callback: the function of makeBuffers
+    WorkerHelper.prototype.send = function send (url, callback) //e.g., callback: the function of makeBuffers in TileContent.load_ssc_tile(url, gl)
     {
         // use a random id
         var id = Math.round((Math.random() * 1e18)).toString(36).substring(0, 10);
@@ -3413,75 +3378,46 @@
 
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
 
+        this.renderer.render_ssctrees(steps, this.getTransform(), St);
 
-        this.renderer._clearColor();
-        this.renderer._clearDepth();
-        //console.log('map.js steps.length:', steps.length)
+        //this.renderer._clearColor()
+        ////this.renderer._clearDepth()
+        ////console.log('map.js steps.length:', steps.length)
 
-        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
-        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
+        ////console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
+        ////console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
 
-        for (var i = steps.length - 1; i >= 0; i--) { //draw from the last layer to the first layer; first layer will be on top
-            //console.log('map.js i:', i)
-            var ssctree = this.ssctrees[i];
-            //console.log('map.js render ssctree:', ssctree)
-            var step = steps[i] - 0.001; //to compensate with the rounding problems
+        ////draw from the last layer to the first layer; first layer will be on top
+        //for (var i = steps.length - 1; i >= 0; i--) {
+        ////clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
+        //this.renderer._clearDepth() 
+        //let ssctree = this.ssctrees[i]
+        ////console.log('map.js render ssctree:', ssctree)
+        //let step = steps[i] - 0.001 //to compensate with the rounding problems
 
-            //let last_step = ssctree.tree.metadata.no_of_steps_Ns
-            var last_step = Number.MAX_SAFE_INTEGER;
-            if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
-                last_step = ssctree.tree.metadata.no_of_steps_Ns;
-                //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
-            }
+        ////let last_step = ssctree.tree.metadata.no_of_steps_Ns
+        //let last_step = Number.MAX_SAFE_INTEGER
+        //if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
+        //    last_step = ssctree.tree.metadata.no_of_steps_Ns
+        //    //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
+        //}
 
-
-            //console.log('map.js render, last_step:', last_step)
-
-            //var step = this.ssctree.get_step_from_St(St) //+ 0.001
-            //console.log('map.js, step before snapping:', step)
-            //if (k ==1) { //in this case, we are at the end of a zooming operation, we test if we want to snap
-            //var snapped_step = this.ssctree.get_step_from_St(St, true, this._interaction_settings.zoom_factor)
-            //if (Math.abs(step - snapped_step) < 0.001) { //snap to an existing step
-            //    step = snapped_step
-            //}
-            //}
-
-            if (step < 0) {
-                step = 0;
-            }
-            else if (step >= last_step) {
-                step = last_step;
-            }
-            steps[i] = step;
+        //if (step < 0) {
+        //    step = 0
+        //}
+        //else if (step >= last_step) {
+        //    step = last_step
+        //}
+        //steps[i] = step
+        ////console.log('map.js, step after snapping:', step)
 
 
-
-
-
-
-
-            //console.log('map.js, step after snapping:', step)
-
-
-            var matrix_box3d = this._prepare_active_tiles(step, ssctree);
-            this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
-        }
+        //var matrix_box3d = this.prepare_active_tiles(step, this.getTransform(), this.getWebGLContext())
+        //this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
+        //}
     };
 
-    // FIXME: Move this function to class SSCTree?
-    Map.prototype._prepare_active_tiles = function _prepare_active_tiles (near, ssctree) {
-        var matrix = this.getTransform().world_square;
-        var far = -0.5;
-        matrix[10] = -2.0 / (near - far);
-        matrix[14] = (near + far) / (near - far);
-        var box2d = this.getTransform().getVisibleWorld();
-        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
-        var gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
-        ssctree.fetch_tiles(box3d, gl);
-        return [matrix, box3d]
-    };
+
 
     Map.prototype.doEaseNone = function doEaseNone (start, end) {
             var this$1 = this;
@@ -3727,7 +3663,7 @@
             slider.min = 0;
             slider.max = 1;
             slider.step = 0.025;
-            slider.value = tree_setting.opacity; //we must set the value after setting the step; otherwise, uneffective
+            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
 
             newfieldset.append(opacity_div, slider);
 

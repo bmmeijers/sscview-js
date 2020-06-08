@@ -1915,28 +1915,3 @@
     //    }
     ////#endregion
     //}
-
-
-   //load_subtree(node) {
-    //    //console.log(this.tree_setting.tree_root_href + node.href)
-    //    fetch(this.tree_setting.tree_root_href + node.href)
-    //        .then(r => {
-    //            return r.json()
-    //        })
-    //        .then(j => {
-
-    //            node.children = j.children;
-    //            let dataelements = obtain_dataelements(node)  //dataelements recorded in .json file
-    //            dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
-    //                element.content = null
-    //                element.last_touched = null
-    //                element.url = this.tree_setting.tile_root_href + element.href
-    //                element.loaded = false;
-    //            })
-
-    //            this.msgbus.publish('data.tree.loaded', 'tree.ready')
-    //        })
-    //        .catch(err => {
-    //            console.error(err)
-    //        })
-    //}
