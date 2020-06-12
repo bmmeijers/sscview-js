@@ -300,27 +300,27 @@
 
             let tree_setting1 = {
                 'layer_nm' : 'example-7',
+                'datatype' : 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
                 // 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
-                'do_blend': true,                
-                'as_backdrop' : false,
+                'do_blend': true,
                 'opacity': 0.8,
                 'do_draw': true,
             }
 
             let tree_setting2 = {
                 'layer_nm' : 'Aanvoergebieden',
+                'datatype' : 'polygon',
                 'tree_root_file_nm': 'Aanvoergebieden.json',
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': true,
                 'do_depth_test': false,
                 'do_blend': false,
-                'as_backdrop' : false,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -328,33 +328,34 @@
 
             let tree_setting3 = {
                 'layer_nm' : 'watershappen2017',
+                'datatype' : 'polygon',
                 'tree_root_file_nm': 'watershappen2017.json',
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
                 'draw_cw_faces': true,
                 'do_depth_test': false,
                 'do_blend': false,
-                'as_backdrop' : false,
                 'opacity': 0.5,
                 'do_draw': true,
             }
 
 
             let tree_setting4 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
-                'layer_nm' : 'Drenthe',    
+                'layer_nm' : 'Drenthe',
+                'datatype' : 'polygon',
                 'tree_root_file_nm': 'tree.json',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 'draw_cw_faces': true,
                 'do_depth_test': false,                    
                 'do_blend': true, //we must do blending so that the dataset will be transparent
-                'as_backdrop' : false,
                 'opacity': 0.5,
                 'do_draw': true,
             }
 
             let tree_setting5 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
                 'layer_nm' : 'NL-raster', 
+                'datatype' : 'image',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
@@ -362,7 +363,6 @@
                 'draw_cw_faces': true,
                 'do_depth_test': false,                    
                 'do_blend': true,
-                'as_backdrop' : true,
                 'opacity': 1,
                 'do_draw': true,
             }

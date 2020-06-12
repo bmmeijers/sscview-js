@@ -10,8 +10,9 @@
         var vertices = [];
         //we will reverse the order of the groups to avoid drawing all the lower ssc levels 
         //(we only draw the immediate-lower level, useful for the case when we want to draw a level with transparency).
-        var trianglegroups = []; 
-        var grouped_triangles = []; //for webgl, it is important to keep the order of the triangles in a group
+        //let trianglegroups = [] 
+        var triangles = [];
+        //let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
         var btriangles = []; //triangles of boundaries
         var deltas = []; //deltas of boundaries
 
@@ -30,8 +31,8 @@
                 }
 
                 case 'g': {
-                    trianglegroups.push(grouped_triangles);
-                    grouped_triangles = [];
+                    //trianglegroups.push(grouped_triangles)
+                    //grouped_triangles = []
                     var feature_class = parseInt(words[1].split('_')[0]);
                     fcolor = class_color[feature_class];
                     if (fcolor === undefined) 
@@ -47,7 +48,8 @@
                     for (var i = 1; i <= 3; i++) {
                         var vertex = vertices[parseInt(words[i]) - 1];
                         //the vertices of all the triangles are saved in the same list
-                        grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac]);
+                        //grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
+                        triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac]);
                     }
                     break
                 }
@@ -105,32 +107,34 @@
             }
         });
 
-        trianglegroups.push(grouped_triangles);
-        var trianglegroup_dts = []; //a list of dictionaries; each dictionary stores a group of triangles
-        for (var i = 1; i < trianglegroups.length; i++) { //trianglegroups[0] is empty
-            var maxz = - Number.MAX_VALUE;        
-            for (var j = 0; j < trianglegroups[i].length; j++) {
-                var vt = trianglegroups[i][j];
+        //trianglegroups.push(grouped_triangles)
+        //let trianglegroup_dts = [] //a list of dictionaries; each dictionary stores a group of triangles
+        //for (var i = 1; i < trianglegroups.length; i++) { //trianglegroups[0] is empty
+        //    let maxz = - Number.MAX_VALUE        
+        //    for (var j = 0; j < trianglegroups[i].length; j++) {
+        //        let vt = trianglegroups[i][j]
 
-                if (vt[2] > maxz) {
-                    maxz = vt[2];
-                }
-            }
-            trianglegroup_dts.push({ 'maxz': maxz, 'trianglegroup': trianglegroups[i]});
-        }
+        //        if (vt[2] > maxz) {
+        //            maxz = vt[2]
+        //        }
+        //    }
+        //    trianglegroup_dts.push({ 'maxz': maxz, 'trianglegroup': trianglegroups[i]})
+        //}
 
-        //let original_triangles = []
+        ////let original_triangles = []
+        ////trianglegroup_dts.forEach(trianglegroup_dt =>
+        ////    trianglegroup_dt.trianglegroup.forEach(triangle =>
+        ////        original_triangles.push(triangle)
+        ////    )
+        ////)
+        
+        //trianglegroup_dts.sort((a, b) => b.maxz - a.maxz) //in descending order    
+        //let triangles = []
         //trianglegroup_dts.forEach(trianglegroup_dt =>
         //    trianglegroup_dt.trianglegroup.forEach(triangle =>
-        //        original_triangles.push(triangle)
+        //        triangles.push(triangle)
         //    )
-        //)
-        
-        trianglegroup_dts.sort(function (a, b) { return b.maxz - a.maxz; }); //in descending order    
-        var triangles = [];
-        trianglegroup_dts.forEach(function (trianglegroup_dt) { return trianglegroup_dt.trianglegroup.forEach(function (triangle) { return triangles.push(triangle); }
-            ); }
-        ); 
+        //) 
 
         var triangles32 = new Float32Array(triangles.flat(1));
         var btriangles32 = new Float32Array(btriangles.flat(1));

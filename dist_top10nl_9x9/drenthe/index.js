@@ -1413,8 +1413,6 @@
         return St
     };
 
-    // FIXME: rename draw to renderFunc ?
-
     var DrawProgram = function DrawProgram(gl, vertexShaderText, fragmentShaderText) {
 
         var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderText);
@@ -1469,7 +1467,7 @@
         gl.enableVertexAttribArray(attrib_location);
         gl.vertexAttribPointer(
             attrib_location,// * Attribute location
-            itemSize,       // * Number of components per attribute ????? 
+            itemSize,       // * Number of components per vertex attribute. Must be 1, 2, 3, or 4 (1d, 2d, 3d, or 4d).
             gl.FLOAT,       // * Type of elements
             false,          // * Is normalized?
             stride,         // * stride 
@@ -1482,8 +1480,7 @@
 
 
     var ImageTileDrawProgram = /*@__PURE__*/(function (DrawProgram) {
-        function ImageTileDrawProgram(gl)
-        {
+        function ImageTileDrawProgram(gl) {
             var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec2 aTextureCoord;\n\nuniform mat4 M;\n\nvarying highp vec2 vTextureCoord;\n\n\nvoid main()\n{\n    gl_Position = M * vec4(vertexPosition_modelspace, 1.0);\n    vTextureCoord = aTextureCoord;\n}\n";
 
             var fragmentShaderText = "\nprecision highp float;\n\nvarying highp vec2 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform float opacity;\n            \nvoid main()\n{\n    vec4 color = texture2D(uSampler, vTextureCoord);\n    color.a = opacity;\n    gl_FragColor = color;\n}\n";
@@ -1504,7 +1501,7 @@
             {
                 return;
             }
-            //console.log('render.js tree_setting.opacity 3:', tree_setting.opacity)
+            //console.log('drawprograms.js tree_setting.opacity 3:', tree_setting.opacity)
             var gl = this.gl;
             var shaderProgram = this.shaderProgram;
             gl.useProgram(shaderProgram);
@@ -1547,7 +1544,116 @@
         return ImageTileDrawProgram;
     }(DrawProgram));
 
+    var ImageFboDrawProgram = /*@__PURE__*/(function (DrawProgram) {
+        function ImageFboDrawProgram(gl) {
+            var vertexShaderText =
+                'attribute vec4 a_Position;\n' +
+                'attribute vec2 a_TexCoord;\n' +
+                'varying vec2 v_TexCoord;\n' +
+                'void main() {\n' +
+                '  gl_Position = a_Position;\n' +
+                '  v_TexCoord = a_TexCoord;\n' +
+                '}\n';
 
+            var fragmentShaderText = 
+                //'#ifdef GL_ES\n' +
+                //'precision mediump float;\n' +
+                //'#endif\n' +
+                //'uniform sampler2D u_Sampler;\n' +
+                //'varying vec2 v_TexCoord;\n' +
+                //'void main() {\n' +
+                //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
+                //'}\n';
+                'precision highp float;\n' +            
+                'uniform sampler2D uSampler;\n' +
+                'uniform float opacity;\n' +
+                'varying vec2 v_TexCoord;\n' +
+                'void main() {\n' +
+                '  vec4 color = texture2D(uSampler, v_TexCoord);' +
+                '  color.a = opacity;' +
+                '  gl_FragColor = color;\n' +
+                '}\n';
+
+            //uniform float opacity;
+            //vec4 color = texture2D(u_tex, v_texCoord);
+            //color.a = 0.5;
+
+            DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
+        }
+
+        if ( DrawProgram ) ImageFboDrawProgram.__proto__ = DrawProgram;
+        ImageFboDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
+        ImageFboDrawProgram.prototype.constructor = ImageFboDrawProgram;
+
+        //    draw(matrix, tilecontent)
+        ImageFboDrawProgram.prototype.draw_tile = function draw_tile (fbo, tree_setting) {
+            //console.log('drawprograms.js fbo:', fbo)
+            if (fbo === null) {
+                console.log('drawprograms.js fbo is null:', fbo);
+                return;
+            }
+            //console.log('drawprograms.js tree_setting.opacity 3:', tree_setting.opacity)
+            var gl = this.gl;
+            var shaderProgram = this.shaderProgram;
+            gl.useProgram(shaderProgram);
+            gl.program = shaderProgram;
+            // Set the vertex information
+            var n = initVertexBuffers(gl);
+            if (n < 0) {
+                console.log('Failed to set the vertex information');
+                return;
+            }
+
+            {
+                var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+                gl.uniform1f(opacity_location, tree_setting.opacity);
+
+
+            }
+
+
+            //gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.buffer);
+
+            //// FIXME: better to store with bucket how the layout of the mesh is?
+            //const positionAttrib = gl.getAttribLocation(shaderProgram, 'vertexPosition_modelspace');
+            //// gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 24, 0);
+            //gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+            //gl.enableVertexAttribArray(positionAttrib);
+
+
+
+            //gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.textureCoordBuffer)
+            //const textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
+            //gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
+            //gl.enableVertexAttribArray(textureAttrib);
+
+            gl.activeTexture(gl.TEXTURE0);
+            //gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+            gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+            var uSampler = gl.getUniformLocation(shaderProgram, 'uSampler');
+            gl.uniform1i(uSampler, 0);
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+            //        gl.disable(gl.BLEND);
+            gl.enable(gl.DEPTH_TEST);
+            //gl.disable(gl.DEPTH_TEST);
+
+            //gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            //gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
+        };
+
+        return ImageFboDrawProgram;
+    }(DrawProgram));
 
 
     var LineDrawProgram = /*@__PURE__*/(function (DrawProgram) {
@@ -1701,14 +1807,11 @@
 
     var PolygonDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function PolygonDrawProgram(gl) {
-            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\nvarying vec3 vertexColor2;\nvarying float opacity2;\n\nvoid main()\n{\n    vertexColor2 = vertexColor;\n    opacity2 = opacity;\n    \n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
-            var fragmentShaderText = "\nprecision mediump float;\n\nuniform vec4 fragColor2;\nvarying vec3 vertexColor2;\nvarying float opacity2;\n\nvoid main()\n{\n    gl_FragColor = vec4(vertexColor2,opacity2);\n}\n";
 
-            //gl_FragColor = vec4(1.0, 0.0, 1.0, 0.5);
-            //fragColor = vec4(vertexColor2, opacity2);
-            //fragColor = vec4(vertexColor, opacity);
+            var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\n\nvoid main()\n{\n    fragColor = vec4(vertexColor, opacity);\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
+            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
 
-    //        let vertexShaderText = `
+            //        let vertexShaderText = `
     //precision highp float;
 
     //attribute vec3 vertexPosition_modelspace;
@@ -1723,47 +1826,20 @@
     //{
     //    vertexColor2 = vertexColor;
     //    opacity2 = opacity;
-        
+
     //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
     //}
     //`;
     //        let fragmentShaderText = `
     //precision mediump float;
 
-    //varying vec4 fragColor;
+    //uniform vec4 fragColor2;
     //varying vec3 vertexColor2;
     //varying float opacity2;
 
     //void main()
     //{
-    //    fragColor = vec4(vertexColor2, opacity2);
-    //    gl_FragColor = vec4(fragColor);
-    //}
-    //`;
-
-
-    //        let vertexShaderText = `
-    //precision highp float;
-
-    //attribute vec3 vertexPosition_modelspace;
-    //attribute vec3 vertexColor;
-    //uniform mat4 M;
-    //varying vec4 fragColor;
-    //uniform float opacity;
-
-    //void main()
-    //{
-    //    fragColor = vec4(vertexColor, opacity);
-    //    gl_Position = M * vec4(vertexPosition_modelspace, 1);
-    //}
-    //`;
-    //        let fragmentShaderText = `
-    //precision mediump float;
-
-    //varying vec4 fragColor;
-    //void main()
-    //{
-    //    gl_FragColor = vec4(fragColor);
+    //    gl_FragColor = vec4(vertexColor2,opacity2);
     //}
     //`;
 
@@ -1775,11 +1851,11 @@
         PolygonDrawProgram.prototype.constructor = PolygonDrawProgram;
 
 
-        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, tree_setting) {
+        PolygonDrawProgram.prototype.draw_tile = function draw_tile (matrix, tile, tree_setting, width, height) {
             // guard: if no data in the tile, we will skip rendering
             var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
             if (triangleVertexPosBufr === null) {
-                //console.log('render.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
+                //console.log('drawprograms.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
                 return;
             }
             // render
@@ -1787,6 +1863,12 @@
             var shaderProgram = this.shaderProgram;
             gl.useProgram(shaderProgram);
             gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+
+            var readout = new Uint8Array(4);
+            gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2);
+            console.log('drawprograms.js color of the center before drawing:', readout);
 
             //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
             //itemSize = 3: x, y, z;   
@@ -1799,8 +1881,9 @@
                 gl.uniformMatrix4fv(M_location, false, matrix);
 
                 var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-                //console.log('render.js tree_setting.opacity 2:', tree_setting.opacity)
-                gl.uniform1f(opacity_location, tree_setting.opacity);
+                //console.log('drawprograms.js tree_setting.opacity 2:', tree_setting.opacity)
+                //gl.uniform1f(opacity_location, tree_setting.opacity);
+                gl.uniform1f(opacity_location, 1);
             }
 
             //gl.enable(gl.CULL_FACE);
@@ -1824,7 +1907,7 @@
                 gl.disable(gl.DEPTH_TEST);
             }
             gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(gl.LEQUAL);
+            //gl.depthFunc(gl.LEQUAL);
 
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
@@ -1833,15 +1916,155 @@
                 gl.enable(gl.BLEND);
             }
             else {
-                gl.disable(gl.BLEND);
+                gl.disable(gl.BLEND); //disable blending can remove boundary slivers
             }        
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             //renderer._clearDepth()
+            gl.disable(gl.BLEND);
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+
+            gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2);
+            console.log('drawprograms.js color of the center before drawing:', readout);
+        };
+
+
+        PolygonDrawProgram.prototype.draw_tile_fbo = function draw_tile_fbo (matrix, tile, tree_setting, width, height) {
+            // guard: if no data in the tile, we will skip rendering
+            var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
+            if (triangleVertexPosBufr === null) {
+                //console.log('drawprograms.js draw_tile, triangleVertexPosBufr:', triangleVertexPosBufr)
+                return 0;
+            }
+            // render
+            var gl = this.gl;
+            var shaderProgram = this.shaderProgram;
+            gl.useProgram(shaderProgram);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+            gl.viewport(0, 0, width, height);
+
+            var readout = new Uint8Array(4);
+            gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2);
+            console.log('drawprograms.js color of the center before drawing:', readout);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+
+            //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
+            //itemSize = 3: x, y, z;   
+            this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
+            //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
+            this._specify_data_for_shaderProgram(gl, shaderProgram, 'vertexColor', 3, 24, 12);
+
+            {
+                var M_location = gl.getUniformLocation(shaderProgram, 'M');
+                gl.uniformMatrix4fv(M_location, false, matrix);
+
+                var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
+                //console.log('drawprograms.js tree_setting.opacity 2:', tree_setting.opacity)
+                //gl.uniform1f(opacity_location, tree_setting.opacity);
+                gl.uniform1f(opacity_location, 1);
+            }
+
+
+
+            //gl.enable(gl.CULL_FACE);
+            ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
+
+
+
+            //if (tree_setting.draw_cw_faces == true) {
+            //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
+            //}
+            //else {
+            //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+            //}
+            //gl.cullFace(gl.BACK);
+            //gl.cullFace(gl.FRONT);
+
+            if (tree_setting.do_depth_test == true) {
+                gl.enable(gl.DEPTH_TEST);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
+
+            //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+
+            if (tree_setting.do_blend == true) {
+                gl.enable(gl.BLEND);
+            }
+            else {
+                gl.disable(gl.BLEND); //disable blending can remove boundary slivers
+            }
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            //gl.disable(gl.BLEND)
+
+            gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
+
+
+            gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            console.log('drawprograms.js color of the center after drawing:', readout);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            //return triangleVertexPosBufr.numItems
         };
 
         return PolygonDrawProgram;
     }(DrawProgram));
+
+    function initVertexBuffers(gl) {
+        var verticesTexCoords = new Float32Array([
+            // Vertex coordinates, texture coordinate
+            -0.5, 0.5, 0.0, 1.0,
+            -0.5, -0.5, 0.0, 0.0,
+            0.5, 0.5, 1.0, 1.0,
+            0.5, -0.5, 1.0, 0.0 ]);
+        var n = 4; // The number of vertices
+
+        // Create the buffer object
+        var vertexTexCoordBuffer = gl.createBuffer();
+        if (!vertexTexCoordBuffer) {
+            console.log('Failed to create the buffer object');
+            return -1;
+        }
+
+        // Bind the buffer object to target
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
+
+        var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
+        console.log('drawprograms.js FSIZE:', FSIZE);
+        //Get the storage location of a_Position, assign and enable buffer
+        var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+        if (a_Position < 0) {
+            console.log('Failed to get the storage location of a_Position');
+            return -1;
+        }
+        gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+        gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+        // Get the storage location of a_TexCoord
+        var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+        if (a_TexCoord < 0) {
+            console.log('Failed to get the storage location of a_TexCoord');
+            return -1;
+        }
+        // Assign the buffer object to a_TexCoord variable
+        gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+        gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
+
+        return n;
+    }
+
+    // FIXME: rename draw to renderFunc ?
+
 
 
 
@@ -1862,6 +2085,9 @@
             new ImageTileDrawProgram(gl)
             //new ForegroundDrawProgram(gl)
         ];
+
+        //this.fbo = gl.createFramebuffer();
+        //gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
     };
 
     // addBucket(mesh)
@@ -1880,6 +2106,7 @@
     Renderer.prototype.render_ssctrees = function render_ssctrees (steps, transform, St) {
 
         this._clearColor();
+        this._clearColorFbo();
         //this.renderer._clearDepth()
         //console.log('map.js steps.length:', steps.length)
 
@@ -1890,6 +2117,7 @@
         for (var i = steps.length - 1; i >= 0; i--) {
             //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
             this._clearDepth();
+            this._clearDepthFbo();
             var ssctree = this.ssctrees[i];
             //console.log('map.js render ssctree:', ssctree)
             var step = steps[i] - 0.001; //to compensate with the rounding problems
@@ -1914,8 +2142,6 @@
             var matrix_box3d = ssctree.prepare_active_tiles(step, transform, this.gl);
             this.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
         }
-
-
     };
 
     Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (ssctree, matrix, box3d, near_St) {
@@ -1928,36 +2154,16 @@
 
 
 
-
-        //this._clearColor()
-
-        //this.ssctrees.forEach(ssctree => {
-
         //this._clearDepth()
         if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
             return
         }
 
+        var gl = this.gl;
         var tree_setting = ssctree.tree_setting;
-        //tree_setting.opacity = this.settings.foreground_opacity
-        //console.log('render.js tree_setting.as_backdrop:', tree_setting.as_backdrop)
-        //if (tree_setting.as_backdrop == true) {
-        //tree_setting.opacity = this.settings.backdrop_opacity
-        //}
-
-        //console.log('render.js tree_setting.opacity:', tree_setting.opacity)
-
-
-        //console.log('')
-        //console.log('render.js ssctree.tree:', ssctree.tree)
-        //console.log('render.js ssctree.tree.box:', ssctree.tree.box)
-        //        var z_low = ssctree.tree.box[2] - 0.001
-        //        var z_high = ssctree.tree.box[5] - 0.001
-        //        var z_plane = box3d[2]
-        //        if (z_plane < z_low || z_plane >= z_high) {
-        //            return
-        //        }
-
+        var canvas = document.getElementById('canvas');
+        //console.log('render.js tree_setting:', tree_setting)
+        //console.log('render.js tree_setting:', &tree_setting)
         //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
         //console.log('render.js box3d:', box3d)
         //console.log('render.js near_St:', near_St)
@@ -1965,36 +2171,54 @@
         var tiles = ssctree.get_relevant_tiles(box3d);
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
-            var polygon_draw_program = this.programs[0];
-            tiles.forEach(function (tile) {
-                //        .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                polygon_draw_program.draw_tile(matrix, tile, tree_setting);
-            });
 
-            var image_tile_draw_program = this.programs[2];
-            tiles.filter(
-                // tile should have image data
-                function (tile) {
-                    return tile.texture !== null
-                })
-                .forEach(function (tile) {
-                    image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
+            if (tree_setting.datatype == 'polygon') {
+                var polygon_draw_program = this.programs[0];
+                //let fbo = null
+                //let fbo = initFramebufferObject(gl, canvas.width, canvas.height);
+                ////console.log('render.js canvas.width:', canvas.width)
+                ////console.log('render.js gl.width:', gl.width)
+                ////console.log('render.js canvas.height:', canvas.height)
+                ////console.log('render.js gl.height:', gl.height)
+                //fbo.width = canvas.width
+                //fbo.height = canvas.height
+                //gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                console.log('');
+                tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                    //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    polygon_draw_program.draw_tile_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    //console.log('render.js fbo:', fbo)
                 });
 
+                var image_fbo_program = new ImageFboDrawProgram(gl);
+                image_fbo_program.draw_tile(gl.framebuffer, tree_setting);
 
-            // If we want to draw lines twice -> thick line under / small line over
-            // we need to do this twice + move the code for determining line width here...
-            if (this.settings.boundary_width > 0) {
-                var line_draw_program = this.programs[1];
-                tiles.forEach(function (tile) {
-                    // FIXME: would be nice to specify width here in pixels.
-                    // bottom lines (black)
-                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                    // interior (color)
-                    line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings, tree_setting);
-                });
+
+                // If we want to draw lines twice -> thick line under / small line over
+                // we need to do this twice + move the code for determining line width here...
+                if (this.settings.boundary_width > 0) {
+                    var line_draw_program = this.programs[1];
+                    tiles.forEach(function (tile) {
+                        // FIXME: would be nice to specify width here in pixels.
+                        // bottom lines (black)
+                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                        // interior (color)
+                        line_draw_program.draw_tile(matrix, tile, near_St, this$1.settings, tree_setting);
+                    });
+                }
+
+                // Unbind the fbo.
+                //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
-
+            else if (tree_setting.datatype == 'image') {
+                var image_tile_draw_program = this.programs[2];
+                tiles.filter(function (tile) { // tile should have image data                    
+                        return tile.texture !== null
+                    })
+                    .forEach(function (tile) {
+                        image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
+                    });
+            }
 
 
         }
@@ -2006,26 +2230,38 @@
         // in case there is no active buckets (i.e. all buckets are destroy()'ed )
         // we should this.gl.clear()
 
-
-        //})
-
-
     };
 
-    Renderer.prototype._clearDepth = function _clearDepth ()
-    {
+    Renderer.prototype._clearDepth = function _clearDepth () {
         var gl = this.gl;
         // gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
-    //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
+        //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
         gl.clear(gl.DEPTH_BUFFER_BIT);  // clear depth buffer
     };
 
-    Renderer.prototype._clearColor = function _clearColor ()
-    {
+    Renderer.prototype._clearDepthFbo = function _clearDepthFbo () {
+        var gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        // gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.clearDepth(1.0); // Clear everything
+        //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.DEPTH_BUFFER_BIT);  // clear depth buffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    };
+
+    Renderer.prototype._clearColor = function _clearColor () {
         var gl = this.gl;
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+    };
+
+    Renderer.prototype._clearColorFbo = function _clearColorFbo () {
+        var gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     };
 
     Renderer.prototype.setViewport = function setViewport (width, height) {
@@ -2087,7 +2323,9 @@
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
                 //console.log('tilecontent.js data[0]:', data[0])
+                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
                 this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
                 //if (this.polygon_triangleVertexPosBufr == null) {
                 //console.log('tilecontent.js load_ssc_tile, url:', url)
@@ -2585,6 +2823,20 @@
             })
     };
 
+    SSCTree.prototype.prepare_active_tiles = function prepare_active_tiles (near, transform, gl) {
+        var matrix = transform.world_square;
+        var far = -0.5;
+        matrix[10] = -2.0 / (near - far);
+        matrix[14] = (near + far) / (near - far);
+        var box2d = transform.getVisibleWorld();
+        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
+        //let gl = this.getWebGLContext();
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        this.fetch_tiles(box3d, gl);
+        return [matrix, box3d]
+    };
+
     SSCTree.prototype.get_step_from_St = function get_step_from_St (St, if_snap, zoom_factor, current_step) {
             if ( if_snap === void 0 ) if_snap = false;
             if ( zoom_factor === void 0 ) zoom_factor = 1;
@@ -2763,21 +3015,6 @@
 
         //console.log('transform.js step, Nb, Sb, St:', step, Nb, this.tree.metadata.start_scale_Sb, St)
         return St
-    };
-
-    // FIXME: Move this function to class SSCTree?
-    SSCTree.prototype.prepare_active_tiles = function prepare_active_tiles (near, transform, gl) {
-        var matrix = transform.world_square;
-        var far = -0.5;
-        matrix[10] = -2.0 / (near - far);
-        matrix[14] = (near + far) / (near - far);
-        var box2d = transform.getVisibleWorld();
-        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
-        //let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
-        this.fetch_tiles(box3d, gl);
-        return [matrix, box3d]
     };
 
 
@@ -3278,7 +3515,10 @@
         //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
         this.ssctree = this.ssctrees[0];
-        this.renderer = new Renderer(this.getWebGLContext(), this.ssctrees);
+        this.gl = this.getWebGLContext();
+        console.log('map.js container.width, container.height:', this._container.width, this._container.height);
+        this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height);
+        this.renderer = new Renderer(this.gl, this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,
                                   this.getCanvasContainer().height);
 
@@ -3296,7 +3536,7 @@
             this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]); 
         }
 
-        this.evictor = new Evictor(this.ssctrees, this.getWebGLContext());
+        this.evictor = new Evictor(this.ssctrees, this.gl);
         // every 30 seconds release resources
         window.setInterval(
             function () {
@@ -3379,42 +3619,6 @@
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
 
         this.renderer.render_ssctrees(steps, this.getTransform(), St);
-
-        //this.renderer._clearColor()
-        ////this.renderer._clearDepth()
-        ////console.log('map.js steps.length:', steps.length)
-
-        ////console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
-        ////console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
-
-        ////draw from the last layer to the first layer; first layer will be on top
-        //for (var i = steps.length - 1; i >= 0; i--) {
-        ////clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
-        //this.renderer._clearDepth() 
-        //let ssctree = this.ssctrees[i]
-        ////console.log('map.js render ssctree:', ssctree)
-        //let step = steps[i] - 0.001 //to compensate with the rounding problems
-
-        ////let last_step = ssctree.tree.metadata.no_of_steps_Ns
-        //let last_step = Number.MAX_SAFE_INTEGER
-        //if (ssctree.tree != null) { //the tree is null when the tree hasn't been loaded yet. 
-        //    last_step = ssctree.tree.metadata.no_of_steps_Ns
-        //    //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
-        //}
-
-        //if (step < 0) {
-        //    step = 0
-        //}
-        //else if (step >= last_step) {
-        //    step = last_step
-        //}
-        //steps[i] = step
-        ////console.log('map.js, step after snapping:', step)
-
-
-        //var matrix_box3d = this.prepare_active_tiles(step, this.getTransform(), this.getWebGLContext())
-        //this.renderer.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
-        //}
     };
 
 
@@ -3692,6 +3896,66 @@
             });
         });
     };
+
+
+    function initFramebufferObject(gl, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
+        var framebuffer, texture, depthBuffer;
+
+        // Define the error handling function
+        var error = function () {
+            if (framebuffer) { gl.deleteFramebuffer(framebuffer); }
+            if (texture) { gl.deleteTexture(texture); }
+            if (depthBuffer) { gl.deleteRenderbuffer(depthBuffer); }
+            return null;
+        };
+
+        // Create a frame buffer object (FBO)
+        framebuffer = gl.createFramebuffer();
+        if (!framebuffer) {
+            console.log('Failed to create frame buffer object');
+            return error();
+        }
+
+        // Create a texture object and set its size and parameters
+        texture = gl.createTexture(); // Create a texture object
+        if (!texture) {
+            console.log('Failed to create texture object');
+            return error();
+        }
+        gl.bindTexture(gl.TEXTURE_2D, texture); // Bind the object to target
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        framebuffer.texture = texture; // Store the texture object
+
+        // Create a renderbuffer object and Set its size and parameters
+        depthBuffer = gl.createRenderbuffer(); // Create a renderbuffer object
+        if (!depthBuffer) {
+            console.log('Failed to create renderbuffer object');
+            return error();
+        }
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer); // Bind the object to target
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+
+        // Attach the texture and the renderbuffer object to the FBO
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+
+        // Check if FBO is configured correctly
+        var e = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (gl.FRAMEBUFFER_COMPLETE !== e) {
+            console.log('Frame buffer object is incomplete: ' + e.toString());
+            return error();
+        }
+
+        // Unbind the buffer object
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+
+        return framebuffer;
+    }
 
     // import  Rectangle from "./rect"
     //let r = new Rectangle(1, 2, 3, 4);
