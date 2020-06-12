@@ -517,10 +517,10 @@ void main()
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
 
         var readout = new Uint8Array(4);
-        gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-        console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
-        console.log('drawprograms.js color of the center before drawing:', readout)
+        //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
+        //console.log('drawprograms.js color of the center before drawing:', readout)
 
         //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
         //itemSize = 3: x, y, z;   
@@ -575,10 +575,10 @@ void main()
         gl.disable(gl.BLEND)
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
-        gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-        console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
-        console.log('drawprograms.js color of the center before drawing:', readout)
+        //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
+        //console.log('drawprograms.js color of the center before drawing:', readout)
     }
 
 
@@ -597,10 +597,10 @@ void main()
         gl.viewport(0, 0, width, height)
 
         var readout = new Uint8Array(4);
-        gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-        console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
-        console.log('drawprograms.js color of the center before drawing:', readout)
+        //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
+        //console.log('drawprograms.js color of the center before drawing:', readout)
 
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
 
@@ -660,9 +660,9 @@ void main()
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
 
-        gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-        console.log('drawprograms.js color of the center after drawing:', readout)
+        //console.log('drawprograms.js color of the center after drawing:', readout)
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         //return triangleVertexPosBufr.numItems
@@ -674,10 +674,10 @@ void main()
 function initVertexBuffers(gl) {
     var verticesTexCoords = new Float32Array([
         // Vertex coordinates, texture coordinate
-        -0.5, 0.5, 0.0, 1.0,
-        -0.5, -0.5, 0.0, 0.0,
-        0.5, 0.5, 1.0, 1.0,
-        0.5, -0.5, 1.0, 0.0,
+        -1, 1, 0.0, 1.0,
+        -1, -1, 0.0, 0.0,
+        1, 1, 1.0, 1.0,
+        1, -1, 1.0, 0.0,
     ]);
     var n = 4; // The number of vertices
 
@@ -693,7 +693,7 @@ function initVertexBuffers(gl) {
     gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
 
     var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
-    console.log('drawprograms.js FSIZE:', FSIZE);
+    //console.log('drawprograms.js FSIZE:', FSIZE);
     //Get the storage location of a_Position, assign and enable buffer
     var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
     if (a_Position < 0) {

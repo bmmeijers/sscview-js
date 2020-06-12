@@ -120,7 +120,7 @@ export class Renderer {
                 //fbo.width = canvas.width
                 //fbo.height = canvas.height
                 //gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-                console.log('')
+                //console.log('')
                 tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
                     polygon_draw_program.draw_tile_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);

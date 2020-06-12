@@ -122,7 +122,7 @@ class Map {
 
         this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext()
-        console.log('map.js container.width, container.height:', this._container.width, this._container.height)
+        //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
         this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height)
         this.renderer = new Renderer(this.gl, this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,
