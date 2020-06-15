@@ -11,10 +11,14 @@ function parse_obj(txt)
     //we will reverse the order of the groups to avoid drawing all the lower ssc levels 
     //(we only draw the immediate-lower level, useful for the case when we want to draw a level with transparency).
     //let trianglegroups = [] 
-    let triangles = []
+    let output = {
+        triangles: [], //each element is a point
+        btriangles: [], //triangles of boundaries, each element is a point
+        deltas: [] //deltas of boundaries, each element is a point
+    }
+    
     //let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
-    let btriangles = [] //triangles of boundaries
-    let deltas = [] //deltas of boundaries
+
 
     txt.split('\n').forEach(line => {
         let words = line.split(' ');
@@ -49,7 +53,7 @@ function parse_obj(txt)
                     let vertex = vertices[parseInt(words[i]) - 1];
                     //the vertices of all the triangles are saved in the same list
                     //grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
-                    triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
+                    output.triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
                 }
                 break
             }
@@ -94,8 +98,8 @@ function parse_obj(txt)
 
                         //start consists of x, y, z (step_low), step_high, while
                         //startl consists of only x, y
-                        btriangles.push(start, start, end, start, end, end);
-                        deltas.push(startl, startr, endl, startr, endr, endl);
+                        output.btriangles.push(start, start, end, start, end, end);
+                        output.deltas.push(startl, startr, endl, startr, endr, endl);
                     }
                 }
                 break;
@@ -136,9 +140,9 @@ function parse_obj(txt)
     //    )
     //) 
 
-    let triangles32 = new Float32Array(triangles.flat(1))
-    let btriangles32 = new Float32Array(btriangles.flat(1))
-    let deltas32 = new Float32Array(deltas.flat(1))
+    let triangles32 = new Float32Array(output.triangles.flat(1))
+    let btriangles32 = new Float32Array(output.btriangles.flat(1))
+    let deltas32 = new Float32Array(output.deltas.flat(1))
 
     //we must return buffers intead of triangles32; see file worker.js for the reason
     return [triangles32.buffer, btriangles32.buffer, deltas32.buffer]

@@ -2256,6 +2256,8 @@
         var gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        //gl.clearColor(0, 0, 0, 1.0);
+        //gl.clearColor(0, 0, 0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     };
@@ -3512,7 +3514,7 @@
 
         this.ssctree = this.ssctrees[0];
         this.gl = this.getWebGLContext();
-        console.log('map.js container.width, container.height:', this._container.width, this._container.height);
+        //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
         this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height);
         this.renderer = new Renderer(this.gl, this.ssctrees);
         this.renderer.setViewport(this.getCanvasContainer().width,

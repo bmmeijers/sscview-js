@@ -197,6 +197,8 @@ export class Renderer {
         let gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        //gl.clearColor(0, 0, 0, 1.0);
+        //gl.clearColor(0, 0, 0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
