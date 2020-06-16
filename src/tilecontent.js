@@ -52,7 +52,7 @@ export class TileContent {
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
                 //console.log('tilecontent.js data[0]:', data[0])
-                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
                 this.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6)
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)

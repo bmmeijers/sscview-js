@@ -1939,7 +1939,7 @@
             var gl = this.gl;
             var shaderProgram = this.shaderProgram;
             gl.useProgram(shaderProgram);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
             gl.viewport(0, 0, width, height);
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
@@ -2097,6 +2097,8 @@
         }
         gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer); // Bind the object to target
         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+        framebuffer.depthBuffer = depthBuffer;
+
 
         // Attach the texture and the renderbuffer object to the FBO
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -2115,8 +2117,7 @@
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
-
-        return framebuffer;
+        gl.fbo = framebuffer; //fbo: frambuffer object
     }
 
     // FIXME: rename draw to renderFunc ?
@@ -2249,7 +2250,7 @@
                 });
 
                 var image_fbo_program = new ImageFboDrawProgram(gl);
-                image_fbo_program.draw_tile(gl.framebuffer, tree_setting);
+                image_fbo_program.draw_tile(gl.fbo, tree_setting);
 
 
                 // If we want to draw lines twice -> thick line under / small line over
@@ -2300,7 +2301,7 @@
 
     Renderer.prototype._clearDepthFbo = function _clearDepthFbo () {
         var gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         // gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
         //    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
@@ -2316,7 +2317,7 @@
 
     Renderer.prototype._clearColorFbo = function _clearColorFbo () {
         var gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);
@@ -2466,7 +2467,7 @@
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
                 //console.log('tilecontent.js data[0]:', data[0])
-                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
                 this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
@@ -3662,7 +3663,7 @@
         this.ssctree = this.ssctrees[0];
         this.gl = this.getWebGLContext();
         //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
-        this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height);
+        initFramebufferObject(this.gl, this._container.width, this._container.height); //set gl.fbo
         this.renderer = new Renderer(this.gl, this._container, this.ssctrees);
         //this.renderer.setViewport(this.getCanvasContainer().width,
         //                      this.getCanvasContainer().height)
@@ -3952,6 +3953,17 @@
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight);
+        var gl = this.gl;
+
+        var fbo = gl.fbo;
+        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);        
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, newWidth, newHeight);
+
+        // Unbind the buffer object;
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     };
 
     Map.prototype.subscribe_scale = function subscribe_scale () {

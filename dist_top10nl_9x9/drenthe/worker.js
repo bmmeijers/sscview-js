@@ -18,10 +18,10 @@
 
         var output = {
             vertices: [],
-            triangles: [],
+            triangles: [], //each element is a point
             boundaries: {
-                triangles: [],
-                deltas: []
+                triangles: [], //triangles of boundaries, each element is a point
+                deltas: [] //deltas of boundaries, each element is a point
             }
         };
 

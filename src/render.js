@@ -130,7 +130,7 @@ export class Renderer {
                 })
 
                 var image_fbo_program = new ImageFboDrawProgram(gl)
-                image_fbo_program.draw_tile(gl.framebuffer, tree_setting)
+                image_fbo_program.draw_tile(gl.fbo, tree_setting)
 
 
                 // If we want to draw lines twice -> thick line under / small line over
@@ -181,7 +181,7 @@ export class Renderer {
 
     _clearDepthFbo() {
         let gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         // gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.clearDepth(1.0); // Clear everything
         //        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear both color and depth buffer
@@ -197,7 +197,7 @@ export class Renderer {
 
     _clearColorFbo() {
         let gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);

@@ -593,7 +593,7 @@ void main()
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         gl.viewport(0, 0, width, height)
 
         var readout = new Uint8Array(4);
@@ -754,6 +754,8 @@ export function initFramebufferObject(gl, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
     }
     gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer); // Bind the object to target
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+    framebuffer.depthBuffer = depthBuffer
+
 
     // Attach the texture and the renderbuffer object to the FBO
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -772,6 +774,5 @@ export function initFramebufferObject(gl, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
-
-    return framebuffer;
+    gl.fbo = framebuffer; //fbo: frambuffer object
 }

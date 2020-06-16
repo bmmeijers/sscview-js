@@ -128,7 +128,7 @@ class Map {
         this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext()
         //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
-        this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height)
+        initFramebufferObject(this.gl, this._container.width, this._container.height) //set gl.fbo
         this.renderer = new Renderer(this.gl, this._container, this.ssctrees);
         //this.renderer.setViewport(this.getCanvasContainer().width,
         //                          this.getCanvasContainer().height)
@@ -410,6 +410,17 @@ class Map {
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight)
+        let gl = this.gl
+
+        let fbo = gl.fbo;
+        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);        
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, newWidth, newHeight);
+
+        // Unbind the buffer object;
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     }
 
     subscribe_scale() {
