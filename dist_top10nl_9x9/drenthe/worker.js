@@ -1,21 +1,31 @@
 (function () {
     'use strict';
 
-    function parse_obj(txt)
-    {
+    function parse_obj(txt) {
         var fcolor = null;  //feature color
         var step_high = null;
         var class_color = generate_class_color();
 
-        var vertices = [];
+        //let vertices = []
         //we will reverse the order of the groups to avoid drawing all the lower ssc levels 
         //(we only draw the immediate-lower level, useful for the case when we want to draw a level with transparency).
         //let trianglegroups = [] 
+        //let output = {
+        //    triangles: [], //each element is a point
+        //    btriangles: [], //triangles of boundaries, each element is a point
+        //    deltas: [] //deltas of boundaries, each element is a point
+        //}
+
         var output = {
-            triangles: [], //each element is a point
-            btriangles: [], //triangles of boundaries, each element is a point
-            deltas: [] //deltas of boundaries, each element is a point
+            vertices: [],
+            triangles: [],
+            boundaries: {
+                triangles: [],
+                deltas: []
+            }
         };
+
+
         
         //let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
 
@@ -30,7 +40,7 @@
             switch (words[0])
             {
                 case 'v': {
-                    vertices.push([parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3])]);
+                    output.vertices.push([parseFloat(words[1]), parseFloat(words[2]), parseFloat(words[3])]);
                     break
                 }
 
@@ -50,7 +60,7 @@
                 case 'f': {
                     // 3 vertex indentifiers make a triangle; add coordinates and colors
                     for (var i = 1; i <= 3; i++) {
-                        var vertex = vertices[parseInt(words[i]) - 1];
+                        var vertex = output.vertices[parseInt(words[i]) - 1];
                         //the vertices of all the triangles are saved in the same list
                         //grouped_triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac])
                         output.triangles.push([vertex[0], vertex[1], vertex[2], fcolor.r_frac, fcolor.g_frac, fcolor.b_frac]);
@@ -71,7 +81,7 @@
                     //console.log('words:', words)
                     //console.log('step_high:', step_high)
                     for (var i$1 = 1; i$1 < words.length; i$1++) {
-                        polyline.push(vertices[words[i$1] - 1]);
+                        polyline.push(output.vertices[words[i$1] - 1]);
                     }
 
                     var point_records = [];
@@ -98,8 +108,8 @@
 
                             //start consists of x, y, z (step_low), step_high, while
                             //startl consists of only x, y
-                            output.btriangles.push(start, start, end, start, end, end);
-                            output.deltas.push(startl, startr, endl, startr, endr, endl);
+                            output.boundaries.triangles.push(start, start, end, start, end, end);
+                            output.boundaries.deltas.push(startl, startr, endl, startr, endr, endl);
                         }
                     }
                     break;
@@ -141,8 +151,8 @@
         //) 
 
         var triangles32 = new Float32Array(output.triangles.flat(1));
-        var btriangles32 = new Float32Array(output.btriangles.flat(1));
-        var deltas32 = new Float32Array(output.deltas.flat(1));
+        var btriangles32 = new Float32Array(output.boundaries.triangles.flat(1));
+        var deltas32 = new Float32Array(output.boundaries.deltas.flat(1));
 
         //we must return buffers intead of triangles32; see file worker.js for the reason
         return [triangles32.buffer, btriangles32.buffer, deltas32.buffer]

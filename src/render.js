@@ -7,8 +7,9 @@ import { ImageTileDrawProgram, ImageFboDrawProgram, LineDrawProgram, PolygonDraw
 
 
 export class Renderer {
-    constructor(gl, ssctrees) {
+    constructor(gl, canvas, ssctrees) {
         this.gl = gl
+        this.canvas = canvas
         this.ssctrees = ssctrees
         this.settings = {
             boundary_width: 0.2,
@@ -25,6 +26,7 @@ export class Renderer {
             //new ForegroundDrawProgram(gl)
         ];
 
+        this.setViewport(canvas.width, canvas.height)
         //this.fbo = gl.createFramebuffer();
         //gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
     }
@@ -209,6 +211,5 @@ export class Renderer {
 
 
 }
-
 
 

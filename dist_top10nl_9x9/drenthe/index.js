@@ -2059,13 +2059,74 @@
         return n;
     }
 
+
+    function initFramebufferObject(gl, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
+        var framebuffer, texture, depthBuffer;
+
+        // Define the error handling function
+        var error = function () {
+            if (framebuffer) { gl.deleteFramebuffer(framebuffer); }
+            if (texture) { gl.deleteTexture(texture); }
+            if (depthBuffer) { gl.deleteRenderbuffer(depthBuffer); }
+            return null;
+        };
+
+        // Create a frame buffer object (FBO)
+        framebuffer = gl.createFramebuffer();
+        if (!framebuffer) {
+            console.log('Failed to create frame buffer object');
+            return error();
+        }
+
+        // Create a texture object and set its size and parameters
+        texture = gl.createTexture(); // Create a texture object
+        if (!texture) {
+            console.log('Failed to create texture object');
+            return error();
+        }
+        gl.bindTexture(gl.TEXTURE_2D, texture); // Bind the object to target
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        framebuffer.texture = texture; // Store the texture object
+
+        // Create a renderbuffer object and Set its size and parameters
+        depthBuffer = gl.createRenderbuffer(); // Create a renderbuffer object
+        if (!depthBuffer) {
+            console.log('Failed to create renderbuffer object');
+            return error();
+        }
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer); // Bind the object to target
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+
+        // Attach the texture and the renderbuffer object to the FBO
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+
+        // Check if FBO is configured correctly
+        var e = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (gl.FRAMEBUFFER_COMPLETE !== e) {
+            console.log('Frame buffer object is incomplete: ' + e.toString());
+            return error();
+        }
+
+        // Unbind the buffer object
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+
+        return framebuffer;
+    }
+
     // FIXME: rename draw to renderFunc ?
 
 
 
 
-    var Renderer = function Renderer(gl, ssctrees) {
+    var Renderer = function Renderer(gl, canvas, ssctrees) {
         this.gl = gl;
+        this.canvas = canvas;
         this.ssctrees = ssctrees;
         this.settings = {
             boundary_width: 0.2,
@@ -2082,6 +2143,7 @@
             //new ForegroundDrawProgram(gl)
         ];
 
+        this.setViewport(canvas.width, canvas.height);
         //this.fbo = gl.createFramebuffer();
         //gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
     };
@@ -2264,6 +2326,89 @@
 
     Renderer.prototype.setViewport = function setViewport (width, height) {
         this.gl.viewport(0, 0, width, height);
+    };
+
+    var LayerControl = function LayerControl(map, tree_settings) {
+        this.map = map;
+        this.tree_settings = tree_settings;
+    };
+
+    LayerControl.prototype.add_layercontrols = function add_layercontrols (div_id) {
+            var this$1 = this;
+
+
+        // var container_close = document.getElementById("container-close");
+        // container_close.parentNode.insertBefore(newheader, container_close)
+        // var newcontainer = document.createElement("div");
+        // newcontainer.class = 'w3-container w3-padding'
+        var msgbus = this.map.msgbus;
+        var fieldsets_rendering = document.getElementById(div_id);
+
+        this.tree_settings.forEach(function (tree_setting) {
+
+            var layer_nm = tree_setting.layer_nm;
+            //console.log('map.js layer_nm:', layer_nm)
+            // create a new div element 
+            var newfieldset = document.createElement("fieldset");
+            fieldsets_rendering.append(newfieldset);
+
+
+            //make the legend of the layer
+            var newlegend = document.createElement("legend");
+            newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+
+            var id_cb = layer_nm + '_cb';
+            var topic_cb = 'setting.layer.' + layer_nm + '_cb';
+            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + layer_nm;
+            var cb = document.getElementById(id_cb);
+            cb.checked = tree_setting.do_draw;
+            cb.value = topic_cb;
+
+            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {
+                tree_setting.do_draw = message; //if we want to draw the layer or not
+                this$1.map.abortAndRender();
+            });
+
+
+            //make the slider for the opacity
+            var opacity_div = document.createElement("div");
+            opacity_div.id = layer_nm + '_opacity-value';
+
+            // var slider_div = document.createElement("div");
+            var slider = document.createElement("input");
+            // slider.id = layer_nm + '_opacity-slider';
+            slider.type = 'range';
+            slider.min = 0;
+            slider.max = 1;
+            slider.step = 0.025;
+            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
+
+            newfieldset.append(opacity_div, slider);
+
+
+
+            var topic = 'setting.layer.' + layer_nm + '_opacity-slider';
+            msgbus.subscribe(topic, function (topic, message, sender) {
+                // let el = document.getElementById(displayid);
+                opacity_div.innerHTML = 'opacity value: ' + message;
+            });
+            // let slider = document.getElementById(widgetid);
+            slider.addEventListener('input',
+                function () {
+                    // console.log('index.html slider.value:', slider.value)
+
+                    msgbus.publish(topic, parseFloat(slider.value));
+                    // tree_setting.opacity = parseFloat(slider.value);
+                    this$1.map.abortAndRender();
+                }
+            );
+            msgbus.publish(topic, parseFloat(slider.value));
+
+            msgbus.subscribe(topic, function (topic, message, sender) {
+                tree_setting.opacity = parseFloat(message);
+                this$1.map.abortAndRender();
+            });
+        });
     };
 
     // FIXME: UNIFY TileContent and ImageTileContent by branching inside load()-method
@@ -3499,7 +3644,9 @@
         });
 
         this.subscribe_scale();
-        this.add_layer_settings(map_setting.tree_settings);
+
+        var layercontrol = new LayerControl(this, map_setting.tree_settings);
+        layercontrol.add_layercontrols("fieldsets-rendering");
 
         map_setting.tree_settings.forEach(function (tree_setting) {
             //console.log('map.js tree_setting:', tree_setting)
@@ -3516,9 +3663,9 @@
         this.gl = this.getWebGLContext();
         //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
         this.gl.framebuffer = initFramebufferObject(this.gl, this._container.width, this._container.height);
-        this.renderer = new Renderer(this.gl, this.ssctrees);
-        this.renderer.setViewport(this.getCanvasContainer().width,
-                                  this.getCanvasContainer().height);
+        this.renderer = new Renderer(this.gl, this._container, this.ssctrees);
+        //this.renderer.setViewport(this.getCanvasContainer().width,
+        //                      this.getCanvasContainer().height)
 
         dragHandler(this);  // attach mouse handlers
         scrollHandler(this);
@@ -3816,144 +3963,6 @@
             el.textContent = " 1:" + scale;
         });
     };
-
-    Map.prototype.add_layer_settings = function add_layer_settings (tree_settings) {
-            var this$1 = this;
-
-
-        // var container_close = document.getElementById("container-close");
-        // container_close.parentNode.insertBefore(newheader, container_close)
-        // var newcontainer = document.createElement("div");
-        // newcontainer.class = 'w3-container w3-padding'
-        var msgbus = this.msgbus;
-        var fieldsets_rendering = document.getElementById("fieldsets-rendering");
-
-        tree_settings.forEach(function (tree_setting) {
-                
-            var layer_nm = tree_setting.layer_nm;
-            //console.log('map.js layer_nm:', layer_nm)
-            // create a new div element 
-            var newfieldset = document.createElement("fieldset");
-            fieldsets_rendering.append(newfieldset);
-
-
-            //make the legend of the layer
-            var newlegend = document.createElement("legend");
-            newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
-
-            var id_cb = layer_nm + '_cb';
-            var topic_cb = 'setting.layer.' + layer_nm + '_cb';
-            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + layer_nm;
-            var cb = document.getElementById(id_cb);
-            cb.checked = tree_setting.do_draw;
-            cb.value = topic_cb;
-
-            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {
-                tree_setting.do_draw = message; //if we want to draw the layer or not
-                this$1.abortAndRender();
-            });
-
-
-            //make the slider for the opacity
-            var opacity_div = document.createElement("div");
-            opacity_div.id = layer_nm + '_opacity-value';
-
-            // var slider_div = document.createElement("div");
-            var slider = document.createElement("input");
-            // slider.id = layer_nm + '_opacity-slider';
-            slider.type = 'range';
-            slider.min = 0;
-            slider.max = 1;
-            slider.step = 0.025;
-            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
-
-            newfieldset.append(opacity_div, slider);
-
-
-                
-            var topic = 'setting.layer.' + layer_nm + '_opacity-slider';
-            msgbus.subscribe(topic, function (topic, message, sender) {
-                // let el = document.getElementById(displayid);
-                opacity_div.innerHTML = 'opacity value: ' + message;
-            });
-            // let slider = document.getElementById(widgetid);
-            slider.addEventListener('input',
-                function () {
-                    // console.log('index.html slider.value:', slider.value)
-
-                    msgbus.publish(topic, parseFloat(slider.value));
-                    // tree_setting.opacity = parseFloat(slider.value);
-                    this$1.abortAndRender();
-                }
-            );
-            msgbus.publish(topic, parseFloat(slider.value));
-
-            msgbus.subscribe(topic, function (topic, message, sender) {
-                tree_setting.opacity = parseFloat(message);
-                this$1.abortAndRender();
-            });
-        });
-    };
-
-
-    function initFramebufferObject(gl, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
-        var framebuffer, texture, depthBuffer;
-
-        // Define the error handling function
-        var error = function () {
-            if (framebuffer) { gl.deleteFramebuffer(framebuffer); }
-            if (texture) { gl.deleteTexture(texture); }
-            if (depthBuffer) { gl.deleteRenderbuffer(depthBuffer); }
-            return null;
-        };
-
-        // Create a frame buffer object (FBO)
-        framebuffer = gl.createFramebuffer();
-        if (!framebuffer) {
-            console.log('Failed to create frame buffer object');
-            return error();
-        }
-
-        // Create a texture object and set its size and parameters
-        texture = gl.createTexture(); // Create a texture object
-        if (!texture) {
-            console.log('Failed to create texture object');
-            return error();
-        }
-        gl.bindTexture(gl.TEXTURE_2D, texture); // Bind the object to target
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        framebuffer.texture = texture; // Store the texture object
-
-        // Create a renderbuffer object and Set its size and parameters
-        depthBuffer = gl.createRenderbuffer(); // Create a renderbuffer object
-        if (!depthBuffer) {
-            console.log('Failed to create renderbuffer object');
-            return error();
-        }
-        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer); // Bind the object to target
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
-
-        // Attach the texture and the renderbuffer object to the FBO
-        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
-
-        // Check if FBO is configured correctly
-        var e = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        if (gl.FRAMEBUFFER_COMPLETE !== e) {
-            console.log('Frame buffer object is incomplete: ' + e.toString());
-            return error();
-        }
-
-        // Unbind the buffer object
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-
-
-        return framebuffer;
-    }
 
     // import  Rectangle from "./rect"
     //let r = new Rectangle(1, 2, 3, 4);
