@@ -49,10 +49,10 @@ export class Renderer {
         this._clearColor()
         this._clearColorFbo()
         //this.renderer._clearDepth()
-        //console.log('map.js steps.length:', steps.length)
+        //console.log('render.js steps.length:', steps.length)
 
-        //console.log('map.js render this.ssctrees.length:', this.ssctrees.length)
-        //console.log('map.js this.ssctrees[0]:', this.ssctrees[0])
+        //console.log('render.js render this.ssctrees.length:', this.ssctrees.length)
+        //console.log('render.js this.ssctrees[0]:', this.ssctrees[0])
 
         //draw from the last layer to the first layer; first layer will be on top
         for (var i = steps.length - 1; i >= 0; i--) {
@@ -60,7 +60,7 @@ export class Renderer {
             this._clearDepth()
             this._clearDepthFbo()
             let ssctree = this.ssctrees[i]
-            //console.log('map.js render ssctree:', ssctree)
+            //console.log('render.js render ssctree:', ssctree)
             let step = steps[i] - 0.001 //to compensate with the rounding problems
 
             //let last_step = ssctree.tree.metadata.no_of_steps_Ns
@@ -77,9 +77,9 @@ export class Renderer {
                 step = last_step
             }
             steps[i] = step
-            //console.log('map.js, step after snapping:', step)
+            //console.log('render.js, step after snapping:', step)
 
-
+            //console.log('render.js, step after snapping:', step)
             var matrix_box3d = ssctree.prepare_active_tiles(step, transform, this.gl)
             this.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
         }
@@ -198,7 +198,8 @@ export class Renderer {
     _clearColorFbo() {
         let gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
-        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        //gl.clearColor(0.999, 0.999, 0.999, 0);
+        gl.clearColor(1, 1, 1, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer

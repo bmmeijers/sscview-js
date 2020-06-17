@@ -151,34 +151,40 @@ class Transform {
         let St_current = this.getScaleDenominator()
         let current_step = ssctree.get_step_from_St(St_current) //current_step should be compute instantly because of aborting actions
         this.compute_zoom_parameters(zoom_factor, x, y)
-        let St = this.getScaleDenominator()
+        let time_factor = 1
 
 
-        //console.log('transform.js St_current:', St_current)
-        //console.log('transform.js St:', St)
-        //console.log('transform.js St_current / St:', St_current / St)
-        //console.log('transform.js zoom_factor:', zoom_factor)
+        if (if_snap == true) {
 
-        //console.log('transform.js ----------------:')
-        //console.log('transform.js St after:', this.getScaleDenominator())
+            let St_new = this.getScaleDenominator()
 
 
+            //console.log('transform.js St_current:', St_current)
+            //console.log('transform.js St:', St)
+            //console.log('transform.js St_current / St:', St_current / St)
+            //console.log('transform.js zoom_factor:', zoom_factor)
 
-        let snapped_step = ssctree.get_step_from_St(St, if_snap, zoom_factor, current_step)
-        let time_factor = ssctree.get_time_factor(St, if_snap, zoom_factor, current_step)
-        let snapped_St = ssctree.get_St_from_step(snapped_step)
-        this.snapped_step = snapped_step
-        this.snapped_St = snapped_St
+            //console.log('transform.js ----------------:')
+            //console.log('transform.js St after:', this.getScaleDenominator())
 
-        //this.current_step = snapped_step
 
-        //console.log('transform.js snapped_step:', snapped_step)
-        //console.log('transform.js snapped_St:', snapped_St)
-        //console.log('transform.js St / snapped_St:', St / snapped_St)
-        this.compute_zoom_parameters(St / snapped_St, x, y)
-        //let final_St = this.getScaleDenominator()
-        //console.log('transform.js final St:', final_St) 
-        //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
+            let snapped_step = ssctree.get_snappedstep_from_newSt(St_new, zoom_factor, current_step)
+            time_factor = ssctree.get_time_factor(St_new, zoom_factor, current_step)
+            let snapped_St = ssctree.get_St_from_step(snapped_step)
+            this.snapped_step = snapped_step
+            this.snapped_St = snapped_St
+
+            //this.current_step = snapped_step
+
+            //console.log('transform.js snapped_step:', snapped_step)
+            //console.log('transform.js snapped_St:', snapped_St)
+            //console.log('transform.js St / snapped_St:', St / snapped_St)
+            this.compute_zoom_parameters(St_new / snapped_St, x, y)
+            //let final_St = this.getScaleDenominator()
+            //console.log('transform.js final St:', final_St)
+            //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
+
+        }
         return time_factor
     }
 

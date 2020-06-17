@@ -156,7 +156,7 @@ class Map {
                 let box3ds = []
                 const box2d = this.getTransform().getVisibleWorld()
                 this.ssctrees.forEach((ssctree) => {
-                    var step = ssctree.get_step_from_St(St, this.if_snap)
+                    var step = ssctree.get_step_from_St(St)
 
                     //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
                     //const near = near_St[0]
@@ -217,7 +217,8 @@ class Map {
         }
         else {
             St = this.getTransform().getScaleDenominator()
-            //console.log('map.js render, test')
+            //console.log('')
+            //console.log('map.js St:', St)
             this.ssctrees.forEach((ssctree) => {
                 steps.push(ssctree.get_step_from_St(St))
             })

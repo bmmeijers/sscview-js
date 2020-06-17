@@ -255,7 +255,23 @@ export class SSCTree {
         return [matrix, box3d]
     }
 
-    get_step_from_St(St, if_snap = false, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
+    get_step_from_St(St) {
+
+        if (this.tree === null) {
+            return 0
+        }
+        //console.log('')
+
+        // reduction in percentage
+        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        console.log('ssctree.js reductionf:', reductionf)
+        let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        console.log('ssctree.js Nt:', this.tree.metadata.no_of_objects_Nb - step)
+
+        return step
+    }
+
+    get_snappedstep_from_newSt(St_new,zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
         
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
@@ -276,18 +292,18 @@ export class SSCTree {
         //console.log('')
 
         // reduction in percentage
-        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        //let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
         //console.log('ssctree.js reductionf:', reductionf)
-        let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        let snapped_step = step
+        //let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        let newstep = this.get_step_from_St(St_new)
+        let snapped_step = newstep
         let step_highs = this.step_highs
-        if (if_snap == true
-            && step_highs != null
-            && step > step_highs[0] - 0.001
-            && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        if (step_highs != null
+            && newstep > step_highs[0] - 0.001
+            && newstep < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('ssctree.js step_highs:', step_highs)
-            //console.log('ssctree.js step:', step)
+            console.log('ssctree.js step_highs:', step_highs)
+            console.log('ssctree.js step:', newstep)
             
 
             let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
@@ -302,7 +318,7 @@ export class SSCTree {
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
             //console.log('ssctree.js current_step:', current_step)
             //console.log('ssctree.js step_highs[step_index]:', step_highs[step_index])
-            let snapped_index = snap_to_existing_stephigh(step, step_highs)
+            let snapped_index = snap_to_existing_stephigh(newstep, step_highs)
             snapped_step = step_highs[snapped_index]
 
 
@@ -336,22 +352,23 @@ export class SSCTree {
         return snapped_step
     }
 
-    get_time_factor(St, if_snap = false, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
+    get_time_factor(St_new, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
 
-        if (this.tree === null || if_snap == false) {
+        if (this.tree === null) {
             return 1
         }
 
         // reduction in percentage
-        let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        let snapped_step = step
+        //let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        //let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        let newstep = this.get_step_from_St(St_new)
+
+        let snapped_step = newstep
         let step_highs = this.step_highs
         let time_factor = 1
-        if (if_snap == true
-            && step_highs != null
-            && step > step_highs[0] - 0.001
-            && step < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        if (step_highs != null
+            && newstep > step_highs[0] - 0.001
+            && newstep < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('ssctree.js --------------------------------------')
             //console.log('ssctree.js step_highs:', step_highs)
@@ -367,9 +384,9 @@ export class SSCTree {
 
             //console.log('ssctree.js step:', step)
             //console.log('ssctree.js step_highs[current_step_index]:', step_highs[current_step_index])
-            let normal_step_diff = Math.abs(step - current_step)
+            let normal_step_diff = Math.abs(newstep - current_step)
 
-            let snapped_index = snap_to_existing_stephigh(step, step_highs)
+            let snapped_index = snap_to_existing_stephigh(newstep, step_highs)
 
 
             //if we scroll too little, the map doesn't zoom because of the snapping.

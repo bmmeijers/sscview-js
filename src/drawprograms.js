@@ -178,15 +178,31 @@ export class ImageFboDrawProgram extends DrawProgram {
             //'void main() {\n' +
             //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
             //'}\n';
-            'precision highp float;\n' +            
-            'uniform sampler2D uSampler;\n' +
-            'uniform float opacity;\n' +
-            'varying vec2 v_TexCoord;\n' +
-            'void main() {\n' +
-            '  vec4 color = texture2D(uSampler, v_TexCoord);' +
-            '  color.a = opacity;' +
-            '  gl_FragColor = color;\n' +
-            '}\n';
+            `
+            precision highp float;\n          
+            uniform sampler2D uSampler;\n
+            uniform float opacity;\n
+            varying vec2 v_TexCoord;\n
+            void main() {\n
+              vec4 color = texture2D(uSampler, v_TexCoord);
+              if (color.a != 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js
+                { color.a = opacity; } 
+              else 
+                { discard; } 
+              gl_FragColor = color;\n 
+            }\n
+            `;
+
+        //if (color.r == 0.0 && color.b == 1.0 && color.g == 1.0) { discard; } else { color.a = 0.5; } 
+        //'precision highp float;\n' +
+        //    'uniform sampler2D uSampler;\n' +
+        //    'uniform float opacity;\n' +
+        //    'varying vec2 v_TexCoord;\n' +
+        //    'void main() {\n' +
+        //    '  vec4 color = texture2D(uSampler, v_TexCoord);' +
+        //    '  color.a = opacity;' +
+        //    '  gl_FragColor = color;\n' +
+        //    '}\n';
 
         //uniform float opacity;
         //vec4 color = texture2D(u_tex, v_texCoord);
