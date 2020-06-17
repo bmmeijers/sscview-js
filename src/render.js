@@ -9,7 +9,6 @@ import { ImageTileDrawProgram, ImageFboDrawProgram, LineDrawProgram, PolygonDraw
 export class Renderer {
     constructor(gl, canvas, ssctrees) {
         this.gl = gl
-        this.canvas = canvas
         this.ssctrees = ssctrees
         this.settings = {
             boundary_width: 0.2,
@@ -113,24 +112,16 @@ export class Renderer {
 
             if (tree_setting.datatype == 'polygon') {
                 var polygon_draw_program = this.programs[0];
-                //let fbo = null
-                //let fbo = initFramebufferObject(gl, canvas.width, canvas.height);
-                ////console.log('render.js canvas.width:', canvas.width)
-                ////console.log('render.js gl.width:', gl.width)
-                ////console.log('render.js canvas.height:', canvas.height)
-                ////console.log('render.js gl.height:', gl.height)
-                //fbo.width = canvas.width
-                //fbo.height = canvas.height
-                //gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
                 //console.log('')
                 tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    polygon_draw_program.draw_tile_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
                     //console.log('render.js fbo:', fbo)
                 })
 
                 var image_fbo_program = new ImageFboDrawProgram(gl)
-                image_fbo_program.draw_tile(gl.fbo, tree_setting)
+                image_fbo_program.draw_fbo(gl.fbo, tree_setting)
 
 
                 // If we want to draw lines twice -> thick line under / small line over
@@ -198,7 +189,6 @@ export class Renderer {
     _clearColorFbo() {
         let gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
-        //gl.clearColor(0.999, 0.999, 0.999, 0);
         gl.clearColor(1, 1, 1, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);

@@ -193,26 +193,11 @@ export class ImageFboDrawProgram extends DrawProgram {
             }\n
             `;
 
-        //if (color.r == 0.0 && color.b == 1.0 && color.g == 1.0) { discard; } else { color.a = 0.5; } 
-        //'precision highp float;\n' +
-        //    'uniform sampler2D uSampler;\n' +
-        //    'uniform float opacity;\n' +
-        //    'varying vec2 v_TexCoord;\n' +
-        //    'void main() {\n' +
-        //    '  vec4 color = texture2D(uSampler, v_TexCoord);' +
-        //    '  color.a = opacity;' +
-        //    '  gl_FragColor = color;\n' +
-        //    '}\n';
-
-        //uniform float opacity;
-        //vec4 color = texture2D(u_tex, v_texCoord);
-        //color.a = 0.5;
-
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
     //    draw(matrix, tilecontent)
-    draw_tile(fbo, tree_setting) {
+    draw_fbo(fbo, tree_setting) {
         //console.log('drawprograms.js fbo:', fbo)
         if (fbo === null) {
             console.log('drawprograms.js fbo is null:', fbo)
@@ -598,7 +583,7 @@ void main()
     }
 
 
-    draw_tile_fbo(matrix, tile, tree_setting, width, height) {
+    draw_tile_into_fbo(matrix, tile, tree_setting, width, height) {
         // guard: if no data in the tile, we will skip rendering
         let triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
         if (triangleVertexPosBufr === null) {

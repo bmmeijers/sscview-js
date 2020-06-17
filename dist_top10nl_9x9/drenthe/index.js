@@ -1570,7 +1570,7 @@
                 //'void main() {\n' +
                 //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
                 //'}\n';
-                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a == 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { discard; } \n              else \n                { color.a = opacity; } \n              gl_FragColor = color;\n \n            }\n\n            ";
+                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a != 1.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { color.a = opacity; } \n              else \n                { discard; } \n              gl_FragColor = color;\n \n            }\n\n            ";
 
             //if (color.r == 0.0 && color.b == 1.0 && color.g == 1.0) { discard; } else { color.a = 0.5; } 
             //'precision highp float;\n' +
