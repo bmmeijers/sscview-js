@@ -1,0 +1,500 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Vario-scale Maps Demo</title>
+    <meta charset="UTF-8">
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <link rel="stylesheet" href="w3.css">
+
+    <script type="text/javascript" src="index.js?id=5"></script>
+    <link rel="prefetch" href="worker.js">
+
+    <!-- see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error# -->
+    <link rel="shortcut icon" href="#">
+
+    <style type="text/css">
+        #canvas {
+            display: block;
+            background: white;
+        }
+
+        .tu-shadow {
+            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
+            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
+            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
+        }
+
+        .tu-blue {
+            color: white !important;
+            background-color: rgb(110, 187,213) !important
+        }
+
+        .tu-right {
+            right: 0px;
+        }
+        /*
+        #navigationBar {
+        border-bottom: 1px solid #ddd;
+        }
+        */
+
+        /* css3 spinner: define keyframes + how it should spin
+        note: also w3.css provides a spin class: w3-spin
+        */
+        @-moz-keyframes spin {
+            from {
+                -moz-transform: rotate(0deg);
+            }
+
+            to {
+                -moz-transform: rotate(359deg);
+            }
+        }
+
+        @-webkit-keyframes spin {
+            from {
+                -webkit-transform: rotate(0deg);
+            }
+
+            to {
+                -webkit-transform: rotate(359deg);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(359deg);
+            }
+        }
+
+        .do-spin {
+            -webkit-animation: spin 3s infinite linear;
+            -moz-animation: spin 3s infinite linear;
+            -o-animation: spin 3s infinite linear;
+            animation: spin 2.5s infinite ease-in-out;
+        }
+
+        input[type="radio"] {
+            margin: 0px 6px 0 6px;
+        }
+
+        legend, label {
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none;
+        }
+
+        .prevent-pull-to-refresh {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<!-- <p hidden id="myP"></p> -->
+
+<body class="w3-white prevent-pull-to-refresh">
+    <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
+
+    <div class="w3-bar w3-light-grey" id="navigationBar">
+        <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
+        <span class="w3-bar-item">
+            <a href="http://www.gdmc.nl/">
+                <img class="tu-shadow"
+                     src="gdmc-cube.min.svg" height="22">
+            </a>
+        </span>
+        <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
+        <!--     <a href="#" class="w3-bar-item w3-button">Home</a>-->
+        <!--    <div class="w3-dropdown-click">-->
+        <!--        <button class="w3-bar-item w3-button tu-blue w3-padding" id="openMenuButton"><img class="tu-shadow" src="more-vert.svg" height="20"></button>-->
+        <!--        <div id="menu" class="w3-dropdown-content w3-bar-block w3-card">-->
+        <!--            <a href="#" class="w3-bar-item w3-button">Link 1</a>-->
+        <!--            <a href="#" class="w3-bar-item w3-button">Link 2</a>-->
+        <!--            <a href="#" class="w3-bar-item w3-button">Link 3</a>-->
+        <!--        </div>-->
+        <!--    </div>-->
+
+        <span class="w3-bar-item" id="demo_info"></span>
+        <span class="w3-bar-item" id="scale-denominator">1: scale</span>
+
+        <div class="w3-dropdown-click w3-right">
+            <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
+
+            <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
+            <div id="menu"
+                 class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
+                <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
+                <!--
+                <a href="#" class="w3-bar-item w3-button">Link 2</a>
+                <a href="#" class="w3-bar-item w3-button">Link 3</a>
+                <a href="#" class="w3-bar-item w3-button">Link 4</a>
+                <a href="#" class="w3-bar-item w3-button">Link 5</a>
+                <a href="#" class="w3-bar-item w3-button">Link 6</a>
+                <a href="#" class="w3-bar-item w3-button">Link 7</a>
+                <a href="#" class="w3-bar-item w3-button">Link 8</a>
+                <a href="#" class="w3-bar-item w3-button">Link 9</a>
+                <a href="#" class="w3-bar-item w3-button">Link 10</a>
+                <a href="#" class="w3-bar-item w3-button">Link 11</a>
+                -->
+            </div>
+        </div>
+
+        <!--            class="do-spin" style="visibility: visible;" -->
+        <!-- hide, but keep space -->
+        <!--
+        <span class="w3-bar-item">
+        <img
+        style="visibility: hidden;"
+        src="spinner.svg" height="20">
+        </span>
+        -->
+
+
+    </div>
+
+
+
+
+    <div class="w3-display-container">
+        <!--
+        <div class="w3-display-bottomright w3-transparent w3-padding-large">
+        <button class="w3-button w3-circle w3-red">+</button>
+        <button class="w3-button w3-circle w3-teal">&mdash;</button>
+        </div>
+        -->
+        <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
+            <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
+        </div>
+        <canvas id="canvas" style="w3-white"></canvas>
+    </div>
+
+    <!--
+
+    -->
+    <!-- The Settings Modal -->
+    <div id="settingsModal" class="w3-modal">
+        <!-- style="touch-action: none;" -->
+        <div class="w3-modal-content" id= 'modal-content'>
+            <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
+
+            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+
+            <div class="w3-container w3-padding">
+
+                <div class="setting" id = "interaction-setting">
+                    <fieldset>
+                        <legend> zooming factor </legend>
+                        <div class="w3-margin">
+                            <!--<label for="speed-025">0.25</label>-->
+                            <input type="radio" id="speed-025" name="speed" value="0.25" class="radio-btn">
+                            <label for="speed-025">0.25 &nbsp;&nbsp;</label>
+                            <input type="radio" id="speed-05" name="speed" value="0.5" class="radio-btn">
+                            <label for="speed-05">0.5 &nbsp;&nbsp;</label>
+                            <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
+                            <label for="speed-1">1 &nbsp;&nbsp;</label>
+                            <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
+                            <label for="speed-2">2 &nbsp;&nbsp;</label>
+                            <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
+                            <label for="speed-4">4 &nbsp;&nbsp;</label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> zooming duration</legend>
+                        <div class="w3-padding">
+                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> panning duration</legend>
+                        <div class="w3-padding">
+                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <header class="w3-container w3-light-grey w3-padding"><h2>Rendering settings</h2></header>
+            <div class="w3-container w3-padding" id = 'container-rendering'>
+                <div class="setting" id="fieldsets-rendering">
+                    <fieldset>
+                        <legend> boundary width</legend>
+                        <div>
+                            line-width value (mm): <span id="width-value"></span>
+                        </div>
+                        <div>
+                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <footer class="w3-container w3-light-grey w3-padding" id="container-close">
+                <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
+                    Close
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <footer class="w3-container w3-bottom" style="pointer-events: none;">
+        <!--
+        <p class="w3-left w3-margin-top">
+        {placeholder}
+        </p>
+        -->
+
+        <div class="w3-left">
+            <!--class="w3-bar-item w3-padding-small" -->
+
+
+            <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
+                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="logo.svg" height="30">
+            </a>
+        </div>
+
+        <div class="w3-right">
+            <!-- FIXME: zooming in with a button should also obey the setting panel; this is not the case at the moment -->
+            <button style="pointer-events: auto;" id="zoomInButton" class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
+            <button style="pointer-events: auto;" id="zoomOutButton" class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
+        </div>
+    </footer>
+
+
+
+
+    <script type="text/javascript">
+        function toggle_layer(cb){ //better to put this function into map.js if we can
+            let msgbus = new varioscale.MessageBusConnector();
+            let topic = cb.value;
+            msgbus.publish(topic, cb.checked);
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+
+            // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
+            let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
+            let canvas_nm = 'canvas'
+            let canvas = document.getElementById(canvas_nm);
+            // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
+            let hGap = 0;
+            let vGap = document.getElementById("navigationBar").offsetHeight;
+            canvas.width = window.innerWidth - hGap;
+            canvas.height = window.innerHeight - vGap;
+
+
+            //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
+            //window_location = https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/questions/30863164
+            var href = window.location.href;
+            var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
+            // console.log('window_location:', window_location)
+
+
+            let tree_setting1 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
+                'layer_nm' : 'Example-7',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'tree_smooth.json',
+                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/',
+                'draw_cw_faces': false, //draw counterclockwise 
+                'do_depth_test': false,
+                'do_blend': true,
+                'opacity': 0.8,
+                'do_draw': true,
+            }
+
+            let tree_setting2 = {
+                'layer_nm' : 'Aanvoergebieden',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'aanvoergebieden2.json',
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/',
+                'low_scale': null,
+                'high_scale': 1000000,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+
+            let tree_setting3 = {
+                'layer_nm' : 'Watershappen2017',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'waterschappen2017.json',
+                'tree_root_href': window_location + 'data/',    // with trailing slash!
+                'tile_root_href': window_location + 'data/',
+                'low_scale': 1000000,
+                'high_scale': null,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+
+            let tree_setting4 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
+                'layer_nm' : 'Drenthe',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'tree.json',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
+                'do_blend': true, //we must do blending so that the dataset will be transparent
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting5 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
+                'layer_nm' : 'NL-raster', 
+                'datatype' : 'image',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
+                'tree_root_file_nm': 'tree.json',
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
+                'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
+                'do_blend': true,
+                'opacity': 1,
+                'do_draw': true,
+            }
+
+
+            var map_setting = {
+                'initialization': {
+
+                    // 'scale_den': 12000, //top10nl, start_scale
+                    // 'center2d': [186500.0, 312450.0],     //top10nl
+
+                    // 'scale_den': 300000, //Drenthe
+                    // 'center2d': [257148.828, 533408.562],   //Drenthe
+
+                    'scale_den': 1200000, //Drenthe
+                    'center2d': [140000, 460000],   //Drenthe
+
+                    'navigationBar_title': 'Top10NL',
+                },
+                'canvas_nm': canvas_nm,
+                'tree_settings': [ //we will draw from the                 
+                  
+                    // tree_setting4,                                        
+                    // tree_setting1, 
+
+                    tree_setting2, 
+                    tree_setting3,
+                    tree_setting5,
+                ],
+                'interaction_defaults': []
+            }
+            // console.log('index.html, map_setting:', map_setting)
+
+            document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
+                map_setting.initialization.navigationBar_title
+
+            // Make a new map instance
+            var map = new varioscale.Map(map_setting);
+            map.loadTree();
+
+
+
+            // Resize the canvas to span complete screen, when the screen is resized
+            // (note, this does include device rotation on mobile)
+            var resize = function () {
+                let canvas = document.getElementById(canvas_nm);
+                // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
+                let newWidth = window.innerWidth - hGap;
+                let newHeight = window.innerHeight - vGap;
+
+                map.resize(newWidth, newHeight);
+                // update the canvas its size with the new size given by the browser
+                canvas.width = newWidth
+                canvas.height = newHeight
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                map.abortAndRender()
+            };
+            window.addEventListener('resize', resize, false);
+            window.addEventListener('orientationchange', resize);
+
+
+            /* -- start slider -- */
+            let init_boundary_width_slider = () => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => {
+                    let el = document.getElementById("width-value");
+                    el.innerHTML = message;
+                });
+                let slider = document.getElementById("boundary-width");
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.rendering.boundary-width", parseFloat(slider.value));
+                    }
+                );
+                msgbus.publish("settings.rendering.boundary-width", parseFloat(slider.value));
+            };
+            init_boundary_width_slider();
+            /* -- end of slider -- */
+
+
+
+
+
+            /* -- start slider -- */
+            let init_slider = (name) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                let slider = document.getElementById(name);
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                        // map.abortAndRender();
+                    }
+                );
+                msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+            }
+            //init_slider("zoom-factor");
+            init_slider("pan-animation");
+            init_slider("zoom-animation");
+            /* -- end of slider -- */
+
+
+
+
+            /* opening and closing the settings modal dialog */
+            // FIXME: repetition of names and ids here is cumbersome
+            var modalSettingsOpen = function () {
+                toggleMenu(); // hide the menu
+                document.getElementById('settingsModal').style.display = 'block';
+            };
+            var modalSettingsClose = function () {
+                document.getElementById('settingsModal').style.display = 'none';
+            }
+            document.getElementById("openSettingsButton").addEventListener('click', modalSettingsOpen);
+            document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
+            document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
+
+            // the menu on the top
+            function toggleMenu() {
+                var x = document.getElementById("menu");
+                if (x.className.indexOf("w3-show") == -1) {
+                    x.className += " w3-show";
+                } else {
+                    x.className = x.className.replace(" w3-show", "");
+                }
+            };
+            document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
+        });
+    </script>
+
+</body>
+</html>

@@ -8,7 +8,7 @@
     "no_of_steps_comment": "number of steps of the SSCTree (according to dataset)"
   },
   "id": 0,
-  "box": [ 182000.0, 307900.0, 0.0, 191000.0, 317000.0, 4.0 ],
+  "box": [ 182000.0, 307900.0, 0.0, 191000.0, 317000.0, 7.0 ],
   "children": [],
   "dataelements": [
     {

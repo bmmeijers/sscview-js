@@ -1570,22 +1570,7 @@
                 //'void main() {\n' +
                 //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
                 //'}\n';
-                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a != 1.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { color.a = opacity; } \n              else \n                { discard; } \n              gl_FragColor = color;\n \n            }\n\n            ";
-
-            //if (color.r == 0.0 && color.b == 1.0 && color.g == 1.0) { discard; } else { color.a = 0.5; } 
-            //'precision highp float;\n' +
-            //    'uniform sampler2D uSampler;\n' +
-            //    'uniform float opacity;\n' +
-            //    'varying vec2 v_TexCoord;\n' +
-            //    'void main() {\n' +
-            //    '  vec4 color = texture2D(uSampler, v_TexCoord);' +
-            //    '  color.a = opacity;' +
-            //    '  gl_FragColor = color;\n' +
-            //    '}\n';
-
-            //uniform float opacity;
-            //vec4 color = texture2D(u_tex, v_texCoord);
-            //color.a = 0.5;
+                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a != 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { color.a = opacity; } \n              else \n                { discard; } \n              gl_FragColor = color;\n \n            }\n\n            ";
 
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
         }
@@ -1595,7 +1580,7 @@
         ImageFboDrawProgram.prototype.constructor = ImageFboDrawProgram;
 
         //    draw(matrix, tilecontent)
-        ImageFboDrawProgram.prototype.draw_tile = function draw_tile (fbo, tree_setting) {
+        ImageFboDrawProgram.prototype.draw_fbo = function draw_fbo (fbo, tree_setting) {
             //console.log('drawprograms.js fbo:', fbo)
             if (fbo === null) {
                 console.log('drawprograms.js fbo is null:', fbo);
@@ -1937,7 +1922,7 @@
         };
 
 
-        PolygonDrawProgram.prototype.draw_tile_fbo = function draw_tile_fbo (matrix, tile, tree_setting, width, height) {
+        PolygonDrawProgram.prototype.draw_tile_into_fbo = function draw_tile_into_fbo (matrix, tile, tree_setting, width, height) {
             // guard: if no data in the tile, we will skip rendering
             var triangleVertexPosBufr = tile.content.polygon_triangleVertexPosBufr;
             if (triangleVertexPosBufr === null) {
@@ -1950,6 +1935,8 @@
             gl.useProgram(shaderProgram);
             gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
             gl.viewport(0, 0, width, height);
+
+            //var readout = new Uint8Array(4);
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
@@ -2136,7 +2123,6 @@
 
     var Renderer = function Renderer(gl, canvas, ssctrees) {
         this.gl = gl;
-        this.canvas = canvas;
         this.ssctrees = ssctrees;
         this.settings = {
             boundary_width: 0.2,
@@ -2183,10 +2169,21 @@
 
         //draw from the last layer to the first layer; first layer will be on top
         for (var i = steps.length - 1; i >= 0; i--) {
+            var ssctree = this.ssctrees[i];
+
+            var low_scale = ssctree.tree_setting.low_scale;
+            var high_scale = ssctree.tree_setting.high_scale;
+            if (low_scale != null && St < low_scale) {
+                continue
+            }
+            if (high_scale != null && St > high_scale) {
+                continue
+            }
+
             //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
             this._clearDepth();
             this._clearDepthFbo();
-            var ssctree = this.ssctrees[i];
+                
             //console.log('render.js render ssctree:', ssctree)
             var step = steps[i] - 0.001; //to compensate with the rounding problems
 
@@ -2242,24 +2239,16 @@
 
             if (tree_setting.datatype == 'polygon') {
                 var polygon_draw_program = this.programs[0];
-                //let fbo = null
-                //let fbo = initFramebufferObject(gl, canvas.width, canvas.height);
-                ////console.log('render.js canvas.width:', canvas.width)
-                ////console.log('render.js gl.width:', gl.width)
-                ////console.log('render.js canvas.height:', canvas.height)
-                ////console.log('render.js gl.height:', gl.height)
-                //fbo.width = canvas.width
-                //fbo.height = canvas.height
-                //gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
                 //console.log('')
                 tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    polygon_draw_program.draw_tile_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
                     //console.log('render.js fbo:', fbo)
                 });
 
                 var image_fbo_program = new ImageFboDrawProgram(gl);
-                image_fbo_program.draw_tile(gl.fbo, tree_setting);
+                image_fbo_program.draw_fbo(gl.fbo, tree_setting);
 
 
                 // If we want to draw lines twice -> thick line under / small line over
@@ -2327,7 +2316,6 @@
     Renderer.prototype._clearColorFbo = function _clearColorFbo () {
         var gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
-        //gl.clearColor(0.999, 0.999, 0.999, 0);
         gl.clearColor(1, 1, 1, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);
@@ -2731,6 +2719,7 @@
 
     };
 
+    //import { facecount, setfacecount, readfacecount} from "./parse.js"
     //import { require } from "./require"
     //var SortedMap = require("collections/sorted-map");
     //import { fromArray } from '@collectable/sorted-set';
@@ -2899,6 +2888,34 @@
             });
     };
 
+    SSCTree.prototype.get_relevant_tiles = function get_relevant_tiles (box3d) {
+        if (this.tree === null) { return [] }
+
+        var overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d);
+        return overlapped_dataelements
+            .map(function (elem) { // set for each tile to be rendered the last accessed time
+                elem.last_touched = _now();
+                return elem
+            })
+    };
+
+    SSCTree.prototype.prepare_active_tiles = function prepare_active_tiles (near, transform, gl) {
+        var matrix = transform.world_square;
+        var far = -0.5;
+        matrix[10] = -2.0 / (near - far);
+        matrix[14] = (near + far) / (near - far);
+        var box2d = transform.getVisibleWorld();
+        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
+        //console.log('ssctree.js facecount:', readfacecount())
+        //setfacecount();
+        //box3d = [0, 300000, 0, 280000, 620000, 0]
+        //let gl = this.getWebGLContext();
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        this.fetch_tiles(box3d, gl);
+        return [matrix, box3d]
+    };
+
     SSCTree.prototype.fetch_tiles = function fetch_tiles (box3d, gl) {
             var this$1 = this;
 
@@ -2966,30 +2983,6 @@
 
     };
 
-    SSCTree.prototype.get_relevant_tiles = function get_relevant_tiles (box3d) {
-        if (this.tree === null) { return [] }
-
-        var overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d);
-        return overlapped_dataelements
-            .map(function (elem) { // set for each tile to be rendered the last accessed time
-                elem.last_touched = _now();
-                return elem
-            })
-    };
-
-    SSCTree.prototype.prepare_active_tiles = function prepare_active_tiles (near, transform, gl) {
-        var matrix = transform.world_square;
-        var far = -0.5;
-        matrix[10] = -2.0 / (near - far);
-        matrix[14] = (near + far) / (near - far);
-        var box2d = transform.getVisibleWorld();
-        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
-        //let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
-        this.fetch_tiles(box3d, gl);
-        return [matrix, box3d]
-    };
 
     SSCTree.prototype.get_step_from_St = function get_step_from_St (St) {
 
@@ -3002,6 +2995,7 @@
         var reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2);
         console.log('ssctree.js reductionf:', reductionf);
         var step = this.tree.metadata.no_of_objects_Nb * reductionf; //step is not necessarily an integer
+        console.log('ssctree.js step:', step);
         console.log('ssctree.js Nt:', this.tree.metadata.no_of_objects_Nb - step);
 
         return step
@@ -3408,8 +3402,7 @@
 
 
 
-    var Evictor = function Evictor(ssctrees, gl)
-    {
+    var Evictor = function Evictor(ssctrees, gl) {
         this.ssctrees = ssctrees;
         this.gl = gl;
     };
@@ -3425,45 +3418,46 @@
     // - is it currently displayed
     // - ... ?
     */
-    Evictor.prototype.evict = function evict (box3ds)
-    {
+    Evictor.prototype.evict = function evict (box3ds) {
         var gl = this.gl;
         var to_evict = [];
         if (this.ssctrees.length == 0) { return; }
 
+        //this.ssctrees.forEach(ssctree => {})
         for (var i = 0; i < this.ssctrees.length; i++) {
             var dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(function (elem) { return elem.loaded });
             //console.log('number of loaded tiles: ' + dataelements.length)
-            dataelements.forEach(
-                function (tile) {
-                    try {
-                        // remove tiles that were rendered more than 3 seconds ago
-                        // and that are currently not on the screen
-                        if (tile.last_touched !== null && (tile.last_touched + 3000) < _now()
-                            && !overlaps3d(box3ds[i], tile.box)) {
-                            to_evict.push(tile);
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        console.log('ssctree.js evict box3ds[i]:', box3ds[i]);
-                        console.log('ssctree.js evict tile.box:', tile.box);
+            dataelements.forEach(function (tile) {
+                try {
+                    // remove tiles that were rendered more than 3 seconds ago
+                    // and that are currently not on the screen
+                    if (tile.last_touched !== null && (tile.last_touched + 3000) < _now()
+                        && !overlaps3d(box3ds[i], tile.box)) {
+                        to_evict.push(tile);
                     }
-
-
-                    //if (box3ds[i] == null) {
-                    //console.log('ssctree.js evict box3ds[i] is null')
-                    //}
-                    //if (tile.box == null) {
-                    //console.log('ssctree.js evict tile.box is null')
-                    //}
+                } catch (e) {
+                    console.error(e);
+                    console.log('ssctree.js evict box3ds[i]:', box3ds[i]);
+                    console.log('ssctree.js evict tile.box:', tile.box);
                 }
-            );
+
+
+                //if (box3ds[i] == null) {
+                //console.log('ssctree.js evict box3ds[i] is null')
+                //}
+                //if (tile.box == null) {
+                //console.log('ssctree.js evict tile.box is null')
+                //}
+            });
             //console.log('number of tiles for which memory will be released: ' + to_evict.length)
             to_evict.forEach(function (tile) {
-                tile.content.destroy(gl);
-                tile.content = null;
+                if (tile.content != null) {
+                    tile.content.destroy(gl);
+                    tile.content = null;
+                }
                 tile.last_touched = null;
                 tile.loaded = false;
+
             });
             // when we have removed tiles, let's clear the screen (both color and depth buffer)
             if (to_evict.length > 0) {
@@ -3722,15 +3716,14 @@
                     //const near = near_St[0]
 
                     box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step]);
-                    this$1.evictor.evict(box3ds);
-                    this$1.render();
-
 
                 });
-
+                this$1.evictor.evict(box3ds);
+                this$1.render();
 
             },
             60 * 1000 * 2.5 // every X mins (expressed in millisec)
+            //10000 // every X mins (expressed in millisec)
         );
 
     };

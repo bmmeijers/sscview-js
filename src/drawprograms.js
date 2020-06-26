@@ -597,7 +597,7 @@ void main()
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         gl.viewport(0, 0, width, height)
 
-        var readout = new Uint8Array(4);
+        //var readout = new Uint8Array(4);
         //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)

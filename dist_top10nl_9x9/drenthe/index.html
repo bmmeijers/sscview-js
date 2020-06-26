@@ -295,7 +295,7 @@
             //more information: https://stackoverflow.com/questions/30863164
             var href = window.location.href;
             var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
-            console.log('window_location:', window_location)
+            // console.log('window_location:', window_location)
 
 
             let tree_setting1 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
@@ -318,6 +318,8 @@
                 'tree_root_file_nm': 'Aanvoergebieden.json',
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
+                'low_scale': null,
+                'high_scale': 100000,
                 'draw_cw_faces': true,
                 'do_depth_test': false,
                 'do_blend': false,
@@ -332,6 +334,8 @@
                 'tree_root_file_nm': 'watershappen2017.json',
                 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 'tile_root_href': window_location + 'data/',
+                'low_scale': 100000,
+                'high_scale': null,
                 'draw_cw_faces': true,
                 'do_depth_test': false,
                 'do_blend': false,
@@ -382,11 +386,12 @@
                 'canvas_nm': canvas_nm,
                 'tree_settings': [ //we will draw from the                 
                     tree_setting4, 
-                    tree_setting5,
+                    
                     // tree_setting4,                                        
                     // tree_setting1, 
                     // tree_setting2, 
                     // tree_setting3,
+                    // tree_setting5,
                 ],
                 'interaction_defaults': []
             }

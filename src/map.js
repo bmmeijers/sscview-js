@@ -162,15 +162,14 @@ class Map {
                     //const near = near_St[0]
 
                     box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step])
-                    this.evictor.evict(box3ds)
-                    this.render()
-
 
                 })
-
+                this.evictor.evict(box3ds)
+                this.render()
 
             },
             60 * 1000 * 2.5 // every X mins (expressed in millisec)
+            //10000 // every X mins (expressed in millisec)
         )
 
     }

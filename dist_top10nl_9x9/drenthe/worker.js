@@ -1,6 +1,17 @@
 (function () {
     'use strict';
 
+    //export var facecount = 0
+
+    //export function setfacecount() {
+    //    facecount = 0
+    //}
+
+    //export function readfacecount() {
+    //    console.log('parse.js facecount:', facecount)
+    //    return facecount
+    //}
+
     function parse_obj(txt) {
         var fcolor = null;  //feature color
         var step_high = null;
@@ -47,6 +58,8 @@
                 case 'g': {
                     //trianglegroups.push(grouped_triangles)
                     //grouped_triangles = []
+                    //facecount += 1
+                    //console.log('parse.js reading facecount:', facecount)
                     var feature_class = parseInt(words[1].split('_')[0]);
                     fcolor = class_color[feature_class];
                     if (fcolor === undefined) 

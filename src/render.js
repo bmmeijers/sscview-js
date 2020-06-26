@@ -55,10 +55,23 @@ export class Renderer {
 
         //draw from the last layer to the first layer; first layer will be on top
         for (var i = steps.length - 1; i >= 0; i--) {
+            let ssctree = this.ssctrees[i]
+
+            //If both low_scale and high_scale do not exist, the map will be drawn
+            //If low_scale or high_scale exists, we will check if we should draw the map
+            let low_scale = ssctree.tree_setting.low_scale
+            let high_scale = ssctree.tree_setting.high_scale
+            if (low_scale != null && low_scale > St) {
+                continue
+            }
+            if (high_scale != null && high_scale < St) {
+                continue
+            }
+
             //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
             this._clearDepth()
             this._clearDepthFbo()
-            let ssctree = this.ssctrees[i]
+            
             //console.log('render.js render ssctree:', ssctree)
             let step = steps[i] - 0.001 //to compensate with the rounding problems
 

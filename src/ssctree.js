@@ -1,5 +1,6 @@
 import { now } from "./animate"
 import { TileContent } from "./tilecontent"
+//import { facecount, setfacecount, readfacecount} from "./parse.js"
 //import { require } from "./require"
 //var SortedMap = require("collections/sorted-map");
 //import { fromArray } from '@collectable/sorted-set';
@@ -165,6 +166,34 @@ export class SSCTree {
             })
     }
 
+    get_relevant_tiles(box3d) {
+        if (this.tree === null) { return [] }
+
+        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
+        return overlapped_dataelements
+            .map(elem => { // set for each tile to be rendered the last accessed time
+                elem.last_touched = now();
+                return elem
+            })
+    }
+
+    prepare_active_tiles(near, transform, gl) {
+        let matrix = transform.world_square
+        const far = -0.5
+        matrix[10] = -2.0 / (near - far)
+        matrix[14] = (near + far) / (near - far)
+        const box2d = transform.getVisibleWorld()
+        let box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+        //console.log('ssctree.js facecount:', readfacecount())
+        //setfacecount();
+        //box3d = [0, 300000, 0, 280000, 620000, 0]
+        //let gl = this.getWebGLContext();
+        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
+        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        this.fetch_tiles(box3d, gl)
+        return [matrix, box3d]
+    }
+
     fetch_tiles(box3d, gl) {
         if (this.tree === null) { return }
         //console.log('ssctree.js fetch_tiles, this.tree_setting.tree_root_file_nm 1:', this.tree_setting.tree_root_file_nm)
@@ -230,30 +259,6 @@ export class SSCTree {
 
     }
 
-    get_relevant_tiles(box3d) {
-        if (this.tree === null) { return [] }
-
-        let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
-        return overlapped_dataelements
-            .map(elem => { // set for each tile to be rendered the last accessed time
-                elem.last_touched = now();
-                return elem
-            })
-    }
-
-    prepare_active_tiles(near, transform, gl) {
-        let matrix = transform.world_square
-        const far = -0.5
-        matrix[10] = -2.0 / (near - far)
-        matrix[14] = (near + far) / (near - far)
-        const box2d = transform.getVisibleWorld()
-        const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-        //let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
-        this.fetch_tiles(box3d, gl)
-        return [matrix, box3d]
-    }
 
     get_step_from_St(St) {
 
@@ -264,9 +269,11 @@ export class SSCTree {
 
         // reduction in percentage
         let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        console.log('ssctree.js reductionf:', reductionf)
+        //console.log('ssctree.js reductionf:', reductionf)
         let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        console.log('ssctree.js Nt:', this.tree.metadata.no_of_objects_Nb - step)
+        //let step = this.tree.metadata.no_of_steps_Ns * reductionf
+        //console.log('ssctree.js step:', step)
+        //console.log('ssctree.js Nt:', this.tree.metadata.no_of_objects_Nb - step)
 
         return step
     }
@@ -302,8 +309,8 @@ export class SSCTree {
             && newstep > step_highs[0] - 0.001
             && newstep < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            console.log('ssctree.js step_highs:', step_highs)
-            console.log('ssctree.js step:', newstep)
+            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js step:', newstep)
             
 
             let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
@@ -498,13 +505,6 @@ function obtain_overlapped_dataelements(node, box3d) {
                 if (overlaps3d(node.box, box3d)) {
                     stack.push(child)
                 }
-
-                if (node.box == null) {
-                    console.log('ssctree.js obtain_overlapped_dataelements node.box is null')
-                }
-                if (box3d == null) {
-                    console.log('ssctree.js obtain_overlapped_dataelements box3d 1 is null')
-                }
             });
         }
 
@@ -514,14 +514,6 @@ function obtain_overlapped_dataelements(node, box3d) {
             node.dataelements.forEach(element => {
                 if (overlaps3d(element.box, box3d)) {
                     result.push(element)
-                }
-
-
-                if (element.box == null) {
-                    console.log('ssctree.js obtain_overlapped_dataelements element.box is null')
-                }
-                if (box3d == null) {
-                    console.log('ssctree.js obtain_overlapped_dataelements box3d 2 is null')
                 }
             });
         }
@@ -548,13 +540,6 @@ function obtain_overlapped_subtrees(node, box3d) {
                     && overlaps3d(child.box, box3d)) {
                     result.push(child)
                     child.loaded = true;
-                }
-
-                if (child.box == null) {
-                    console.log('ssctree.js obtain_overlapped_subtrees child.box is null')
-                }
-                if (box3d == null) {
-                    console.log('ssctree.js obtain_overlapped_subtrees box3d is null')
                 }
             });
         }
@@ -671,8 +656,7 @@ class WorkerHelper {
 
 
 export class Evictor {
-    constructor(ssctrees, gl)
-    {
+    constructor(ssctrees, gl) {
         this.ssctrees = ssctrees
         this.gl = gl
     }
@@ -688,45 +672,46 @@ export class Evictor {
     // - is it currently displayed
     // - ... ?
     */
-    evict(box3ds)
-    {
+    evict(box3ds) {
         let gl = this.gl
         let to_evict = []
         if (this.ssctrees.length == 0) { return; }
 
+        //this.ssctrees.forEach(ssctree => {})
         for (var i = 0; i < this.ssctrees.length; i++) {
             let dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(elem => { return elem.loaded })
             //console.log('number of loaded tiles: ' + dataelements.length)
-            dataelements.forEach(
-                tile => {
-                    try {
-                        // remove tiles that were rendered more than 3 seconds ago
-                        // and that are currently not on the screen
-                        if (tile.last_touched !== null && (tile.last_touched + 3000) < now()
-                            && !overlaps3d(box3ds[i], tile.box)) {
-                            to_evict.push(tile)
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        console.log('ssctree.js evict box3ds[i]:', box3ds[i])
-                        console.log('ssctree.js evict tile.box:', tile.box)
+            dataelements.forEach(tile => {
+                try {
+                    // remove tiles that were rendered more than 3 seconds ago
+                    // and that are currently not on the screen
+                    if (tile.last_touched !== null && (tile.last_touched + 3000) < now()
+                        && !overlaps3d(box3ds[i], tile.box)) {
+                        to_evict.push(tile)
                     }
-
-
-                    //if (box3ds[i] == null) {
-                    //    console.log('ssctree.js evict box3ds[i] is null')
-                    //}
-                    //if (tile.box == null) {
-                    //    console.log('ssctree.js evict tile.box is null')
-                    //}
+                } catch (e) {
+                    console.error(e);
+                    console.log('ssctree.js evict box3ds[i]:', box3ds[i])
+                    console.log('ssctree.js evict tile.box:', tile.box)
                 }
-            )
+
+
+                //if (box3ds[i] == null) {
+                //    console.log('ssctree.js evict box3ds[i] is null')
+                //}
+                //if (tile.box == null) {
+                //    console.log('ssctree.js evict tile.box is null')
+                //}
+            })
             //console.log('number of tiles for which memory will be released: ' + to_evict.length)
             to_evict.forEach(tile => {
-                tile.content.destroy(gl)
-                tile.content = null
+                if (tile.content != null) {
+                    tile.content.destroy(gl)
+                    tile.content = null
+                }
                 tile.last_touched = null
                 tile.loaded = false
+
             })
             // when we have removed tiles, let's clear the screen (both color and depth buffer)
             if (to_evict.length > 0) {
