@@ -53,7 +53,7 @@ var dist_folder = 'dist_top10nl_9x9/';
 // dist_folder += 'one-triangle';
 // dist_folder += 'one-polygon';
 // dist_folder += 'drenthe';
-dist_folder += 'netherlands';
+dist_folder += 'nl';
 
 // var dist_folder = 'dist_top10nl_9x9_0.1';
 // var dist_folder = 'dist_top10nl_9x9_0.01';

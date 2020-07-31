@@ -42,9 +42,12 @@ class Map {
 
         this._action = 'zoomAnimated' //if we are zooming, we may want to snap to a valid state
         this._abort = null
-        this._transform = new Transform(map_setting.initialization.center2d,
-                                        [this.getCanvasContainer().width, this.getCanvasContainer().height],
-                                        map_setting.initialization.scale_den)
+
+        
+        this._transform = new Transform(
+            map_setting.initialization.center2d,
+            [this._container.width, this._container.height],
+            map_setting.initialization.scale_den)
 
         /* settings for zooming and panning */
         this._interaction_settings = {
@@ -111,7 +114,7 @@ class Map {
 
         this.subscribe_scale()
 
-        var layercontrol = new LayerControl(this, map_setting.tree_settings)
+        var layercontrol = new LayerControl(this, map_setting)
         layercontrol.add_layercontrols("fieldsets-rendering")
 
         map_setting.tree_settings.forEach((tree_setting) => {

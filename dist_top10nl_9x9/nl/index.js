@@ -162,6 +162,9 @@
         function doMouseDrag(evt) {
             evt.preventDefault();
             var r = canvas.getBoundingClientRect();
+
+            //console.log('mouse.drag.js swiper.style.transform:', document.getElementById('swiper').style.transform)
+
             // for mouse use raw evt, for touches, use first touch location
             var e = evt.touches ? evt.touches[0] : evt;
 
@@ -2138,7 +2141,7 @@
             new ImageTileDrawProgram(gl)
             //new ForegroundDrawProgram(gl)
         ];
-
+        this.canvas = canvas;
         this.setViewport(canvas.width, canvas.height);
         //this.fbo = gl.createFramebuffer();
         //gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
@@ -2228,7 +2231,7 @@
 
         var gl = this.gl;
         var tree_setting = ssctree.tree_setting;
-        var canvas = document.getElementById('canvas');
+        var canvas = this.canvas;
         //console.log('render.js tree_setting:', tree_setting)
         //console.log('render.js tree_setting:', &tree_setting)
         //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
@@ -2329,9 +2332,10 @@
         this.gl.viewport(0, 0, width, height);
     };
 
-    var LayerControl = function LayerControl(map, tree_settings) {
+    var LayerControl = function LayerControl(map, map_setting) {
         this.map = map;
-        this.tree_settings = tree_settings;
+        this.map_setting = map_setting;
+        this.tree_settings = map_setting.tree_settings;
     };
 
     LayerControl.prototype.add_layercontrols = function add_layercontrols (div_id) {
@@ -2344,6 +2348,14 @@
         // newcontainer.class = 'w3-container w3-padding'
         var msgbus = this.map.msgbus;
         var fieldsets_rendering = document.getElementById(div_id);
+
+
+        var canvas_nm = '';
+        if ('canvas_nm' in this.map_setting) {
+            canvas_nm = this.map_setting.canvas_nm + '_';
+        }
+
+        //console.log('layercontro.js this.tree_settings:', this.tree_settings)
 
         this.tree_settings.forEach(function (tree_setting) {
 
@@ -2358,9 +2370,12 @@
             var newlegend = document.createElement("legend");
             newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
 
-            var id_cb = layer_nm + '_cb';
-            var topic_cb = 'setting.layer.' + layer_nm + '_cb';
-            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + layer_nm;
+
+
+            var canvaslyr_nm = canvas_nm + layer_nm;
+            var id_cb = canvaslyr_nm + '_cb';
+            var topic_cb = 'setting.layer.' + canvaslyr_nm + '_cb';
+            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + canvaslyr_nm;
             var cb = document.getElementById(id_cb);
             cb.checked = tree_setting.do_draw;
             cb.value = topic_cb;
@@ -2373,7 +2388,7 @@
 
             //make the slider for the opacity
             var opacity_div = document.createElement("div");
-            opacity_div.id = layer_nm + '_opacity-value';
+            opacity_div.id = canvaslyr_nm + '_opacity-value';
 
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input");
@@ -2388,7 +2403,7 @@
 
 
 
-            var topic = 'setting.layer.' + layer_nm + '_opacity-slider';
+            var topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider';
             msgbus.subscribe(topic, function (topic, message, sender) {
                 // let el = document.getElementById(displayid);
                 opacity_div.innerHTML = 'opacity value: ' + message;
@@ -3577,9 +3592,12 @@
 
         this._action = 'zoomAnimated'; //if we are zooming, we may want to snap to a valid state
         this._abort = null;
-        this._transform = new Transform(map_setting.initialization.center2d,
-                                        [this.getCanvasContainer().width, this.getCanvasContainer().height],
-                                        map_setting.initialization.scale_den);
+
+            
+        this._transform = new Transform(
+            map_setting.initialization.center2d,
+            [this._container.width, this._container.height],
+            map_setting.initialization.scale_den);
 
         /* settings for zooming and panning */
         this._interaction_settings = {
@@ -3646,7 +3664,7 @@
 
         this.subscribe_scale();
 
-        var layercontrol = new LayerControl(this, map_setting.tree_settings);
+        var layercontrol = new LayerControl(this, map_setting);
         layercontrol.add_layercontrols("fieldsets-rendering");
 
         map_setting.tree_settings.forEach(function (tree_setting) {

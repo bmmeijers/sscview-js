@@ -42,6 +42,9 @@ export function dragHandler(map) {
     function doMouseDrag(evt) {
         evt.preventDefault();
         const r = canvas.getBoundingClientRect();
+
+        //console.log('mouse.drag.js swiper.style.transform:', document.getElementById('swiper').style.transform)
+
         // for mouse use raw evt, for touches, use first touch location
         let e = evt.touches ? evt.touches[0] : evt;
 

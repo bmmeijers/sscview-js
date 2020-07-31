@@ -95,6 +95,44 @@
         .prevent-pull-to-refresh {
             touch-action: none;
         }
+
+        .my-legend .legend-title {
+            text-align: left;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 90%;
+        }
+        .my-legend .legend-scale ul {
+            margin: 0;
+            margin-bottom: 5px;
+            padding: 0;
+            float: left;
+            list-style: none;
+        }
+        .my-legend .legend-scale ul li {
+            font-size: 80%;
+            list-style: none;
+            margin-left: 0;
+            line-height: 18px;
+            margin-bottom: 2px;
+        }
+        .my-legend ul.legend-labels li span {
+            display: block;
+            float: left;
+            height: 16px;
+            width: 30px;
+            margin-right: 5px;
+            margin-left: 0;
+            border: 1px solid #999;
+        }
+        .my-legend .legend-source {
+            font-size: 70%;
+            color: #999;
+            clear: both;
+        }
+        .my-legend a {
+            color: #777;
+        }
     </style>
 </head>
 
@@ -174,6 +212,7 @@
             <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
         </div>
         <canvas id="canvas" style="w3-white"></canvas>
+
     </div>
 
     <!--
@@ -209,13 +248,15 @@
                     <fieldset>
                         <legend> zooming duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" 
+                            id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                     <fieldset>
                         <legend> panning duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" 
+                            id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                 </div>
@@ -230,7 +271,8 @@
                             line-width value (mm): <span id="width-value"></span>
                         </div>
                         <div>
-                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" 
+                            id="boundary-width" style="margin: 0 16px 0 16px;"> wide
                         </div>
                     </fieldset>
                 </div>
@@ -243,6 +285,35 @@
             </footer>
         </div>
     </div>
+
+    <footer class="w3-container w3-display-left">
+        <div class="w3-left">
+            <!--class="w3-bar-item w3-padding-small" -->
+
+              <div class="w3-dropdown-click">
+                <button onclick="myFunction()" class="w3-button w3-black">Legend</button>
+                <div id="Demo" class="w3-dropdown-content w3-bar-block w3-border">
+                    <!-- see https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
+                    <div class='my-legend'>
+                        <!-- <div class='legend-title'>The Title or Explanation of your Map</div> -->
+                        <div class='legend-scale'>
+                          <ul class='legend-labels'>
+                            <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
+                            <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
+                            <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
+                            <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
+                            <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
+                          </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
+        <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
+    </div> -->
 
     <footer class="w3-container w3-bottom" style="pointer-events: none;">
         <!--
@@ -262,10 +333,13 @@
 
         <div class="w3-right">
             <!-- FIXME: zooming in with a button should also obey the setting panel; this is not the case at the moment -->
-            <button style="pointer-events: auto;" id="zoomInButton" class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
-            <button style="pointer-events: auto;" id="zoomOutButton" class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
+            <button style="pointer-events: auto;" id="zoomInButton" 
+            class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
+            <button style="pointer-events: auto;" id="zoomOutButton" 
+            class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
         </div>
     </footer>
+
 
 
 
@@ -275,6 +349,15 @@
             let msgbus = new varioscale.MessageBusConnector();
             let topic = cb.value;
             msgbus.publish(topic, cb.checked);
+        }
+
+        function myFunction() {
+            var x = document.getElementById("Demo");
+            if (x.className.indexOf("w3-show") == -1) {
+                x.className += " w3-show";
+            } else {
+                x.className = x.className.replace(" w3-show", "");
+            }
         }
 
         window.addEventListener('DOMContentLoaded', function () {
@@ -321,6 +404,8 @@
                 'draw_cw_faces': true,
                 'do_depth_test': false,                    
                 'do_blend': true, //we must do blending so that the dataset will be transparent
+                'low_scale': null,
+                'high_scale': 300000,                
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -328,9 +413,43 @@
             let tree_setting3 = {
                 'layer_nm' : 'Aan_20200302_Drenthe',
                 'datatype' : 'polygon',
-                'tree_root_file_nm': 'aan-20200302-drenthe.json',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',
+                'tree_root_file_nm': 'aan_20200302_drenthe.json',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',
+                'low_scale': null,
+                'high_scale': 300000,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting7 = {
+                'layer_nm' : 'Aanvoergebieden2_4_test',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'aanvoergebieden2_4_legend_test.json',
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',                
+                'low_scale': null,
+                'high_scale': 300000,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting8 = {
+                'layer_nm' : 'Aanvoergebieden2_5_rect',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'aanvoergebieden2_5_rect.json',
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',                
                 'low_scale': null,
                 'high_scale': 300000,
                 'draw_cw_faces': true,
@@ -341,12 +460,15 @@
             }
 
             let tree_setting4 = {
-                'layer_nm' : 'Aanvoergebieden',
+                'layer_nm' : 'Aanvoergebieden2',
                 'datatype' : 'polygon',
                 'tree_root_file_nm': 'aanvoergebieden2.json',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',
-                'low_scale': 300000,
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',
+                // 'low_scale': 300000,
+                'low_scale': null,
                 'high_scale': 1000000,
                 'draw_cw_faces': true,
                 'do_depth_test': false,
@@ -360,8 +482,8 @@
                 'layer_nm' : 'Watershappen2017',
                 'datatype' : 'polygon',
                 'tree_root_file_nm': 'waterschappen2017.json',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/opacity/nl/data/',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',
                 'low_scale': 1000000,
                 'high_scale': null,
                 'draw_cw_faces': true,
@@ -393,7 +515,7 @@
                     // 'scale_den': 12000, //top10nl, start_scale
                     // 'center2d': [186500.0, 312450.0],     //top10nl
 
-                    'scale_den': 200000, //Drenthe
+                    'scale_den': 100000, //Drenthe
                     'center2d': [257148.828, 533408.562],   //Drenthe
 
                     // 'scale_den': 1200000, //Netherlands
@@ -404,12 +526,13 @@
                 'canvas_nm': canvas_nm,
                 'tree_settings': [ //we will draw from the                 
                   
-                    // tree_setting4,                                        
+                    tree_setting4,                                        
                     // tree_setting1, 
-
-                    tree_setting3, 
-                    tree_setting4,
-                    tree_setting5,
+                    // tree_setting2,
+                    // tree_setting3, 
+                    // tree_setting8,
+                    // tree_setting4,
+                    // tree_setting5,
                     tree_setting6,
                 ],
                 'interaction_defaults': []

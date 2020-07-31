@@ -2,9 +2,10 @@
 
 
 class LayerControl {
-    constructor(map, tree_settings) {
+    constructor(map, map_setting) {
         this.map = map
-        this.tree_settings = tree_settings
+        this.map_setting = map_setting
+        this.tree_settings = map_setting.tree_settings
     }
 
     add_layercontrols(div_id) {
@@ -15,6 +16,14 @@ class LayerControl {
         // newcontainer.class = 'w3-container w3-padding'
         let msgbus = this.map.msgbus;
         var fieldsets_rendering = document.getElementById(div_id)
+
+
+        let canvas_nm = ''
+        if ('canvas_nm' in this.map_setting) {
+            canvas_nm = this.map_setting.canvas_nm + '_'
+        }
+
+        //console.log('layercontro.js this.tree_settings:', this.tree_settings)
 
         this.tree_settings.forEach(tree_setting => {
 
@@ -29,9 +38,12 @@ class LayerControl {
             var newlegend = document.createElement("legend");
             newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
 
-            let id_cb = layer_nm + '_cb'
-            let topic_cb = 'setting.layer.' + layer_nm + '_cb'
-            newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggle_layer(this)"> ` + layer_nm
+
+
+            let canvaslyr_nm = canvas_nm + layer_nm
+            let id_cb = canvaslyr_nm + '_cb'
+            let topic_cb = 'setting.layer.' + canvaslyr_nm + '_cb'
+            newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggle_layer(this)"> ` + canvaslyr_nm
             let cb = document.getElementById(id_cb)
             cb.checked = tree_setting.do_draw
             cb.value = topic_cb
@@ -44,7 +56,7 @@ class LayerControl {
 
             //make the slider for the opacity
             var opacity_div = document.createElement("div");
-            opacity_div.id = layer_nm + '_opacity-value'
+            opacity_div.id = canvaslyr_nm + '_opacity-value'
 
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input")
@@ -59,7 +71,7 @@ class LayerControl {
 
 
 
-            let topic = 'setting.layer.' + layer_nm + '_opacity-slider'
+            let topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider'
             msgbus.subscribe(topic, (topic, message, sender) => {
                 // let el = document.getElementById(displayid);
                 opacity_div.innerHTML = 'opacity value: ' + message;

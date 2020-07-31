@@ -28,7 +28,14 @@ export function moveHandler (map) {
     function doMouseMove(evt)
     {
         //console.log("do hover");
+        //console.log('mouse,move.js swiper.style.transform:', document.getElementById('swiper').style.transform)
+
+
+
         var r = _canvas.getBoundingClientRect();
+
+
+
         var x = evt.clientX - r.left - _canvas.clientLeft;
         var y = evt.clientY - r.top - _canvas.clientTop;
         const transformed = _map.getTransform().backward([x, r.height-y, 0]);

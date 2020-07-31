@@ -24,7 +24,7 @@ export class Renderer {
             new ImageTileDrawProgram(gl)
             //new ForegroundDrawProgram(gl)
         ];
-
+        this.canvas = canvas
         this.setViewport(canvas.width, canvas.height)
         //this.fbo = gl.createFramebuffer();
         //gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
@@ -112,7 +112,7 @@ export class Renderer {
 
         let gl = this.gl
         let tree_setting = ssctree.tree_setting
-        let canvas = document.getElementById('canvas');
+        let canvas = this.canvas;
         //console.log('render.js tree_setting:', tree_setting)
         //console.log('render.js tree_setting:', &tree_setting)
         //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
