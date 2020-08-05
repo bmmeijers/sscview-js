@@ -271,7 +271,7 @@
                 <li>mouse position</li>
             </ul>
         </div>
-        <!-- <canvas id="map1" style="w3-white"></canvas> -->
+        <!-- <canvas id="lmap" style="w3-white"></canvas> -->
 
         <div id='bgright' class='bgred' style="background-color: darkblue; position: absolute; top:0px; left:600px">
             <canvas id="rcanvas" style="background-color: white;"></canvas>
@@ -280,25 +280,6 @@
         <div id='bgleft' class='bgwhite' style="background: darkgreen; position: absolute; top:0px; left:0px">
             <canvas id="lcanvas" style="background-color: white;"></canvas>
         </div>
-
-        <!-- <div id="swiper" class="compare">
-            <div id="swiper-handle" class="compare-swiper">
-            </div>
-        </div> -->
-
-
-
-        <!-- <div id='bgleft' class='map' style="background: darkgreen; width: 1024px; height: 640px; position: absolute;">
-            <canvas id="lcanvas" width="1024" height="640"
-                style="width:1124px; height: 640px; background-color: white;"></canvas>
-        </div>
-
-        <div id='bgright' class='map' style="background-color: darkblue; width: 1024px; height: 640px; position: absolute;">
-            <canvas id="rcanvas" width="1024" height="640"
-                style="width:1124px; height: 640px; background-color: red;"></canvas>
-        </div> -->
-
-
 
     </div>
 
@@ -450,6 +431,8 @@
             rcanvas.width = innerhalf;
             rcanvas.height = innerHeight;
 
+            let swipe_xrelative = 0.5;
+
 
 
 
@@ -464,59 +447,157 @@
             // console.log('window_location:', window_location)
 
 
-            var tree_setting1 = {
-                // 'step_event_nm': 'step_event.json',
-                // 'tree_root_href': window_location + 'data_single/',    // with trailing slash!
-                // 'tile_root_href': window_location + 'data_single/',
-                'layer_nm': 'test_7',
-                'datatype': 'polygon',
+            let tree_setting1 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
+                'layer_nm' : 'Example-7',
+                'datatype' : 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/switch/drenthe/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/switch/drenthe/data/',
-                'low_scale': null,
-                'high_scale': 300000,
-                'draw_cw_faces': false,
+                // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
+                'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
+                'do_blend': true,
+                'opacity': 0.8,
+                'do_draw': true,
+            }   
+
+            let tree_setting2 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
+                'layer_nm' : 'Drenthe',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'tree.json',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
+                'do_blend': true, //we must do blending so that the dataset will be transparent
+                'low_scale': null,
+                'high_scale': 500000,                
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting3 = {
+                'layer_nm' : 'Aan_20200302_Drenthe',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'aan_20200302_drenthe.json',
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',                
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
+                'low_scale': null,
+                'high_scale': 500000,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting4 = {
+                'layer_nm' : 'Aanvoergebieden2_Drenthe',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'aanvoergebieden2_drenthe.json',
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
+                // 'low_scale': 300000,
+                'low_scale': 500000,
+                'high_scale': 1000000,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+            let tree_setting5 = {
+                'layer_nm' : 'Watershappen2017',
+                'datatype' : 'polygon',
+                'tree_root_file_nm': 'waterschappen2017.json',
+                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
+                // 'tile_root_href': window_location + 'data/',                
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
+                'low_scale': 1000000,
+                'high_scale': null,
+                'draw_cw_faces': true,
+                'do_depth_test': false,
+                'do_blend': false,
+                'opacity': 0.5,
+                'do_draw': true,
+            }
+
+
+            let tree_setting6 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
+                'layer_nm' : 'NL-raster', 
+                'datatype' : 'image',
+                'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
+                'tree_root_file_nm': 'tree.json',
+                'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
+                'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
+                'draw_cw_faces': true,
+                'do_depth_test': false,                    
                 'do_blend': true,
                 'opacity': 1,
                 'do_draw': true,
             }
-            var tree_setting2 = Object.assign({}, tree_setting1) //just a shallow copy  
-            // tree_setting2.tree_root_href =  window_location + 'data/'
-            // tree_setting2.tile_root_href =  window_location + 'data/'
 
-            lcenter2d = [186500.0, 312450.0]    //top10nl, center
-            var map_setting1 = {
+            let lcenter2d = [186500.0, 312450.0]    //top10nl, center
+            // let lcenter2d = [257148.828, 533408.562]   //Drenthe
+            var lmap_setting = {
                 'initialization': {
-                    'scale_den': 10000, //top10nl, start_scale
+                    'scale_den': 100000, //top10nl, start_scale
                     'center2d': lcenter2d,     //top10nl, center
                     // 'center2d': [150000, 400000],
                     // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
                     'navigationBar_title': 'Top10NL',
                 },
                 'canvas_nm': lcanvas_nm,
-                'tree_settings': [tree_setting1],
+                'tree_settings': [
+                    tree_setting1, 
+
+
+                //   tree_setting4,                                        
+                //   
+                //   // tree_setting2,
+                //   tree_setting3, 
+                //   // tree_setting8,
+                //   // tree_setting4,
+                //   tree_setting5,
+                //   tree_setting6,
+              ],
                 'interaction_defaults': []
             }
 
             // var rcenter2d = [(lcanvas.width + rcanvas.width)/2 +lcenter2d[0], lcenter2d[1]]
 
 
-            var map_setting2 = Object.assign({}, map_setting1)  //just a shallow copy 
-            map_setting2.canvas_nm = rcanvas_nm
-            map_setting2.tree_settings = [tree_setting2]
+            var rmap_setting = Object.assign({}, lmap_setting)  //just a shallow copy 
+            rmap_setting.canvas_nm = rcanvas_nm
+            rmap_setting.tree_settings = [
+                tree_setting1,
+                
+                //   tree_setting4, 
+                //   // tree_setting2,
+                //   tree_setting3, 
+                //   // tree_setting8,
+                //   // tree_setting4,
+                //   tree_setting5,
+                //   tree_setting2,
+              ]
 
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
-                map_setting1.initialization.navigationBar_title
+                lmap_setting.initialization.navigationBar_title
 
-            let map1 = new varioscale.Map(map_setting1);
-            map1.loadTree();
+            let lmap = new varioscale.Map(lmap_setting);
+            lmap.loadTree();
 
-            let map2 = new varioscale.Map(map_setting2);
-            map2.loadTree();
+            let rmap = new varioscale.Map(rmap_setting);
+            rmap.loadTree();
 
-            createSwiper(innerHeight, map1, map2)
+            createSwiper(innerHeight, lmap, rmap)
 
             function sync_movement(maps) {
                 var _subscription = null;
@@ -542,7 +623,7 @@
                 subscribe_on();
 
             };
-            sync_movement([map1, map2]);
+            sync_movement([lmap, rmap]);
 
             let subscribe_scale = (map) => {
                 let msgbus = new varioscale.MessageBusConnector();
@@ -553,35 +634,48 @@
                     el.textContent = " 1:" + scale;
                 });
             }
-            subscribe_scale(map1);
+            subscribe_scale(lmap);
 
 
 
             // Resize the canvas to span complete screen, when the screen is resized
             // (note, this does include device rotation on mobile)
             var resize = function () {
-                // let canvas = document.getElementById(canvas_nm);
-                // var gl = canvas.getContext("webgl", { antialias: true }) ||
-                //     canvas.getContext("experimental-webgl", { antialias: true });
-                let newWidth = window.innerWidth - hGap;
+
+                let newWidth = window.innerWidth - hGap;                
                 let newHeight = window.innerHeight - vGap;
+                // let new_halfwidth = newWidth / 2
+                let lwidth = swipe_xrelative * newWidth
+                let rwidth = newWidth - lwidth
 
-                map1.resize(newWidth, newHeight);
-                // update the canvas its size with the new size given by the browser
-                lcanvas.width = newWidth
-                lcanvas.height = newHeight
-                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
-                map1.abortAndRender()
-
-                map2.resize(newWidth, newHeight);
-                // update the canvas its size with the new size given by the browser
-                rcanvas.width = newWidth
-                rcanvas.height = newHeight
-                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
-                map2.abortAndRender()
+                // console.log('newWidth:', newWidth)
+                // console.log('lwidth:', lwidth)
+                // console.log('rwidth:', rwidth)
 
                 let swiper = document.getElementById("swiper");
+                swiper.style.transform = `translateX(${lwidth}px)`
+                swiper.style.WebkitTransform = `translateX(${lwidth}px)`
                 swiper.style.height = newHeight + 'px';
+
+                
+                // update the canvas' size with the new size given by the browser
+                lcanvas.width = lwidth
+                lcanvas.height = newHeight
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                lmap.resize(lwidth, newHeight);
+                lmap.abortAndRender()
+
+                
+                // update the canvas its size with the new size given by the browser
+                rcanvas.width = rwidth
+                rcanvas.height = newHeight
+                document.getElementById("bgright").style.left = lwidth + "px";
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                rmap.resize(rwidth, newHeight);
+                rmap.abortAndRender()
+
+                // let swiper = document.getElementById("swiper");
+                
             };
             window.addEventListener('resize', resize, false);
             window.addEventListener('orientationchange', resize);
@@ -655,23 +749,27 @@
 
                 //create the swiper
                 let swiper = document.createElement('div');
+                //add the swiper to the canvas-container
+                let canvas_container = document.getElementById("canvas-container");
+                canvas_container.appendChild(swiper) //we append swiper immediately, so that swiper is 'active'
+
                 swiper.id = 'swiper';
                 swiper.classList.add('compare');
                 swiper.style.height = innerHeight + 'px';
-                let swiperleft = - swiper.offsetWidth / 2
-                swiper.style.left = swiperleft + 'px';
+
+                let swiper_halfwidth = swiper.offsetWidth / 2  //swiper.offsetWidth is the swiper's width
+                swiper.style.left = - swiper_halfwidth + 'px'; //so that the center's x is the same as x-coordiante on the canvas 
                 swiper.style.transform = `translateX(${innerhalf}px)`
                 swiper.style.WebkitTransform = `translateX(${innerhalf}px)`
-
-                //add the swiper to the canvas-container
-                let canvas_container = document.getElementById("canvas-container");
-                canvas_container.appendChild(swiper)
 
                 //create the handle of the swiper and added it to the swiper
                 let swiper_handle = document.createElement('div');
                 swiper_handle.id = 'swiper-handle'
                 swiper_handle.classList.add('compare-swiper');
-                swiper.appendChild(swiper_handle)
+                //By default, the center of the handle is aligned with the left boundary of the swipe
+                swiper.appendChild(swiper_handle) 
+                swiper_handle.style.transform = `translateX(${swiper_halfwidth}px)`
+                swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
                 swiper_handle.addEventListener('mousedown', onDown);
 
 
@@ -690,8 +788,8 @@
                     let pos = `translateX(${x}px)`;
 
                     let swiper = document.getElementById("swiper");
-                    document.getElementById('swiper').style.transform = pos;
-                    document.getElementById('swiper').style.WebkitTransform = pos;
+                    swiper.style.transform = pos;
+                    swiper.style.WebkitTransform = pos;
 
                     resizebyswiper(x)
                 }
@@ -701,9 +799,11 @@
                     let lcanvas = document.getElementById('lcanvas');
                     let rcanvas = document.getElementById('rcanvas');
 
-                    rcanvas.width += lcanvas.width - x
-                    document.getElementById("bgright").style.left = x + "px";
                     lcanvas.width = x
+                    rcanvas.width = window.innerWidth - x
+                    document.getElementById("bgright").style.left = x + "px";
+                    
+                    swipe_xrelative = x / (lcanvas.width + rcanvas.width)
 
                     lmap.resize(lcanvas.width, lcanvas.height);
                     lmap.abortAndRender()

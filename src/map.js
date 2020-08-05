@@ -408,8 +408,11 @@ class Map {
         //console.log("resize");
         let tr = this.getTransform();
         let center = tr.getCenter();
+        //console.log('map.js center:', center)
         let denominator = tr.getScaleDenominator();
         // re-initialize the transform
+        //console.log('map.js newWidth, newHeight:', newWidth, newHeight)
+        //console.log('map.js center:', center)
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
         this.renderer.setViewport(newWidth, newHeight)
