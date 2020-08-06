@@ -448,8 +448,8 @@
 
 
             let tree_setting1 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
-                'layer_nm' : 'Example-7',
-                'datatype' : 'polygon',
+                'layer_nm': 'Example-7',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
                 // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
@@ -459,26 +459,26 @@
                 'do_blend': true,
                 'opacity': 0.8,
                 'do_draw': true,
-            }   
+            }
 
             let tree_setting2 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
-                'layer_nm' : 'Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,                    
+                'do_depth_test': false,
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'low_scale': null,
-                'high_scale': 500000,                
+                'high_scale': null,
                 'opacity': 0.5,
                 'do_draw': true,
             }
 
             let tree_setting3 = {
-                'layer_nm' : 'Aan_20200302_Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aan_20200302_Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aan_20200302_drenthe.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',                
@@ -494,8 +494,8 @@
             }
 
             let tree_setting4 = {
-                'layer_nm' : 'Aanvoergebieden2_Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aanvoergebieden2_Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aanvoergebieden2_drenthe.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',
@@ -512,8 +512,8 @@
             }
 
             let tree_setting5 = {
-                'layer_nm' : 'Watershappen2017',
-                'datatype' : 'polygon',
+                'layer_nm': 'Watershappen2017',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'waterschappen2017.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',                
@@ -530,21 +530,32 @@
 
 
             let tree_setting6 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
-                'layer_nm' : 'NL-raster', 
-                'datatype' : 'image',
+                'layer_nm': 'NL-raster',
+                'datatype': 'image',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,                    
+                'do_depth_test': false,
                 'do_blend': true,
                 'opacity': 1,
                 'do_draw': true,
             }
 
-            let lcenter2d = [186500.0, 312450.0]    //top10nl, center
-            // let lcenter2d = [257148.828, 533408.562]   //Drenthe
+            let common_tree_settings = [
+                // tree_setting1, 
+
+                tree_setting4,
+
+                // tree_setting2,
+                tree_setting3,
+                // tree_setting8,
+                // tree_setting4,
+                tree_setting5,
+            ]
+            // let lcenter2d = [186500.0, 312450.0]    //top10nl, center
+            let lcenter2d = [257148.828, 533408.562]   //Drenthe
             var lmap_setting = {
                 'initialization': {
                     'scale_den': 100000, //top10nl, start_scale
@@ -555,20 +566,13 @@
                 },
                 'canvas_nm': lcanvas_nm,
                 'tree_settings': [
-                    tree_setting1, 
-
-
-                //   tree_setting4,                                        
-                //   
-                //   // tree_setting2,
-                //   tree_setting3, 
-                //   // tree_setting8,
-                //   // tree_setting4,
-                //   tree_setting5,
-                //   tree_setting6,
-              ],
+                    ...common_tree_settings,
+                    tree_setting6,
+                ],
                 'interaction_defaults': []
             }
+
+            lmap_setting.tree_settings.push()
 
             // var rcenter2d = [(lcanvas.width + rcanvas.width)/2 +lcenter2d[0], lcenter2d[1]]
 
@@ -576,16 +580,9 @@
             var rmap_setting = Object.assign({}, lmap_setting)  //just a shallow copy 
             rmap_setting.canvas_nm = rcanvas_nm
             rmap_setting.tree_settings = [
-                tree_setting1,
-                
-                //   tree_setting4, 
-                //   // tree_setting2,
-                //   tree_setting3, 
-                //   // tree_setting8,
-                //   // tree_setting4,
-                //   tree_setting5,
-                //   tree_setting2,
-              ]
+                ...common_tree_settings,
+                tree_setting2,
+            ]
 
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
@@ -642,7 +639,7 @@
             // (note, this does include device rotation on mobile)
             var resize = function () {
 
-                let newWidth = window.innerWidth - hGap;                
+                let newWidth = window.innerWidth - hGap;
                 let newHeight = window.innerHeight - vGap;
                 // let new_halfwidth = newWidth / 2
                 let lwidth = swipe_xrelative * newWidth
@@ -657,7 +654,7 @@
                 swiper.style.WebkitTransform = `translateX(${lwidth}px)`
                 swiper.style.height = newHeight + 'px';
 
-                
+
                 // update the canvas' size with the new size given by the browser
                 lcanvas.width = lwidth
                 lcanvas.height = newHeight
@@ -665,7 +662,7 @@
                 lmap.resize(lwidth, newHeight);
                 lmap.abortAndRender()
 
-                
+
                 // update the canvas its size with the new size given by the browser
                 rcanvas.width = rwidth
                 rcanvas.height = newHeight
@@ -675,7 +672,7 @@
                 rmap.abortAndRender()
 
                 // let swiper = document.getElementById("swiper");
-                
+
             };
             window.addEventListener('resize', resize, false);
             window.addEventListener('orientationchange', resize);
@@ -767,7 +764,7 @@
                 swiper_handle.id = 'swiper-handle'
                 swiper_handle.classList.add('compare-swiper');
                 //By default, the center of the handle is aligned with the left boundary of the swipe
-                swiper.appendChild(swiper_handle) 
+                swiper.appendChild(swiper_handle)
                 swiper_handle.style.transform = `translateX(${swiper_halfwidth}px)`
                 swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
                 swiper_handle.addEventListener('mousedown', onDown);
@@ -782,7 +779,7 @@
                     document.addEventListener('mouseup', onMouseUp);
                 }
 
-                function onMove(e) {                    
+                function onMove(e) {
 
                     let x = getX(e);
                     let pos = `translateX(${x}px)`;
@@ -802,7 +799,7 @@
                     lcanvas.width = x
                     rcanvas.width = window.innerWidth - x
                     document.getElementById("bgright").style.left = x + "px";
-                    
+
                     swipe_xrelative = x / (lcanvas.width + rcanvas.width)
 
                     lmap.resize(lcanvas.width, lcanvas.height);
@@ -829,11 +826,11 @@
             let hGap = 0;
             let newWidth = window.innerWidth - hGap;
             if (x > newWidth) x = newWidth;
-			
+
             return x;
         }
 
-        
+
         function toggle_layer(cb) { //better to put this function into map.js if we can
             let msgbus = new varioscale.MessageBusConnector();
             let topic = cb.value;

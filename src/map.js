@@ -128,7 +128,7 @@ class Map {
         // data load
         //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
-        this.ssctree = this.ssctrees[0]
+        //this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext()
         //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
         initFramebufferObject(this.gl, this._container.width, this._container.height) //set gl.fbo
