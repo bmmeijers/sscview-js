@@ -2467,9 +2467,8 @@
         var msgbus = this.map.msgbus;
         var fieldsets_rendering = document.getElementById(div_id);
 
-
         var canvas_nm = '';
-        if ('canvas_nm' in this.map_setting) {
+        if ('canvas_nm' in this.map_setting && this.map.canvasnm_in_cbnm == true) {
             canvas_nm = this.map_setting.canvas_nm + '_';
         }
 
@@ -3584,8 +3583,9 @@
 
     };
 
-    var Map = function Map(map_setting) {
+    var Map = function Map(map_setting, canvasnm_in_cbnm) {
         var this$1 = this;
+        if ( canvasnm_in_cbnm === void 0 ) canvasnm_in_cbnm = false;
 
         //console.log('map.js test:')
         //console.log('map.js map_setting:', map_setting)
@@ -3600,6 +3600,11 @@
         if (!this._container) {
             throw new Error(("Container '" + container + "' not found."))
         }
+
+        //if we want to include the canvas name in the check box name
+        //when we have two canvases in a comparer, we should have this.canvasnm_in_cbnm == true
+        this.canvasnm_in_cbnm = canvasnm_in_cbnm;
+
 
         // FIXME: to not circle map updates (can this be done more elegantly?)
     //    this._should_broadcast_move = true;
@@ -3621,6 +3626,8 @@
             pan_duration: 1000
         };
         this.if_snap = false; //if we want to snap, then we only snap according to the first dataset
+
+
 
         this.msgbus = new MessageBusConnector();
 

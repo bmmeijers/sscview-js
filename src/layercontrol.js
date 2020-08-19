@@ -17,9 +17,8 @@ class LayerControl {
         let msgbus = this.map.msgbus;
         var fieldsets_rendering = document.getElementById(div_id)
 
-
         let canvas_nm = ''
-        if ('canvas_nm' in this.map_setting) {
+        if ('canvas_nm' in this.map_setting && this.map.canvasnm_in_cbnm == true) {
             canvas_nm = this.map_setting.canvas_nm + '_'
         }
 
@@ -97,6 +96,15 @@ class LayerControl {
         });
     }
 
+}
+
+//this function is indeed used in class LayerControl
+function toggleLayer(cb) { //better to put this function into map.js if we can
+    let msgbus = new varioscale.MessageBusConnector();
+    let topic = cb.value;
+
+    //this topic is subscribed in method add_layercontrols of class LayerControl
+    msgbus.publish(topic, cb.checked);
 }
 
 export default LayerControl

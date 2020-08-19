@@ -22,7 +22,7 @@ import { MessageBusConnector } from './pubsub'
 import { initFramebufferObject } from './drawprograms';
 
 class Map {
-    constructor(map_setting) {
+    constructor(map_setting, canvasnm_in_cbnm = false) {
         //console.log('map.js test:')
         //console.log('map.js map_setting:', map_setting)
         this.ssctrees = []
@@ -36,6 +36,11 @@ class Map {
         if (!this._container) {
             throw new Error(`Container '${container}' not found.`)
         }
+
+        //if we want to include the canvas name in the check box name
+        //when we have two canvases in a comparer, we should have this.canvasnm_in_cbnm == true
+        this.canvasnm_in_cbnm = canvasnm_in_cbnm
+
 
         // FIXME: to not circle map updates (can this be done more elegantly?)
 //        this._should_broadcast_move = true;
@@ -57,6 +62,8 @@ class Map {
             pan_duration: 1000
         };
         this.if_snap = false //if we want to snap, then we only snap according to the first dataset
+
+
 
         this.msgbus = new MessageBusConnector()
 

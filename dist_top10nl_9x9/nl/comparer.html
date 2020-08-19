@@ -209,7 +209,8 @@
         <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
         <span class="w3-bar-item">
             <a href="http://www.gdmc.nl/">
-                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg" height="22">
+                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg"
+                    height="22">
             </a>
         </span>
         <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
@@ -381,7 +382,8 @@
 
 
             <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
-                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="logo.svg" height="30">
+                <img class="w3-margin-top w3-margin-bottom tu-shadow"
+                    src="https://pengdlzn.github.io/webmaps/decorations/logo.svg" height="30">
             </a>
         </div>
 
@@ -585,10 +587,10 @@
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
                 lmap_setting.initialization.navigationBar_title
 
-            let lmap = new varioscale.Map(lmap_setting);
+            let lmap = new varioscale.Map(lmap_setting, true);
             lmap.loadTree();
 
-            let rmap = new varioscale.Map(rmap_setting);
+            let rmap = new varioscale.Map(rmap_setting, true);
             rmap.loadTree();
 
             createSwiper(innerHeight, lmap, rmap)
@@ -842,15 +844,6 @@
             if (x > newWidth - 1) x = newWidth - 1;
 
             return x;
-        }
-
-
-        function toggleLayer(cb) { //better to put this function into map.js if we can
-            let msgbus = new varioscale.MessageBusConnector();
-            let topic = cb.value;
-
-            //this topic is subscribed in layercontrol.js
-            msgbus.publish(topic, cb.checked);
         }
 
         function toggleLegend() {

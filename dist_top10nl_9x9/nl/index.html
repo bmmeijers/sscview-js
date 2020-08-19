@@ -162,7 +162,8 @@
         <span class="w3-bar-item">
             <a href="http://www.gdmc.nl/">
                 <!-- <img class="tu-shadow" src="gdmc-cube.min.svg" height="22"> -->
-                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg" height="22">
+                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg"
+                    height="22">
             </a>
         </span>
         <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
@@ -633,14 +634,6 @@
             };
             document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
         });
-
-        function toggleLayer(cb) { //better to put this function into map.js if we can
-            let msgbus = new varioscale.MessageBusConnector();
-            let topic = cb.value;
-
-            //this topic is subscribed in layercontrol.js
-            msgbus.publish(topic, cb.checked);
-        }
 
         function toggleLegend() {
             var x = document.getElementById("Demo");
