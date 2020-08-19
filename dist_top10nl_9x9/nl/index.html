@@ -1,5 +1,6 @@
 ﻿<!doctype html>
 <html>
+
 <head>
     <title>Vario-scale Maps Demo</title>
     <meta charset="UTF-8">
@@ -7,13 +8,17 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-    <link rel="stylesheet" href="w3.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 
     <script type="text/javascript" src="index.js?id=5"></script>
     <link rel="prefetch" href="worker.js">
 
-    <!-- see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error# -->
-    <link rel="shortcut icon" href="#">
+    <!-- the icon for the tab of a web page-->
+    <link href="https://pengdlzn.github.io/webmaps/icons/gdmc-cube.min.svg" rel="shortcut icon"
+        type="image/vnd.microsoft.icon" />
+    <!-- the icon for the tab of a web page: NCG-->
+    <!-- <link href="https://pengdlzn.github.io/events/interactive-online-maps/img/favicon.ico" 
+    rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
 
     <style type="text/css">
         #canvas {
@@ -22,19 +27,21 @@
         }
 
         .tu-shadow {
-            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
-            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
+            -webkit-filter: drop-shadow(1px 1px 2px darkgray);
+            filter: drop-shadow(1px 1px 2px darkgray);
+            /* rgba(255, 255, 255, 0.4) );*/
             /* -webkit-filter: opacity(.6); filter: opacity(.6); */
         }
 
         .tu-blue {
             color: white !important;
-            background-color: rgb(110, 187,213) !important
+            background-color: rgb(110, 187, 213) !important
         }
 
         .tu-right {
             right: 0px;
         }
+
         /*
         #navigationBar {
         border-bottom: 1px solid #ddd;
@@ -85,10 +92,14 @@
             margin: 0px 6px 0 6px;
         }
 
-        legend, label {
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
+        legend,
+        label {
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* IE10+/Edge */
             user-select: none;
         }
 
@@ -102,6 +113,7 @@
             font-weight: bold;
             font-size: 90%;
         }
+
         .my-legend .legend-scale ul {
             margin: 0;
             margin-bottom: 5px;
@@ -109,6 +121,7 @@
             float: left;
             list-style: none;
         }
+
         .my-legend .legend-scale ul li {
             font-size: 80%;
             list-style: none;
@@ -116,6 +129,7 @@
             line-height: 18px;
             margin-bottom: 2px;
         }
+
         .my-legend ul.legend-labels li span {
             display: block;
             float: left;
@@ -125,11 +139,13 @@
             margin-left: 0;
             border: 1px solid #999;
         }
+
         .my-legend .legend-source {
             font-size: 70%;
             color: #999;
             clear: both;
         }
+
         .my-legend a {
             color: #777;
         }
@@ -145,8 +161,8 @@
         <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
         <span class="w3-bar-item">
             <a href="http://www.gdmc.nl/">
-                <img class="tu-shadow"
-                     src="gdmc-cube.min.svg" height="22">
+                <!-- <img class="tu-shadow" src="gdmc-cube.min.svg" height="22"> -->
+                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/icons/gdmc-cube.min.svg" height="22">
             </a>
         </span>
         <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
@@ -164,24 +180,12 @@
         <span class="w3-bar-item" id="scale-denominator">1: scale</span>
 
         <div class="w3-dropdown-click w3-right">
-            <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
+            <button id="toggleMenu" class="w3-button tu-blue">
+                <img src="https://pengdlzn.github.io/webmaps/icons/vertical.svg" height="20"></button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
-            <div id="menu"
-                 class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
+            <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
                 <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
-                <!--
-                <a href="#" class="w3-bar-item w3-button">Link 2</a>
-                <a href="#" class="w3-bar-item w3-button">Link 3</a>
-                <a href="#" class="w3-bar-item w3-button">Link 4</a>
-                <a href="#" class="w3-bar-item w3-button">Link 5</a>
-                <a href="#" class="w3-bar-item w3-button">Link 6</a>
-                <a href="#" class="w3-bar-item w3-button">Link 7</a>
-                <a href="#" class="w3-bar-item w3-button">Link 8</a>
-                <a href="#" class="w3-bar-item w3-button">Link 9</a>
-                <a href="#" class="w3-bar-item w3-button">Link 10</a>
-                <a href="#" class="w3-bar-item w3-button">Link 11</a>
-                -->
             </div>
         </div>
 
@@ -209,7 +213,9 @@
         </div>
         -->
         <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
-            <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
+            <ul id="output" style="font-size: 14px; list-style-type: none;">
+                <li>mouse position</li>
+            </ul>
         </div>
         <canvas id="canvas" style="w3-white"></canvas>
 
@@ -221,14 +227,16 @@
     <!-- The Settings Modal -->
     <div id="settingsModal" class="w3-modal">
         <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content" id= 'modal-content'>
+        <div class="w3-modal-content" id='modal-content'>
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
-            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+            <header class="w3-container w3-light-grey w3-padding">
+                <h2>Interaction settings</h2>
+            </header>
 
             <div class="w3-container w3-padding">
 
-                <div class="setting" id = "interaction-setting">
+                <div class="setting" id="interaction-setting">
                     <fieldset>
                         <legend> zooming factor </legend>
                         <div class="w3-margin">
@@ -248,22 +256,24 @@
                     <fieldset>
                         <legend> zooming duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" 
-                            id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation"
+                                style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                     <fieldset>
                         <legend> panning duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" 
-                            id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation"
+                                style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                 </div>
             </div>
 
-            <header class="w3-container w3-light-grey w3-padding"><h2>Rendering settings</h2></header>
-            <div class="w3-container w3-padding" id = 'container-rendering'>
+            <header class="w3-container w3-light-grey w3-padding">
+                <h2>Rendering settings</h2>
+            </header>
+            <div class="w3-container w3-padding" id='container-rendering'>
                 <div class="setting" id="fieldsets-rendering">
                     <fieldset>
                         <legend> boundary width</legend>
@@ -271,8 +281,8 @@
                             line-width value (mm): <span id="width-value"></span>
                         </div>
                         <div>
-                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" 
-                            id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width"
+                                style="margin: 0 16px 0 16px;"> wide
                         </div>
                     </fieldset>
                 </div>
@@ -290,20 +300,20 @@
         <div class="w3-left">
             <!--class="w3-bar-item w3-padding-small" -->
 
-              <div class="w3-dropdown-click">
-                <button onclick="myFunction()" class="w3-button w3-black">Legend</button>
+            <div class="w3-dropdown-click">
+                <button onclick="toggleLegend()" class="w3-button w3-black">Legend</button>
                 <div id="Demo" class="w3-dropdown-content w3-bar-block w3-border">
                     <!-- see https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
                     <div class='my-legend'>
                         <!-- <div class='legend-title'>The Title or Explanation of your Map</div> -->
                         <div class='legend-scale'>
-                          <ul class='legend-labels'>
-                            <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
-                            <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
-                            <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
-                            <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
-                            <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
-                          </ul>
+                            <ul class='legend-labels'>
+                                <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
+                                <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
+                                <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
+                                <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
+                                <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -327,16 +337,17 @@
 
 
             <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
-                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="logo.svg" height="30">
+                <img class="w3-margin-top w3-margin-bottom tu-shadow"
+                    src="https://pengdlzn.github.io/webmaps/icons/logo.svg" height="30">
             </a>
         </div>
 
         <div class="w3-right">
             <!-- FIXME: zooming in with a button should also obey the setting panel; this is not the case at the moment -->
-            <button style="pointer-events: auto;" id="zoomInButton" 
-            class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
-            <button style="pointer-events: auto;" id="zoomOutButton" 
-            class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
+            <button style="pointer-events: auto;" id="zoomInButton"
+                class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
+            <button style="pointer-events: auto;" id="zoomOutButton"
+                class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
         </div>
     </footer>
 
@@ -345,20 +356,7 @@
 
 
     <script type="text/javascript">
-        function toggle_layer(cb){ //better to put this function into map.js if we can
-            let msgbus = new varioscale.MessageBusConnector();
-            let topic = cb.value;
-            msgbus.publish(topic, cb.checked);
-        }
 
-        function myFunction() {
-            var x = document.getElementById("Demo");
-            if (x.className.indexOf("w3-show") == -1) {
-                x.className += " w3-show";
-            } else {
-                x.className = x.className.replace(" w3-show", "");
-            }
-        }
 
         window.addEventListener('DOMContentLoaded', function () {
 
@@ -382,8 +380,8 @@
 
 
             let tree_setting1 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
-                'layer_nm' : 'Example-7',
-                'datatype' : 'polygon',
+                'layer_nm': 'Example-7',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
                 'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': 'https://pengdlzn.github.io/webmaps/data/nl/example-7',    // with trailing slash!
@@ -393,26 +391,26 @@
                 'do_blend': true,
                 'opacity': 0.8,
                 'do_draw': true,
-            }            
+            }
 
             let tree_setting2 = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
-                'layer_nm' : 'Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,                    
+                'do_depth_test': false,
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'low_scale': null,
-                'high_scale': 500000,                
+                'high_scale': 500000,
                 'opacity': 0.5,
                 'do_draw': true,
             }
 
             let tree_setting3 = {
-                'layer_nm' : 'Aan_20200302_Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aan_20200302_Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aan_20200302_drenthe.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',                
@@ -428,8 +426,8 @@
             }
 
             let tree_setting4 = {
-                'layer_nm' : 'Aanvoergebieden2_Drenthe',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aanvoergebieden2_Drenthe',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aanvoergebieden2_drenthe.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',
@@ -446,8 +444,8 @@
             }
 
             let tree_setting5 = {
-                'layer_nm' : 'Watershappen2017',
-                'datatype' : 'polygon',
+                'layer_nm': 'Watershappen2017',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'waterschappen2017.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',                
@@ -464,14 +462,14 @@
 
 
             let tree_setting6 = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
-                'layer_nm' : 'NL-raster', 
-                'datatype' : 'image',
+                'layer_nm': 'NL-raster',
+                'datatype': 'image',
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                 'tree_root_file_nm': 'tree.json',
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,                    
+                'do_depth_test': false,
                 'do_blend': true,
                 'opacity': 1,
                 'do_draw': true,
@@ -479,13 +477,13 @@
 
 
             let tree_setting7 = {
-                'layer_nm' : 'Aanvoergebieden2_4_test',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aanvoergebieden2_4_test',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aanvoergebieden2_4_legend_test.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',
                 'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',                
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
@@ -496,13 +494,13 @@
             }
 
             let tree_setting8 = {
-                'layer_nm' : 'Aanvoergebieden2_5_rect',
-                'datatype' : 'polygon',
+                'layer_nm': 'Aanvoergebieden2_5_rect',
+                'datatype': 'polygon',
                 'tree_root_file_nm': 'aanvoergebieden2_5_rect.json',
                 // 'tree_root_href': window_location + 'data/',    // with trailing slash!
                 // 'tile_root_href': window_location + 'data/',
                 'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',                
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
@@ -528,10 +526,10 @@
                 },
                 'canvas_nm': canvas_nm,
                 'tree_settings': [ //we will draw from the
-                    tree_setting4,                                        
+                    tree_setting4,
                     // tree_setting1, 
                     // tree_setting2,
-                    tree_setting3, 
+                    tree_setting3,
                     // tree_setting8,
                     // tree_setting4,
                     tree_setting5,
@@ -635,7 +633,25 @@
             };
             document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
         });
+
+        function toggleLayer(cb) { //better to put this function into map.js if we can
+            let msgbus = new varioscale.MessageBusConnector();
+            let topic = cb.value;
+
+            //this topic is subscribed in layercontrol.js
+            msgbus.publish(topic, cb.checked);
+        }
+
+        function toggleLegend() {
+            var x = document.getElementById("Demo");
+            if (x.className.indexOf("w3-show") == -1) {
+                x.className += " w3-show";
+            } else {
+                x.className = x.className.replace(" w3-show", "");
+            }
+        }
     </script>
 
 </body>
+
 </html>

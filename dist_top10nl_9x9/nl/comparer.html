@@ -13,8 +13,9 @@
     <link rel="prefetch" href="worker.js">
 
 
-    <link rel="shortcut icon" href="#">
-
+    <!-- the icon for the tab of a web page-->
+    <link href="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg" rel="shortcut icon"
+        type="image/vnd.microsoft.icon" />
 
     <style type="text/css">
         #lcanvas {
@@ -208,7 +209,7 @@
         <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
         <span class="w3-bar-item">
             <a href="http://www.gdmc.nl/">
-                <img class="tu-shadow" src="gdmc-cube.min.svg" height="22">
+                <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg" height="22">
             </a>
         </span>
         <!--     <input type="text" class="w3-bar-item w3-input" placeholder="Search.."><a href="#" class="w3-bar-item w3-button tu-blue">Go</a>-->
@@ -226,23 +227,12 @@
         <span class="w3-bar-item" id="scale-denominator">1: scale</span>
 
         <div class="w3-dropdown-click w3-right">
-            <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
+            <button id="toggleMenu" class="w3-button tu-blue">
+                <img src="https://pengdlzn.github.io/webmaps/decorations/vertical.svg" height="20"></button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
             <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
                 <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
-                <!--
-                <a href="#" class="w3-bar-item w3-button">Link 2</a>
-                <a href="#" class="w3-bar-item w3-button">Link 3</a>
-                <a href="#" class="w3-bar-item w3-button">Link 4</a>
-                <a href="#" class="w3-bar-item w3-button">Link 5</a>
-                <a href="#" class="w3-bar-item w3-button">Link 6</a>
-                <a href="#" class="w3-bar-item w3-button">Link 7</a>
-                <a href="#" class="w3-bar-item w3-button">Link 8</a>
-                <a href="#" class="w3-bar-item w3-button">Link 9</a>
-                <a href="#" class="w3-bar-item w3-button">Link 10</a>
-                <a href="#" class="w3-bar-item w3-button">Link 11</a>
-                -->
             </div>
         </div>
 
@@ -603,17 +593,17 @@
 
             createSwiper(innerHeight, lmap, rmap)
 
-            let msgbus = new varioscale.MessageBusConnector();
-            msgbus.subscribe('global_msg', (topic, message, sender) => {
-                lmap_setting.tree_settings.forEach(tree_setting => {
-                    console.log('comparer.html left tree_setting:', tree_setting.do_draw)
-                })
+            // let msgbus = new varioscale.MessageBusConnector();
+            // msgbus.subscribe('global_msg', (topic, message, sender) => {
+            //     lmap_setting.tree_settings.forEach(tree_setting => {
+            //         console.log('comparer.html left tree_setting:', tree_setting.do_draw)
+            //     })
 
-                rmap_setting.tree_settings.forEach(tree_setting => {
-                    console.log('comparer.html right tree_setting:', tree_setting.do_draw)
-                })
+            //     rmap_setting.tree_settings.forEach(tree_setting => {
+            //         console.log('comparer.html right tree_setting:', tree_setting.do_draw)
+            //     })
 
-            })
+            // })
 
 
             function sync_movement(maps) {
@@ -854,15 +844,13 @@
             return x;
         }
 
-        
+
         function toggleLayer(cb) { //better to put this function into map.js if we can
             let msgbus = new varioscale.MessageBusConnector();
             let topic = cb.value;
-            // console.log('comparer.html topic:', topic)
 
             //this topic is subscribed in layercontrol.js
             msgbus.publish(topic, cb.checked);
-            // msgbus.publish('global_msg', null);
         }
 
         function toggleLegend() {
