@@ -292,11 +292,21 @@ class Transform {
     }
 
     getScaleDenominator() {
-        let viewport_in_meter = new Rectangle(0, 0,
-            this.viewport.width() / meter_to_pixel,
-            this.viewport.height() / meter_to_pixel)
-        let world_in_meter = this.getVisibleWorld()
-        let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
+
+        let viewport_width_meter = this.viewport.width() / meter_to_pixel
+        let world_width_meter = this.getVisibleWorld().width()
+        let St = world_width_meter / viewport_width_meter
+
+        //let viewport_in_meter = new Rectangle(0, 0,
+        //    this.viewport.width() / meter_to_pixel,
+        //    this.viewport.height() / meter_to_pixel)
+        //let world_in_meter = this.getVisibleWorld()
+        //let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
+        //console.log('transform.js viewport_in_meter.area():', viewport_in_meter.area())
+        //if (viewport_in_meter.area() > 0) {
+        //    St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
+        //}  
+        
         return St
     }
 

@@ -43,14 +43,16 @@ class LayerControl {
             let canvaslyr_nm = canvas_nm + layer_nm
             let id_cb = canvaslyr_nm + '_cb'
             let topic_cb = 'setting.layer.' + canvaslyr_nm + '_cb'
-            newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggle_layer(this)"> ` + canvaslyr_nm
+            newlegend.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggleLayer(this)"> ` + canvaslyr_nm
             let cb = document.getElementById(id_cb)
             cb.checked = tree_setting.do_draw
             cb.value = topic_cb
 
-            msgbus.subscribe(topic_cb, (topic_cb, message, sender) => {
-                tree_setting.do_draw = message //if we want to draw the layer or not
+
+            msgbus.subscribe(topic_cb, (topic_cb, message, sender) => {                
+                tree_setting.do_draw = message //if we want to draw the layer or not                
                 this.map.abortAndRender();
+                //console.log('layercontrol.js tree_setting.do_draw:', tree_setting.do_draw)
             });
 
 

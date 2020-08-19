@@ -226,6 +226,7 @@ class Map {
             })
         }
 
+        //console.log('map.js St:', St)
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
 
         this.renderer.render_ssctrees(steps, this.getTransform(), St)
@@ -315,7 +316,7 @@ class Map {
     animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -349,7 +350,7 @@ class Map {
 
     zoom(x, y, zoom_factor) {
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     }
 
@@ -439,6 +440,23 @@ class Map {
         })
     }
 
+    //subscribe_cb() {
+    //    let msgbus = this.msgbus;
+    //    msgbus.subscribe('map.scale', (topic, message, sender) => {
+    //        if (sender !== msgbus.id) return;
+    //        const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+    //        let el = document.getElementById("scale-denominator");
+    //        el.textContent = " 1:" + scale;
+    //    })
+
+        //this.tree_settings.forEach(tree_setting => {
+        //    console.log()
+        //    console.log('layercontrol.js tree_setting.layer_nm:', tree_setting.layer_nm)
+        //    console.log('layercontrol.js tree_setting.do_draw :', tree_setting.do_draw)
+        //    //tree_setting.do_draw 
+        //})
+
+    //}
     
 }
 

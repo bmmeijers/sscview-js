@@ -1414,11 +1414,21 @@
     };
 
     Transform.prototype.getScaleDenominator = function getScaleDenominator () {
-        var viewport_in_meter = new Rectangle(0, 0,
-            this.viewport.width() / meter_to_pixel,
-            this.viewport.height() / meter_to_pixel);
-        var world_in_meter = this.getVisibleWorld();
-        var St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area());
+
+        var viewport_width_meter = this.viewport.width() / meter_to_pixel;
+        var world_width_meter = this.getVisibleWorld().width();
+        var St = world_width_meter / viewport_width_meter;
+
+        //let viewport_in_meter = new Rectangle(0, 0,
+        //this.viewport.width() / meter_to_pixel,
+        //this.viewport.height() / meter_to_pixel)
+        //let world_in_meter = this.getVisibleWorld()
+        //let St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
+        //console.log('transform.js viewport_in_meter.area():', viewport_in_meter.area())
+        //if (viewport_in_meter.area() > 0) {
+        //St = Math.sqrt(world_in_meter.area() / viewport_in_meter.area())
+        //}  
+            
         return St
     };
 
@@ -2119,6 +2129,112 @@
         gl.fbo = framebuffer; //fbo: frambuffer object
     }
 
+    // from https://github.com/kelektiv/node-uuid
+    // mit license
+
+    // Lookup Table
+    //let byteToHex = [];
+
+    //for (let i = 0; i < 256; ++i) {
+    //    byteToHex[i] = (i + 0x100).toString(16).substr(1);
+    //}
+
+    //function bytesToUuid(buf, offset) {
+    //    let i = offset || 0;
+    //    let bth = byteToHex;
+    //    // join used to fix memory issue caused by concatenation: 
+    //    // https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
+    //    return ([bth[buf[i++]], bth[buf[i++]],
+    //    bth[buf[i++]], bth[buf[i++]], '-',
+    //    bth[buf[i++]], bth[buf[i++]], '-',
+    //    bth[buf[i++]], bth[buf[i++]], '-',
+    //    bth[buf[i++]], bth[buf[i++]], '-',
+    //    bth[buf[i++]], bth[buf[i++]],
+    //    bth[buf[i++]], bth[buf[i++]],
+    //    bth[buf[i++]], bth[buf[i++]]]).join('');
+    //}
+
+    //function mathRNG() {
+    //    let rnds = new Array(16);
+    //    for (let i = 0, r; i < 16; i++) {
+    //        if ((i & 0x03) === 0) {
+    //            r = Math.random() * 0x100000000;
+    //        }
+    //        rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    //    }
+    //    return rnds;
+    //}
+
+    function getUuid() {
+    //    let x = mathRNG();
+    //    return bytesToUuid(x);
+        return Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
+    }
+    // end: from https://github.com/kelektiv/node-uuid
+
+
+    var MessageBus = function MessageBus() {
+        this._topics = {}; // {topic: [subscriberFn, ...], ...}
+    };
+
+    MessageBus.prototype.publish = function publish (topic, message, sender) {
+        // console.log('publish invoked ' + topic + ' ' + sender + ' ' + message);
+        if (sender === null) {
+            sender = 0;
+        }
+        var subscribers = this._topics[topic];
+        if (!subscribers) {
+            return false;
+        }
+        subscribers.forEach(function (subscriberFn) {
+            setTimeout(subscriberFn(topic, message, sender), 0);
+        });
+
+        return true;
+    };
+
+    MessageBus.prototype.subscribe = function subscribe (topic, func) {
+            var this$1 = this;
+
+        // if the topic list does not exist yet, make one
+        if (!this._topics[topic]) {
+            this._topics[topic] = [];
+        }
+        // add the topic to the list
+        this._topics[topic].push(func);
+        // return reference to arrow function that removes subscription, once invoked
+        return {
+            remove: (function () {
+                // console.log('Invoking remove')
+                // console.log(this._topics[topic])
+                // console.log('old length ' + this._topics[topic].length)
+                var index = this$1._topics[topic].indexOf(func);
+                // console.log(index)
+                this$1._topics[topic].splice(index, 1);
+                // console.log('new length ' + this._topics[topic].length)
+                if (this$1._topics[topic].length === 0) {
+                    delete this$1._topics[topic];
+                }
+            })
+        }
+    };
+
+    var instance = new MessageBus();
+    Object.freeze(instance);
+
+
+    var MessageBusConnector = function MessageBusConnector() {
+        this.id = getUuid();
+    };
+
+    MessageBusConnector.prototype.publish = function publish (topic, message) {
+        return instance.publish(topic, message, this.id)
+    };
+
+    MessageBusConnector.prototype.subscribe = function subscribe (topic, func) {
+        return instance.subscribe(topic, func)
+    };
+
     // FIXME: rename draw to renderFunc ?
 
 
@@ -2233,12 +2349,14 @@
         var tree_setting = ssctree.tree_setting;
         var canvas = this.canvas;
         //console.log('render.js tree_setting:', tree_setting)
+        //console.log('render.js tree_setting.do_draw:', tree_setting.do_draw)
         //console.log('render.js tree_setting:', &tree_setting)
         //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
         //console.log('render.js box3d:', box3d)
         //console.log('render.js near_St:', near_St)
 
         var tiles = ssctree.get_relevant_tiles(box3d);
+
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
 
@@ -2375,14 +2493,16 @@
             var canvaslyr_nm = canvas_nm + layer_nm;
             var id_cb = canvaslyr_nm + '_cb';
             var topic_cb = 'setting.layer.' + canvaslyr_nm + '_cb';
-            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggle_layer(this)\"> " + canvaslyr_nm;
+            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + canvaslyr_nm;
             var cb = document.getElementById(id_cb);
             cb.checked = tree_setting.do_draw;
             cb.value = topic_cb;
 
-            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {
-                tree_setting.do_draw = message; //if we want to draw the layer or not
+
+            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {                
+                tree_setting.do_draw = message; //if we want to draw the layer or not                
                 this$1.map.abortAndRender();
+                //console.log('layercontrol.js tree_setting.do_draw:', tree_setting.do_draw)
             });
 
 
@@ -3464,112 +3584,6 @@
 
     };
 
-    // from https://github.com/kelektiv/node-uuid
-    // mit license
-
-    // Lookup Table
-    //let byteToHex = [];
-
-    //for (let i = 0; i < 256; ++i) {
-    //    byteToHex[i] = (i + 0x100).toString(16).substr(1);
-    //}
-
-    //function bytesToUuid(buf, offset) {
-    //    let i = offset || 0;
-    //    let bth = byteToHex;
-    //    // join used to fix memory issue caused by concatenation: 
-    //    // https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
-    //    return ([bth[buf[i++]], bth[buf[i++]],
-    //    bth[buf[i++]], bth[buf[i++]], '-',
-    //    bth[buf[i++]], bth[buf[i++]], '-',
-    //    bth[buf[i++]], bth[buf[i++]], '-',
-    //    bth[buf[i++]], bth[buf[i++]], '-',
-    //    bth[buf[i++]], bth[buf[i++]],
-    //    bth[buf[i++]], bth[buf[i++]],
-    //    bth[buf[i++]], bth[buf[i++]]]).join('');
-    //}
-
-    //function mathRNG() {
-    //    let rnds = new Array(16);
-    //    for (let i = 0, r; i < 16; i++) {
-    //        if ((i & 0x03) === 0) {
-    //            r = Math.random() * 0x100000000;
-    //        }
-    //        rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    //    }
-    //    return rnds;
-    //}
-
-    function getUuid() {
-    //    let x = mathRNG();
-    //    return bytesToUuid(x);
-        return Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
-    }
-    // end: from https://github.com/kelektiv/node-uuid
-
-
-    var MessageBus = function MessageBus() {
-        this._topics = {}; // {topic: [subscriberFn, ...], ...}
-    };
-
-    MessageBus.prototype.publish = function publish (topic, message, sender) {
-        // console.log('publish invoked ' + topic + ' ' + sender + ' ' + message);
-        if (sender === null) {
-            sender = 0;
-        }
-        var subscribers = this._topics[topic];
-        if (!subscribers) {
-            return false;
-        }
-        subscribers.forEach(function (subscriberFn) {
-            setTimeout(subscriberFn(topic, message, sender), 0);
-        });
-
-        return true;
-    };
-
-    MessageBus.prototype.subscribe = function subscribe (topic, func) {
-            var this$1 = this;
-
-        // if the topic list does not exist yet, make one
-        if (!this._topics[topic]) {
-            this._topics[topic] = [];
-        }
-        // add the topic to the list
-        this._topics[topic].push(func);
-        // return reference to arrow function that removes subscription, once invoked
-        return {
-            remove: (function () {
-                // console.log('Invoking remove')
-                // console.log(this._topics[topic])
-                // console.log('old length ' + this._topics[topic].length)
-                var index = this$1._topics[topic].indexOf(func);
-                // console.log(index)
-                this$1._topics[topic].splice(index, 1);
-                // console.log('new length ' + this._topics[topic].length)
-                if (this$1._topics[topic].length === 0) {
-                    delete this$1._topics[topic];
-                }
-            })
-        }
-    };
-
-    var instance = new MessageBus();
-    Object.freeze(instance);
-
-
-    var MessageBusConnector = function MessageBusConnector() {
-        this.id = getUuid();
-    };
-
-    MessageBusConnector.prototype.publish = function publish (topic, message) {
-        return instance.publish(topic, message, this.id)
-    };
-
-    MessageBusConnector.prototype.subscribe = function subscribe (topic, func) {
-        return instance.subscribe(topic, func)
-    };
-
     var Map = function Map(map_setting) {
         var this$1 = this;
 
@@ -3678,7 +3692,7 @@
         // data load
         //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
-        this.ssctree = this.ssctrees[0];
+        //this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext();
         //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
         initFramebufferObject(this.gl, this._container.width, this._container.height); //set gl.fbo
@@ -3780,6 +3794,7 @@
             });
         }
 
+        //console.log('map.js St:', St)
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
 
         this.renderer.render_ssctrees(steps, this.getTransform(), St);
@@ -3873,7 +3888,7 @@
     Map.prototype.animateZoom = function animateZoom (x, y, zoom_factor) {
         var start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         var end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -3907,7 +3922,7 @@
 
     Map.prototype.zoom = function zoom (x, y, zoom_factor) {
         this._interaction_settings.time_factor = this.getTransform().zoom(
-            this.ssctree, zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     };
 

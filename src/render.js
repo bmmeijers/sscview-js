@@ -1,5 +1,5 @@
 import { ImageTileDrawProgram, ImageFboDrawProgram, LineDrawProgram, PolygonDrawProgram} from "./drawprograms";
-
+import { MessageBusConnector } from './pubsub'
 
 // FIXME: rename draw to renderFunc ?
 
@@ -114,12 +114,14 @@ export class Renderer {
         let tree_setting = ssctree.tree_setting
         let canvas = this.canvas;
         //console.log('render.js tree_setting:', tree_setting)
+        //console.log('render.js tree_setting.do_draw:', tree_setting.do_draw)
         //console.log('render.js tree_setting:', &tree_setting)
         //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
         //console.log('render.js box3d:', box3d)
         //console.log('render.js near_St:', near_St)
 
         var tiles = ssctree.get_relevant_tiles(box3d)
+
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
 
