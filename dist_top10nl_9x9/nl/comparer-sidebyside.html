@@ -2,9 +2,8 @@
 <html>
 
 <head>
-    <title>Vario-scale Maps Demo</title>
+    <title>Vario-scale Map Comparer</title>
     <meta charset="UTF-8">
-    <!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
 
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
@@ -13,15 +12,18 @@
     <script type="text/javascript" src="index.js?id=5"></script>
     <link rel="prefetch" href="worker.js">
 
+
     <!-- the icon for the tab of a web page-->
     <link href="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg" rel="shortcut icon"
         type="image/vnd.microsoft.icon" />
-    <!-- the icon for the tab of a web page: NCG-->
-    <!-- <link href="https://pengdlzn.github.io/events/interactive-online-maps/img/favicon.ico" 
-    rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
 
     <style type="text/css">
-        #canvas {
+        #lcanvas {
+            display: block;
+            background: white;
+        }
+
+        #rcanvas {
             display: block;
             background: white;
         }
@@ -150,18 +152,63 @@
             color: #777;
         }
     </style>
+
+
 </head>
 
-<!-- <p hidden id="myP"></p> -->
-
 <body class="w3-white prevent-pull-to-refresh">
-    <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
+
+    <!-- <script src="index.js"></script> -->
+
+    <style>
+        #bgwhite {
+            /* bg: background */
+            background-color: #fff !important;
+            background: white;
+            color: white;
+            /*position: absolute;*/
+            z-index: 1;
+        }
+
+        #bgred {
+            background: red;
+        }
+
+        /* styles for the swiper element / gutter */
+        .compare {
+            /*gutter*/
+            background-color: #3886be;
+            position: absolute;
+            width: 3px;
+            /* height: 640px; */
+            z-index: 1;
+        }
+
+        .compare .compare-swiper {
+            /* swiper handle */
+            background-color: #3887be;
+            box-shadow: inset 0 0 0 3px #fff;
+            display: inline-block;
+            border-radius: 90%;
+            /* border-radius:50%; */
+            /* handle: circle or square */
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            top: 50%;
+            left: -30px;
+            margin: -30px 1px 0;
+            color: #fff;
+            cursor: ew-resize;
+            z-index: 1;
+            background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgICB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiAgIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiICAgd2lkdGg9IjYwIiAgIGhlaWdodD0iNjAiICAgdmVyc2lvbj0iMS4xIiAgIHZpZXdCb3g9IjAgMCA2MCA2MCIgICBpZD0ic3ZnNTQzNCIgICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkxK2RldmVsK29zeG1lbnUgcjEyOTExIiAgIHNvZGlwb2RpOmRvY25hbWU9Imwtci5zdmciPiAgPG1ldGFkYXRhICAgICBpZD0ibWV0YWRhdGE1NDQ0Ij4gICAgPHJkZjpSREY+ICAgICAgPGNjOldvcmsgICAgICAgICByZGY6YWJvdXQ9IiI+ICAgICAgICA8ZGM6Zm9ybWF0PmltYWdlL3N2Zyt4bWw8L2RjOmZvcm1hdD4gICAgICAgIDxkYzp0eXBlICAgICAgICAgICByZGY6cmVzb3VyY2U9Imh0dHA6Ly9wdXJsLm9yZy9kYy9kY21pdHlwZS9TdGlsbEltYWdlIiAvPiAgICAgICAgPGRjOnRpdGxlPjwvZGM6dGl0bGU+ICAgICAgPC9jYzpXb3JrPiAgICA8L3JkZjpSREY+ICA8L21ldGFkYXRhPiAgPGRlZnMgICAgIGlkPSJkZWZzNTQ0MiIgLz4gIDxzb2RpcG9kaTpuYW1lZHZpZXcgICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIgICAgIGJvcmRlcmNvbG9yPSIjNjY2NjY2IiAgICAgYm9yZGVyb3BhY2l0eT0iMSIgICAgIG9iamVjdHRvbGVyYW5jZT0iMTAiICAgICBncmlkdG9sZXJhbmNlPSIxMCIgICAgIGd1aWRldG9sZXJhbmNlPSIxMCIgICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIgICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMTI4NiIgICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9Ijc1MSIgICAgIGlkPSJuYW1lZHZpZXc1NDQwIiAgICAgc2hvd2dyaWQ9InRydWUiICAgICBpbmtzY2FwZTp6b29tPSI0IiAgICAgaW5rc2NhcGU6Y3g9IjI1Ljg4OTgzMSIgICAgIGlua3NjYXBlOmN5PSIzNC4zODE4MzMiICAgICBpbmtzY2FwZTp3aW5kb3cteD0iMCIgICAgIGlua3NjYXBlOndpbmRvdy15PSIyMyIgICAgIGlua3NjYXBlOndpbmRvdy1tYXhpbWl6ZWQ9IjAiICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmc1NDM0IiAgICAgaW5rc2NhcGU6b2JqZWN0LW5vZGVzPSJ0cnVlIiAgICAgaW5rc2NhcGU6c25hcC1zbW9vdGgtbm9kZXM9InRydWUiPiAgICA8aW5rc2NhcGU6Z3JpZCAgICAgICB0eXBlPSJ4eWdyaWQiICAgICAgIGlkPSJncmlkNTk4OSIgLz4gIDwvc29kaXBvZGk6bmFtZWR2aWV3PiAgPHBhdGggICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOjFweDtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2Utb3BhY2l0eToxIiAgICAgZD0iTSAyNSAyNCBMIDE2IDMwIEwgMjUgMzYgTCAyNSAyNCB6IE0gMzUgMjQgTCAzNSAzNiBMIDQ0IDMwIEwgMzUgMjQgeiAiICAgICBpZD0icGF0aDU5OTUiIC8+PC9zdmc+);
+        }
+    </style>
 
     <div class="w3-bar w3-light-grey" id="navigationBar">
         <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
         <span class="w3-bar-item">
             <a href="http://www.gdmc.nl/">
-                <!-- <img class="tu-shadow" src="gdmc-cube.min.svg" height="22"> -->
                 <img class="tu-shadow" src="https://pengdlzn.github.io/webmaps/decorations/gdmc-cube.min.svg"
                     height="22">
             </a>
@@ -203,10 +250,7 @@
 
     </div>
 
-
-
-
-    <div class="w3-display-container">
+    <div id='canvas-container' class="w3-display-container">
         <!--
         <div class="w3-display-bottomright w3-transparent w3-padding-large">
         <button class="w3-button w3-circle w3-red">+</button>
@@ -218,17 +262,21 @@
                 <li>mouse position</li>
             </ul>
         </div>
-        <canvas id="canvas" style="w3-white"></canvas>
+        <!-- <canvas id="lmap" style="w3-white"></canvas> -->
+
+        <div id='bgright' class='bgred' style="background-color: darkblue; position: absolute; top:0px; left:600px">
+            <canvas id="rcanvas" style="background-color: white;"></canvas>
+        </div>
+
+        <div id='bgleft' class='bgwhite' style="background: darkgreen; position: absolute; top:0px; left:0px">
+            <canvas id="lcanvas" style="background-color: white;"></canvas>
+        </div>
 
     </div>
 
-    <!--
-
-    -->
-    <!-- The Settings Modal -->
     <div id="settingsModal" class="w3-modal">
         <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content" id='modal-content'>
+        <div class="w3-modal-content">
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
             <header class="w3-container w3-light-grey w3-padding">
@@ -289,7 +337,7 @@
                 </div>
             </div>
 
-            <footer class="w3-container w3-light-grey w3-padding" id="container-close">
+            <footer class="w3-container w3-light-grey w3-padding">
                 <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
                     Close
                 </button>
@@ -322,10 +370,6 @@
         </div>
     </footer>
 
-    <!-- <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
-        <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
-    </div> -->
-
     <footer class="w3-container w3-bottom" style="pointer-events: none;">
         <!--
         <p class="w3-left w3-margin-top">
@@ -352,29 +396,44 @@
         </div>
     </footer>
 
+    <script>
 
 
+        window.addEventListener('DOMContentLoaded', () => {
 
 
-    <script type="text/javascript">
-
-
-        window.addEventListener('DOMContentLoaded', function () {
-
-            // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
-            let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
-            let canvas_nm = 'canvas'
-            let canvas = document.getElementById(canvas_nm);
-            // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
             let hGap = 0;
             let vGap = document.getElementById("navigationBar").offsetHeight;
-            canvas.width = window.innerWidth - hGap;
-            canvas.height = window.innerHeight - vGap;
+            let innerWidth = window.innerWidth - hGap;
+            let innerHeight = window.innerHeight - vGap;
+            let innerhalf = innerWidth / 2
+            document.getElementById("bgright").style.left = innerhalf + "px";
+
+
+
+
+
+            let lcanvas_nm = 'lcanvas'
+            let lcanvas = document.getElementById(lcanvas_nm);
+            lcanvas.width = innerhalf;
+            lcanvas.height = innerHeight;
+
+            let rcanvas_nm = 'rcanvas'
+            let rcanvas = document.getElementById(rcanvas_nm);
+            rcanvas.width = innerhalf;
+            rcanvas.height = innerHeight;
+
+            let swipe_xrelative = 0.5;
+
+
+
+
 
 
             //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
-            //window_location = https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/
-            //more information: https://stackoverflow.com/questions/30863164
+            //window_location = /gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/q/1368264
+            //https://stackoverflow.com/questions/30863164
             var href = window.location.href;
             var window_location = href.substring(0, href.lastIndexOf('/')) + "/";
             // console.log('window_location:', window_location)
@@ -384,9 +443,9 @@
                 'layer_nm': 'Example-7',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
-                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/data/nl/example-7',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/data/nl/example-7',
+                // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
                 'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
                 'do_blend': true,
@@ -404,7 +463,7 @@
                 'do_depth_test': false,
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'low_scale': null,
-                'high_scale': 500000,
+                'high_scale': null,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -476,94 +535,159 @@
                 'do_draw': true,
             }
 
+            let common_tree_settings = [
+                // tree_setting1, 
 
-            let tree_setting7 = {
-                'layer_nm': 'Aanvoergebieden2_4_test',
-                'datatype': 'polygon',
-                'tree_root_file_nm': 'aanvoergebieden2_4_legend_test.json',
-                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
-                // 'tile_root_href': window_location + 'data/',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/06/data/',
-                'low_scale': null,
-                'high_scale': 500000,
-                'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
-                'opacity': 0.5,
-                'do_draw': true,
-            }
+                tree_setting3,
 
-            let tree_setting8 = {
-                'layer_nm': 'Aanvoergebieden2_5_rect',
-                'datatype': 'polygon',
-                'tree_root_file_nm': 'aanvoergebieden2_5_rect.json',
-                // 'tree_root_href': window_location + 'data/',    // with trailing slash!
-                // 'tile_root_href': window_location + 'data/',
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/07/data/',
-                'low_scale': null,
-                'high_scale': 500000,
-                'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
-                'opacity': 0.5,
-                'do_draw': true,
-            }
-
-            var map_setting = {
+                // tree_setting2,
+                tree_setting4,
+                // tree_setting8,
+                tree_setting5,
+                // tree_setting6,
+            ]
+            // let lcenter2d = [186500.0, 312450.0]    //top10nl, center
+            let lcenter2d = [257148.828, 533408.562]   //Drenthe
+            var lmap_setting = {
                 'initialization': {
-
-                    // 'scale_den': 12000, //top10nl, start_scale
-                    // 'center2d': [186500.0, 312450.0],     //top10nl
-
-                    'scale_den': 100000, //Drenthe
-                    'center2d': [257148.828, 533408.562],   //Drenthe
-
-                    // 'scale_den': 1200000, //Netherlands
-                    // 'center2d': [140000, 460000],   //Netherlands
-
+                    'scale_den': 100000, //top10nl, start_scale
+                    'center2d': lcenter2d,     //top10nl, center
+                    // 'center2d': [150000, 400000],
+                    // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
                     // 'navigationBar_title': 'Top10NL',
                     'navigationBar_title': 'Drenthe',
-
                 },
-                'canvas_nm': canvas_nm,
-                'tree_settings': [ //we will draw from the
-                    tree_setting3,
-                    // tree_setting1, 
-                    // tree_setting2,
-                    tree_setting4,
-                    // tree_setting8,
-                    tree_setting5,
+                'canvas_nm': lcanvas_nm,
+                'tree_settings': [
+                    ...common_tree_settings,
                     tree_setting6,
                 ],
                 'interaction_defaults': []
             }
-            // console.log('index.html, map_setting:', map_setting)
+
+            lmap_setting.tree_settings.push()
+
+            // var rcenter2d = [(lcanvas.width + rcanvas.width)/2 +lcenter2d[0], lcenter2d[1]]
+            let rcommon_tree_settings = []
+            common_tree_settings.forEach(tree_setting => {
+                rcommon_tree_settings.push(Object.assign({}, tree_setting))
+            })
+
+
+            var rmap_setting = Object.assign({}, lmap_setting)  //just a shallow copy 
+
+            rmap_setting.canvas_nm = rcanvas_nm
+            rmap_setting.tree_settings = [
+                ...rcommon_tree_settings,
+                // tree_setting6,
+                tree_setting2,
+            ]
+
 
             document.getElementById("demo_info").textContent = //"Vario-scale demo: " + 
-                map_setting.initialization.navigationBar_title
+                lmap_setting.initialization.navigationBar_title
 
-            // Make a new map instance
-            var map = new varioscale.Map(map_setting);
-            map.loadTree();
+            let lmap = new varioscale.Map(lmap_setting, true);
+            lmap.loadTree();
+
+            let rmap = new varioscale.Map(rmap_setting, true);
+            rmap.loadTree();
+
+            createSwiper(innerHeight, lmap, rmap)
+
+            // let msgbus = new varioscale.MessageBusConnector();
+            // msgbus.subscribe('global_msg', (topic, message, sender) => {
+            //     lmap_setting.tree_settings.forEach(tree_setting => {
+            //         console.log('comparer.html left tree_setting:', tree_setting.do_draw)
+            //     })
+
+            //     rmap_setting.tree_settings.forEach(tree_setting => {
+            //         console.log('comparer.html right tree_setting:', tree_setting.do_draw)
+            //     })
+
+            // })
+
+
+            function sync_movement(maps) {
+                var _subscription = null;
+                let handle = (topic, message, sender) => {
+                    subscribe_off()
+                    maps.forEach((map, index) => {
+                        if (sender !== map.msgbus.id) {
+                            map.jumpTo(message[0][0], message[0][1], message[1]);
+                        }
+                    });
+                    subscribe_on();
+                }
+
+                subscribe_on = () => {
+                    let msgbus = new varioscale.MessageBusConnector();
+                    _subscription = msgbus.subscribe('map.scale', handle);
+                }
+
+                subscribe_off = () => {
+                    _subscription.remove()
+                }
+
+                subscribe_on();
+
+            };
+            sync_movement([lmap, rmap]);
+
+            // let subscribe_scale = (map) => {
+            //     let msgbus = new varioscale.MessageBusConnector();
+            //     msgbus.subscribe('map.scale', (topic, message, sender) => {
+            //         if (sender !== map.msgbus.id) return;
+            //         console.log('comparer.html message[1]:', message[1])
+            //         const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+            //         let el = document.getElementById("scale-denominator");
+            //         el.textContent = " 1:" + scale;
+            //     });
+            // }
+            // subscribe_scale(lmap);
+
+            lmap.subscribe_scale()
 
 
 
             // Resize the canvas to span complete screen, when the screen is resized
             // (note, this does include device rotation on mobile)
             var resize = function () {
-                let canvas = document.getElementById(canvas_nm);
-                // let gl = canvas.getContext("webgl", { antialias: true, alpha: false, premultipliedAlpha: false});
+
                 let newWidth = window.innerWidth - hGap;
                 let newHeight = window.innerHeight - vGap;
+                // let new_halfwidth = newWidth / 2
+                let lwidth = swipe_xrelative * newWidth
+                let rwidth = newWidth - lwidth
 
-                map.resize(newWidth, newHeight);
-                // update the canvas its size with the new size given by the browser
-                canvas.width = newWidth
-                canvas.height = newHeight
+                // console.log('newWidth:', newWidth)
+                // console.log('lwidth:', lwidth)
+                // console.log('rwidth:', rwidth)
+
+                let swiper = document.getElementById("swiper");
+                swiper.style.transform = `translateX(${lwidth}px)`
+                swiper.style.WebkitTransform = `translateX(${lwidth}px)`
+                swiper.style.height = newHeight + 'px';
+
+
+                // update the canvas' size with the new size given by the browser
+                lcanvas.width = lwidth
+                lcanvas.height = newHeight
                 // schedule re-render (FIXME: we should have a API method for this (on the map class?))
-                map.abortAndRender()
+                lmap.resize(lwidth, newHeight);
+                lmap.abortAndRender()
+
+
+                // update the canvas its size with the new size given by the browser
+                rcanvas.width = rwidth
+                rcanvas.height = newHeight
+                document.getElementById("bgright").style.left = lwidth + "px";
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                rmap.resize(rwidth, newHeight);
+                rmap.abortAndRender()
+
+                // let swiper = document.getElementById("swiper");
+
             };
             window.addEventListener('resize', resize, false);
             window.addEventListener('orientationchange', resize);
@@ -572,22 +696,20 @@
             /* -- start slider -- */
             let init_boundary_width_slider = () => {
                 let msgbus = new varioscale.MessageBusConnector();
-                msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => {
+                msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
                     let el = document.getElementById("width-value");
                     el.innerHTML = message;
                 });
                 let slider = document.getElementById("boundary-width");
                 slider.addEventListener('input',
                     () => {
-                        msgbus.publish("settings.rendering.boundary-width", parseFloat(slider.value));
+                        msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
                     }
                 );
-                msgbus.publish("settings.rendering.boundary-width", parseFloat(slider.value));
+                msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
             };
             init_boundary_width_slider();
             /* -- end of slider -- */
-
-
 
 
 
@@ -634,7 +756,95 @@
                 }
             };
             document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
-        });
+
+            function createSwiper(innerHeight, lmap, rmap) {
+
+                //create the swiper
+                let swiper = document.createElement('div');
+                //add the swiper to the canvas-container
+                let canvas_container = document.getElementById("canvas-container");
+                canvas_container.appendChild(swiper) //we append swiper immediately, so that swiper is 'active'
+
+                swiper.id = 'swiper';
+                swiper.classList.add('compare');
+                swiper.style.height = innerHeight + 'px';
+
+                let swiper_halfwidth = swiper.offsetWidth / 2  //swiper.offsetWidth is the swiper's width
+                swiper.style.left = - swiper_halfwidth + 'px'; //so that the center's x is the same as x-coordiante on the canvas 
+                swiper.style.transform = `translateX(${innerhalf}px)`
+                swiper.style.WebkitTransform = `translateX(${innerhalf}px)`
+
+                //create the handle of the swiper and added it to the swiper
+                let swiper_handle = document.createElement('div');
+                swiper_handle.id = 'swiper-handle'
+                swiper_handle.classList.add('compare-swiper');
+                //By default, the center of the handle is aligned with the left boundary of the swipe
+                swiper.appendChild(swiper_handle)
+                swiper_handle.style.transform = `translateX(${swiper_halfwidth}px)`
+                swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
+                swiper_handle.addEventListener('mousedown', onDown);
+
+
+                function onMouseUp(e) {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                }
+                function onDown(e) {
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                }
+
+                function onMove(e) {
+
+                    let x = getX(e);
+                    let pos = `translateX(${x}px)`;
+
+                    let swiper = document.getElementById("swiper");
+                    swiper.style.transform = pos;
+                    swiper.style.WebkitTransform = pos;
+
+                    resizebyswiper(x)
+                }
+
+                function resizebyswiper(x) {
+
+                    let lcanvas = document.getElementById('lcanvas');
+                    let rcanvas = document.getElementById('rcanvas');
+
+                    lcanvas.width = x
+                    rcanvas.width = window.innerWidth - x
+                    document.getElementById("bgright").style.left = x + "px";
+
+                    swipe_xrelative = x / (lcanvas.width + rcanvas.width)
+
+                    lmap.resize(lcanvas.width, lcanvas.height);
+                    lmap.abortAndRender()
+
+                    rmap.resize(rcanvas.width, rcanvas.height);
+                    rmap.abortAndRender()
+                }
+            }
+
+        }
+
+
+        );
+
+        function getX(e) {
+            // fixme: also handle touch events
+            // var e = e.touches ? e.touches[0] : e;
+            // fixme: handle initial position 
+            // (e.g. at center, instead of completely at left)
+            let x = e.clientX;
+            if (x < 1) x = 1; //avoid the width of a canvas to be 0; otherwise, tricky to computer scale
+
+            // console.log('comparer.html:', x)
+            let hGap = 0;
+            let newWidth = window.innerWidth - hGap;
+            if (x > newWidth - 1) x = newWidth - 1;
+
+            return x;
+        }
 
         function toggleLegend() {
             var x = document.getElementById("Demo");
@@ -654,7 +864,6 @@
             msgbus.publish(topic, cb.checked);
         }
     </script>
-
 </body>
 
 </html>

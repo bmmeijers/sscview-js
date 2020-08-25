@@ -3612,7 +3612,7 @@
         this._action = 'zoomAnimated'; //if we are zooming, we may want to snap to a valid state
         this._abort = null;
 
-            
+        //console.log('map.js map_setting.initialization.center2d:', map_setting.initialization.center2d)
         this._transform = new Transform(
             map_setting.initialization.center2d,
             [this._container.width, this._container.height],

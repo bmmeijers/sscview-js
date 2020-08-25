@@ -264,13 +264,15 @@
         </div>
         <!-- <canvas id="lmap" style="w3-white"></canvas> -->
 
-        <div id='bgright' class='bgred' style="background-color: darkblue; position: absolute; top:0px; left:600px">
-            <canvas id="rcanvas" style="background-color: white;"></canvas>
-        </div>
-
         <div id='bgleft' class='bgwhite' style="background: darkgreen; position: absolute; top:0px; left:0px">
             <canvas id="lcanvas" style="background-color: white;"></canvas>
         </div>
+
+        <div id='bgright' class='bgred' style="background-color: darkblue; position: absolute; top:0px; left:0px">
+            <canvas id="rcanvas" style="background-color: white;"></canvas>
+        </div>
+
+
 
     </div>
 
@@ -407,7 +409,8 @@
             let innerWidth = window.innerWidth - hGap;
             let innerHeight = window.innerHeight - vGap;
             let innerhalf = innerWidth / 2
-            document.getElementById("bgright").style.left = innerhalf + "px";
+            // document.getElementById("bgright").style.left = innerhalf + "px";
+            // document.getElementById("bgright").style.left = innerhalf + "px";
 
 
 
@@ -415,15 +418,16 @@
 
             let lcanvas_nm = 'lcanvas'
             let lcanvas = document.getElementById(lcanvas_nm);
-            lcanvas.width = innerhalf;
+            // lcanvas.width = innerhalf;
+            lcanvas.width = innerWidth;
             lcanvas.height = innerHeight;
 
             let rcanvas_nm = 'rcanvas'
             let rcanvas = document.getElementById(rcanvas_nm);
-            rcanvas.width = innerhalf;
+            rcanvas.width = innerWidth;
             rcanvas.height = innerHeight;
 
-            let swipe_xrelative = 0.5;
+            let swiper_xrelative = 0.5;
 
 
 
@@ -446,6 +450,19 @@
                 // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
                 'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
+                'draw_cw_faces': false, //draw counterclockwise 
+                'do_depth_test': false,
+                'do_blend': true,
+                'opacity': 0.8,
+                'do_draw': true,
+            }
+
+            let tree_setting1_single = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 7, "no_of_steps_Ns": 6}
+                'layer_nm': 'Example-7',
+                'datatype': 'polygon',
+                'tree_root_file_nm': 'tree_smooth.json',
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-single-merging/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-single-merging/data/',
                 'draw_cw_faces': false, //draw counterclockwise 
                 'do_depth_test': false,
                 'do_blend': true,
@@ -536,47 +553,47 @@
             }
 
             let common_tree_settings = [
-                // tree_setting1, 
+                // tree_setting1,
 
-                tree_setting4,
+                tree_setting3,
 
                 // tree_setting2,
-                tree_setting3,
+                tree_setting4,
                 // tree_setting8,
-                // tree_setting4,
                 tree_setting5,
                 // tree_setting6,
             ]
-            // let lcenter2d = [186500.0, 312450.0]    //top10nl, center
-            let lcenter2d = [257148.828, 533408.562]   //Drenthe
+            // let center2d = [186500.0, 312450.0]    //top10nl, center
+            let center2d = [257148.828, 533408.562]   //Drenthe
             var lmap_setting = {
                 'initialization': {
                     'scale_den': 100000, //top10nl, start_scale
-                    'center2d': lcenter2d,     //top10nl, center
+                    'center2d': center2d,     //top10nl, center
                     // 'center2d': [150000, 400000],
                     // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
-                    'navigationBar_title': 'Top10NL',
+                    // 'navigationBar_title': 'Top10NL',
+                    'navigationBar_title': 'Drenthe',
                 },
                 'canvas_nm': lcanvas_nm,
                 'tree_settings': [
                     ...common_tree_settings,
                     tree_setting6,
+                    // tree_setting1_single,
                 ],
                 'interaction_defaults': []
             }
 
-            lmap_setting.tree_settings.push()
-
-            // var rcenter2d = [(lcanvas.width + rcanvas.width)/2 +lcenter2d[0], lcenter2d[1]]
             let rcommon_tree_settings = []
             common_tree_settings.forEach(tree_setting => {
                 rcommon_tree_settings.push(Object.assign({}, tree_setting))
             })
 
-
+            // var r_initialization = Object.assign({}, lmap_setting.initialization)  //just a shallow copy 
             var rmap_setting = Object.assign({}, lmap_setting)  //just a shallow copy 
-
+            // rmap_setting.initialization = r_initialization
             rmap_setting.canvas_nm = rcanvas_nm
+            // console.log('comparer-overlay.html rcenter2d:', rcenter2d)
+            // rmap_setting.initialization.center2d = rcenter2d
             rmap_setting.tree_settings = [
                 ...rcommon_tree_settings,
                 // tree_setting6,
@@ -614,7 +631,7 @@
                     subscribe_off()
                     maps.forEach((map, index) => {
                         if (sender !== map.msgbus.id) {
-                            map.jumpTo(message[0][0], message[0][1], message[1]);
+                            map.jumpTo(message[0][0], message[0][1], message[1]); //x, y, St
                         }
                     });
                     subscribe_on();
@@ -657,16 +674,17 @@
                 let newWidth = window.innerWidth - hGap;
                 let newHeight = window.innerHeight - vGap;
                 // let new_halfwidth = newWidth / 2
-                let lwidth = swipe_xrelative * newWidth
-                let rwidth = newWidth - lwidth
+                let swiper_x = swiper_xrelative * newWidth
+                let lwidth = newWidth
+                let rwidth = newWidth
 
                 // console.log('newWidth:', newWidth)
                 // console.log('lwidth:', lwidth)
                 // console.log('rwidth:', rwidth)
 
                 let swiper = document.getElementById("swiper");
-                swiper.style.transform = `translateX(${lwidth}px)`
-                swiper.style.WebkitTransform = `translateX(${lwidth}px)`
+                swiper.style.transform = `translateX(${swiper_x}px)`
+                swiper.style.WebkitTransform = `translateX(${swiper_x}px)`
                 swiper.style.height = newHeight + 'px';
 
 
@@ -681,7 +699,7 @@
                 // update the canvas its size with the new size given by the browser
                 rcanvas.width = rwidth
                 rcanvas.height = newHeight
-                document.getElementById("bgright").style.left = lwidth + "px";
+                // document.getElementById("bgright").style.left = lwidth + "px";
                 // schedule re-render (FIXME: we should have a API method for this (on the map class?))
                 rmap.resize(rwidth, newHeight);
                 rmap.abortAndRender()
@@ -784,6 +802,8 @@
                 swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
                 swiper_handle.addEventListener('mousedown', onDown);
 
+                resizebyswiper(innerhalf)
+
 
                 function onMouseUp(e) {
                     document.removeEventListener('mousemove', onMove);
@@ -803,25 +823,49 @@
                     swiper.style.transform = pos;
                     swiper.style.WebkitTransform = pos;
 
+
                     resizebyswiper(x)
                 }
 
                 function resizebyswiper(x) {
 
                     let lcanvas = document.getElementById('lcanvas');
-                    let rcanvas = document.getElementById('rcanvas');
+                    // let rcanvas = document.getElementById('rcanvas');
 
-                    lcanvas.width = x
-                    rcanvas.width = window.innerWidth - x
-                    document.getElementById("bgright").style.left = x + "px";
+                    // lcanvas.width = x
+                    // rcanvas.width = window.innerWidth - x
+                    // document.getElementById("bgright").style.left = x + "px";
 
-                    swipe_xrelative = x / (lcanvas.width + rcanvas.width)
 
-                    lmap.resize(lcanvas.width, lcanvas.height);
-                    lmap.abortAndRender()
+                    // let lcanvas1 = document.getElementById('canvas1');
+                    // console.log('comparer-overlay.html x:', x)
+                    var lclip = 'rect(0, ' + x + 'px, ' + lcanvas.height + 'px, 0)'; //top, right, bottom, left
+                    document.getElementById('bgleft').style.clip = lclip;
+                    var rclip = 'rect(0, 999em, ' + lcanvas.height + 'px,' + x + 'px)';
+                    document.getElementById('bgright').style.clip = rclip;
+                    swiper_xrelative = x / lcanvas.width
 
-                    rmap.resize(rcanvas.width, rcanvas.height);
-                    rmap.abortAndRender()
+                    // swiper_xrelative = x / (lcanvas.width + rcanvas.width)
+
+                    // lmap.resize(lcanvas.width, lcanvas.height);
+                    // lmap.abortAndRender()
+
+                    // rmap.resize(rcanvas.width, rcanvas.height);
+                    // rmap.abortAndRender()
+
+
+
+                    // let pos = 'translate(' + x + 'px, 0)';
+                    // // set translate for swiping element: gutter + handle
+                    // document.getElementById('swiper').style.transform = pos;
+                    // document.getElementById('swiper').style.WebkitTransform = pos;
+                    // // clip both 'map' divs
+                    // let canvas1 = document.getElementById('canvas1');
+                    // var clip = 'rect(0, ' + x + 'px, ' + canvas1.height + 'px, 0)';
+                    // document.getElementById('first').style.clip = clip;
+                    // var clip = 'rect(0, 999em, ' + canvas1.height + 'px,' + x + 'px)';
+                    // document.getElementById('second').style.clip = clip;
+                    // console.log('comparer.html canvas1.height:', canvas1.height)
                 }
             }
 
@@ -853,6 +897,15 @@
             } else {
                 x.className = x.className.replace(" w3-show", "");
             }
+        }
+
+        //this function is indeed used in class LayerControl
+        function toggleLayer(cb) { //better to put this function into map.js if we can
+            let msgbus = new varioscale.MessageBusConnector();
+            let topic = cb.value;
+
+            //this topic is subscribed in method add_layercontrols of class LayerControl
+            msgbus.publish(topic, cb.checked);
         }
     </script>
 </body>
