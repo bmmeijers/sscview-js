@@ -21,6 +21,35 @@
     rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
 
     <style type="text/css">
+        .my-modal {
+            z-index: 3;
+            display: none;
+            /* padding-top: 100px; */
+            position: fixed;
+            left: 60%;
+            top: 10%;
+            /* width relative to the window */
+            width: 39%;
+            /* height: 50%; */
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            outline: 2px;
+            outline-style: solid;
+            outline-color: black;
+        }
+
+        .my-modal-content {
+            margin: auto;
+            /* margin: 50px; */
+            background-color: #fff;
+            position: relative;
+            padding: 0;
+            /* outline: 2;
+            outline-style: solid;
+            outline-color: black; */
+            /* width: 600px */
+        }
+
         #canvas {
             display: block;
             background: white;
@@ -226,9 +255,9 @@
 
     -->
     <!-- The Settings Modal -->
-    <div id="settingsModal" class="w3-modal">
+    <div id="settingsModal" class="my-modal">
         <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content" id='modal-content'>
+        <div class="my-modal-content" id='modal-content'>
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
             <header class="w3-container w3-light-grey w3-padding">
@@ -282,6 +311,7 @@
                             line-width value (mm): <span id="width-value"></span>
                         </div>
                         <div>
+                            <!-- narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" -->
                             narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width"
                                 style="margin: 0 16px 0 16px;"> wide
                         </div>
@@ -384,11 +414,11 @@
                 'layer_nm': 'Example-7',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree_smooth.json',
-                'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
-                'tree_root_href': 'https://pengdlzn.github.io/webmaps/data/nl/example-7',    // with trailing slash!
-                'tile_root_href': 'https://pengdlzn.github.io/webmaps/data/nl/example-7',
+                'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
+                'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
                 'draw_cw_faces': false, //draw counterclockwise 
-                'do_depth_test': false,
+                'do_depth_test': true,
                 'do_blend': true,
                 'opacity': 0.8,
                 'do_draw': true,
@@ -401,10 +431,11 @@
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,
+                'do_depth_test': true,
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'low_scale': null,
-                'high_scale': 500000,
+                // 'high_scale': 500000,
+                'high_scale': null,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -420,8 +451,8 @@
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -438,8 +469,8 @@
                 'low_scale': 500000,
                 'high_scale': 1000000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -455,8 +486,8 @@
                 'low_scale': 1000000,
                 'high_scale': null,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -470,7 +501,7 @@
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,
+                'do_depth_test': true,
                 'do_blend': true,
                 'opacity': 1,
                 'do_draw': true,
@@ -488,8 +519,8 @@
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -505,8 +536,8 @@
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -517,8 +548,10 @@
                     // 'scale_den': 12000, //top10nl, start_scale
                     // 'center2d': [186500.0, 312450.0],     //top10nl
 
-                    'scale_den': 100000, //Drenthe
+                    // 'scale_den': 300000, //Drenthe overview
+                    'scale_den': 100000, //Drenthe overview
                     'center2d': [257148.828, 533408.562],   //Drenthe
+                    // 'center2d': [300000, 480000],   //Drenthe south east
 
                     // 'scale_den': 1200000, //Netherlands
                     // 'center2d': [140000, 460000],   //Netherlands
@@ -529,13 +562,16 @@
                 },
                 'canvas_nm': canvas_nm,
                 'tree_settings': [ //we will draw from the
-                    tree_setting3,
+                    // tree_setting3,
+                    // // tree_setting2,
+                    // tree_setting4,
+                    // tree_setting5,
+                    // // tree_setting6,
+                    tree_setting2,
+
+                    // small data sets for testing
                     // tree_setting1, 
-                    // tree_setting2,
-                    tree_setting4,
                     // tree_setting8,
-                    tree_setting5,
-                    tree_setting6,
                 ],
                 'interaction_defaults': []
             }

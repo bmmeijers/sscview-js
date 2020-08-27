@@ -71,28 +71,35 @@ class LayerControl {
             newfieldset.append(opacity_div, slider)
 
 
-
             let topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider'
+
+
+
+
+
+
+            //subscription of the displayed opacity value
             msgbus.subscribe(topic, (topic, message, sender) => {
-                // let el = document.getElementById(displayid);
                 opacity_div.innerHTML = 'opacity value: ' + message;
             });
-            // let slider = document.getElementById(widgetid);
-            slider.addEventListener('input',
-                () => {
-                    // console.log('index.html slider.value:', slider.value)
 
-                    msgbus.publish(topic, parseFloat(slider.value));
-                    // tree_setting.opacity = parseFloat(slider.value);
-                    this.map.abortAndRender();
-                }
-            );
+            //publish new opacity value
+            slider.addEventListener('input', () => {
+                msgbus.publish(topic, parseFloat(slider.value));
+                this.map.abortAndRender();
+            });
+
+            //publish the initial opacity value
+            //this publication must be after 
+            //subscription of the displayed opacity value
+            //so that we see the effects imediately
             msgbus.publish(topic, parseFloat(slider.value));
 
+            //subscription of the tree_setting opacity value
             msgbus.subscribe(topic, (topic, message, sender) => {
                 tree_setting.opacity = parseFloat(message);
                 this.map.abortAndRender();
-            });
+            }); 
         });
     }
 

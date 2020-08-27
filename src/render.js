@@ -12,8 +12,8 @@ export class Renderer {
         this.ssctrees = ssctrees
         this.settings = {
             boundary_width: 0.2,
-            backdrop_opacity: 1,
-            foreground_opacity: 0.5,
+            //backdrop_opacity: 1,
+            //foreground_opacity: 0.5,
             //layer_opacity: 0.5
         }
 
@@ -46,7 +46,9 @@ export class Renderer {
     render_ssctrees(steps, transform, St) {
 
         this._clearColor()
-        this._clearColorFbo()
+        
+        
+        
         //this.renderer._clearDepth()
         //console.log('render.js steps.length:', steps.length)
 
@@ -68,9 +70,14 @@ export class Renderer {
                 continue
             }
 
-            //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
+            //clear the depth before drawing the new layer 
+            //so that the new layer will not be discarded by the depth test
             this._clearDepth()
             this._clearDepthFbo()
+            //the image in Fbo has been drawn to the screen, so it is safe to clear the color in Fbo
+            //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
+            //because the strategy of the fragmentShaderText in ImageFboDrawProgram
+            this._clearColorFbo()
             
             //console.log('render.js render ssctree:', ssctree)
             let step = steps[i] - 0.001 //to compensate with the rounding problems
@@ -122,6 +129,7 @@ export class Renderer {
 
         var tiles = ssctree.get_relevant_tiles(box3d)
 
+        //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
 
@@ -141,6 +149,7 @@ export class Renderer {
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
+                
                 if (this.settings.boundary_width > 0) {
                     var line_draw_program = this.programs[1];
                     tiles.forEach(tile => {
@@ -198,7 +207,7 @@ export class Renderer {
     _clearColor() {
         let gl = this.gl;
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
     }
 
     _clearColorFbo() {
@@ -207,7 +216,7 @@ export class Renderer {
         gl.clearColor(1, 1, 1, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 

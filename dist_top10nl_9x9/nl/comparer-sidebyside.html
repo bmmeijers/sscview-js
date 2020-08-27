@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Vario-scale Map Comparer</title>
+    <title>Vario-scale Map Comparer: Side by Side</title>
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -18,6 +18,35 @@
         type="image/vnd.microsoft.icon" />
 
     <style type="text/css">
+        .my-modal {
+            z-index: 3;
+            display: none;
+            /* padding-top: 100px; */
+            position: fixed;
+            left: 60%;
+            top: 10%;
+            /* width relative to the window */
+            width: 39%;
+            /* height: 50%; */
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            outline: 2px;
+            outline-style: solid;
+            outline-color: black;
+        }
+
+        .my-modal-content {
+            margin: auto;
+            /* margin: 50px; */
+            background-color: #fff;
+            position: relative;
+            padding: 0;
+            /* outline: 2;
+            outline-style: solid;
+            outline-color: black; */
+            /* width: 600px */
+        }
+
         #lcanvas {
             display: block;
             background: white;
@@ -274,9 +303,9 @@
 
     </div>
 
-    <div id="settingsModal" class="w3-modal">
+    <div id="settingsModal" class="my-modal">
         <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content">
+        <div class="my-modal-content">
             <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
 
             <header class="w3-container w3-light-grey w3-padding">
@@ -460,7 +489,7 @@
                 'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,
+                'do_depth_test': true,
                 'do_blend': true, //we must do blending so that the dataset will be transparent
                 'low_scale': null,
                 'high_scale': null,
@@ -479,8 +508,8 @@
                 'low_scale': null,
                 'high_scale': 500000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -497,8 +526,8 @@
                 'low_scale': 500000,
                 'high_scale': 1000000,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -514,8 +543,8 @@
                 'low_scale': 1000000,
                 'high_scale': null,
                 'draw_cw_faces': true,
-                'do_depth_test': false,
-                'do_blend': false,
+                'do_depth_test': true,
+                'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
@@ -529,22 +558,23 @@
                 'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
                 'draw_cw_faces': true,
-                'do_depth_test': false,
+                'do_depth_test': true,
                 'do_blend': true,
                 'opacity': 1,
                 'do_draw': true,
             }
 
             let common_tree_settings = [
-                // tree_setting1, 
-
-                tree_setting3,
-
+            tree_setting3,
                 // tree_setting2,
                 tree_setting4,
-                // tree_setting8,
                 tree_setting5,
                 // tree_setting6,
+                // tree_setting2,
+
+                // small data sets for testing
+                // tree_setting1, 
+                // tree_setting8,
             ]
             // let lcenter2d = [186500.0, 312450.0]    //top10nl, center
             let lcenter2d = [257148.828, 533408.562]   //Drenthe

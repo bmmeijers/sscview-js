@@ -1787,12 +1787,13 @@
             //gl.cullFace(gl.BACK);
             //gl.cullFace(gl.FRONT);
 
-            if (tree_setting.do_depth_test == true) {
-                gl.enable(gl.DEPTH_TEST);
-            }
-            else {
-                gl.disable(gl.DEPTH_TEST);
-            }
+            //if (tree_setting.do_depth_test == true) {
+            //    gl.enable(gl.DEPTH_TEST);
+            //}
+            //else {
+            //    gl.disable(gl.DEPTH_TEST);
+            //}
+            gl.disable(gl.DEPTH_TEST);
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
@@ -1925,7 +1926,7 @@
             }        
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             //renderer._clearDepth()
-            gl.disable(gl.BLEND);
+            //gl.disable(gl.BLEND)
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
@@ -1995,20 +1996,20 @@
             else {
                 gl.disable(gl.DEPTH_TEST);
             }
-            gl.enable(gl.DEPTH_TEST);
+            //gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);
 
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
-            if (tree_setting.do_blend == true) {
-                gl.enable(gl.BLEND);
-            }
-            else {
-                gl.disable(gl.BLEND); //disable blending can remove boundary slivers
-            }
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
-            //gl.disable(gl.BLEND)
+            //if (tree_setting.do_blend == true) {
+            //    gl.enable(gl.BLEND)
+            //}
+            //else {
+            //    gl.disable(gl.BLEND) //disable blending can remove boundary slivers
+            //}
+            //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+            gl.disable(gl.BLEND); //we always opaquely draw into Fbo
 
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
@@ -2245,8 +2246,8 @@
         this.ssctrees = ssctrees;
         this.settings = {
             boundary_width: 0.2,
-            backdrop_opacity: 1,
-            foreground_opacity: 0.5,
+            //backdrop_opacity: 1,
+            //foreground_opacity: 0.5,
             //layer_opacity: 0.5
         };
 
@@ -2280,6 +2281,8 @@
 
         this._clearColor();
         this._clearColorFbo();
+            
+            
         //this.renderer._clearDepth()
         //console.log('render.js steps.length:', steps.length)
 
@@ -2301,9 +2304,14 @@
                 continue
             }
 
-            //clear the depth before drawing the new layer so that the new layer will not be discarded by the depth test
+            //clear the depth before drawing the new layer 
+            //so that the new layer will not be discarded by the depth test
             this._clearDepth();
             this._clearDepthFbo();
+            //the image in Fbo has been drawn to the screen, so it is safe to clear the color in Fbo
+            //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
+            //because the strategy of the fragmentShaderText in ImageFboDrawProgram
+                
                 
             //console.log('render.js render ssctree:', ssctree)
             var step = steps[i] - 0.001; //to compensate with the rounding problems
@@ -2357,6 +2365,7 @@
 
         var tiles = ssctree.get_relevant_tiles(box3d);
 
+        //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
         //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
 
@@ -2376,6 +2385,7 @@
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
+                    
                 if (this.settings.boundary_width > 0) {
                     var line_draw_program = this.programs[1];
                     tiles.forEach(function (tile) {
@@ -2433,7 +2443,7 @@
     Renderer.prototype._clearColor = function _clearColor () {
         var gl = this.gl;
         gl.clearColor(1.0, 1.0, 1.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
     };
 
     Renderer.prototype._clearColorFbo = function _clearColorFbo () {
@@ -2442,7 +2452,7 @@
         gl.clearColor(1, 1, 1, 0.0);
         //gl.clearColor(0, 0, 0, 1.0);
         //gl.clearColor(0, 0, 0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear both color and depth buffer
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     };
 
@@ -2521,28 +2531,35 @@
             newfieldset.append(opacity_div, slider);
 
 
-
             var topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider';
+
+
+
+
+
+
+            //subscription of the displayed opacity value
             msgbus.subscribe(topic, function (topic, message, sender) {
-                // let el = document.getElementById(displayid);
                 opacity_div.innerHTML = 'opacity value: ' + message;
             });
-            // let slider = document.getElementById(widgetid);
-            slider.addEventListener('input',
-                function () {
-                    // console.log('index.html slider.value:', slider.value)
 
-                    msgbus.publish(topic, parseFloat(slider.value));
-                    // tree_setting.opacity = parseFloat(slider.value);
-                    this$1.map.abortAndRender();
-                }
-            );
+            //publish new opacity value
+            slider.addEventListener('input', function () {
+                msgbus.publish(topic, parseFloat(slider.value));
+                this$1.map.abortAndRender();
+            });
+
+            //publish the initial opacity value
+            //this publication must be after 
+            //subscription of the displayed opacity value
+            //so that we see the effects imediately
             msgbus.publish(topic, parseFloat(slider.value));
 
+            //subscription of the tree_setting opacity value
             msgbus.subscribe(topic, function (topic, message, sender) {
                 tree_setting.opacity = parseFloat(message);
                 this$1.map.abortAndRender();
-            });
+            }); 
         });
     };
 

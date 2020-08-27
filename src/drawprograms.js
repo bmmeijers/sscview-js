@@ -417,12 +417,13 @@ void main()
         //gl.cullFace(gl.BACK);
         //gl.cullFace(gl.FRONT);
 
-        if (tree_setting.do_depth_test == true) {
-            gl.enable(gl.DEPTH_TEST);
-        }
-        else {
-            gl.disable(gl.DEPTH_TEST);
-        }
+        //if (tree_setting.do_depth_test == true) {
+        //    gl.enable(gl.DEPTH_TEST);
+        //}
+        //else {
+        //    gl.disable(gl.DEPTH_TEST);
+        //}
+        gl.disable(gl.DEPTH_TEST);
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
@@ -573,7 +574,7 @@ void main()
         }        
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         //renderer._clearDepth()
-        gl.disable(gl.BLEND)
+        //gl.disable(gl.BLEND)
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
         //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
@@ -643,20 +644,20 @@ void main()
         else {
             gl.disable(gl.DEPTH_TEST);
         }
-        gl.enable(gl.DEPTH_TEST);
+        //gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
 
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
-        if (tree_setting.do_blend == true) {
-            gl.enable(gl.BLEND)
-        }
-        else {
-            gl.disable(gl.BLEND) //disable blending can remove boundary slivers
-        }
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
-        //gl.disable(gl.BLEND)
+        //if (tree_setting.do_blend == true) {
+        //    gl.enable(gl.BLEND)
+        //}
+        //else {
+        //    gl.disable(gl.BLEND) //disable blending can remove boundary slivers
+        //}
+        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        gl.disable(gl.BLEND) //we always opaquely draw into Fbo
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
