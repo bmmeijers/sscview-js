@@ -2280,7 +2280,7 @@
     Renderer.prototype.render_ssctrees = function render_ssctrees (steps, transform, St) {
 
         this._clearColor();
-        this._clearColorFbo();
+            
             
             
         //this.renderer._clearDepth()
@@ -2311,7 +2311,7 @@
             //the image in Fbo has been drawn to the screen, so it is safe to clear the color in Fbo
             //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
             //because the strategy of the fragmentShaderText in ImageFboDrawProgram
-                
+            this._clearColorFbo();
                 
             //console.log('render.js render ssctree:', ssctree)
             var step = steps[i] - 0.001; //to compensate with the rounding problems
@@ -3668,7 +3668,8 @@
             this$1.panAnimated(0, 0); // animate for a small time, so that when new tiles are loaded, we are already rendering
         });
 
-        this.msgbus.subscribe("settings.rendering.boundary-width", function (topic, message, sender) { 
+        this.msgbus.subscribe("settings.rendering.boundary-width", function (topic, message, sender) {
+            console.log('map.js parseFloat(message):', parseFloat(message));
             this$1.renderer.settings.boundary_width = parseFloat(message);
             this$1.abortAndRender();
         });

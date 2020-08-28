@@ -87,7 +87,7 @@ class Map {
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
-        this.msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => { 
+        this.msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => {
             this.renderer.settings.boundary_width = parseFloat(message);
             this.abortAndRender();
         });
