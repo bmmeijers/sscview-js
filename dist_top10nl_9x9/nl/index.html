@@ -417,7 +417,7 @@
                 'layer_nm': 'sample',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
-                // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // use the local folder are default value
                 'tile_root_href': window_location + 'data/',    // use the local folder are default value
                 'low_scale': null,
@@ -434,18 +434,25 @@
                 ...{ //the values of the same keys will be updated by this dictionary 
                     'layer_nm': 'Example-7',
                     'tree_root_file_nm': 'tree_smooth.json',
-                    // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                    // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                     'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
                     'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
                     'draw_cw_faces': false, //draw counterclockwise 
                 }
             }
 
+
+
+
+
+
+            
+
             let tree_setting_drenthe_gradual = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
                     'layer_nm': 'Drenthe',
-                    // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                    // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
                     'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                     'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                 }

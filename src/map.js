@@ -37,7 +37,7 @@ class Map {
             throw new Error(`Container '${container}' not found.`)
         }
 
-        //if we want to include the canvas name in the check box name
+        //if we want to include the canvas name in the check box name (cbnm)
         //when we have two canvases in a comparer, we should have this.canvasnm_in_cbnm == true
         this.canvasnm_in_cbnm = canvasnm_in_cbnm
 
@@ -58,7 +58,7 @@ class Map {
         this._interaction_settings = {
             zoom_factor: 1,
             zoom_duration: 1000,
-            time_factor: 1, //we prolong the time because we merge parallelly
+            time_factor: 1, //we changed the factor because we snap when merging parallelly
             pan_duration: 1000
         };
         this.if_snap = false //if we want to snap, then we only snap according to the first dataset

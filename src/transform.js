@@ -176,6 +176,7 @@ class Transform {
 
             //this.current_step = snapped_step
 
+            //console.log('transform.js St_new:', St_new)
             //console.log('transform.js snapped_step:', snapped_step)
             //console.log('transform.js snapped_St:', snapped_St)
             //console.log('transform.js St / snapped_St:', St / snapped_St)

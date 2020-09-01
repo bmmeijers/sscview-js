@@ -45,6 +45,11 @@
         window.webkitCancelAnimationFrame ||
         window.msCancelAnimationFrame;
 
+    //var count = 0
+
+
+
+    //e.g., fn is one of the interpolating functions defined in map.js
     function timed(fn, dur, ctx) {
         if (!dur) {
             fn.call(ctx, 1);
@@ -54,15 +59,22 @@
         var abort = false;
         var start = _now();
 
+        //the tick method runs about 60 times per second
+        //see https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
         function tick(now) {
             if (abort) {
                 return;
             }
             now = _now();
+            //console.log("animate.js now:", now)
 
             if (now >= (start + dur)) {
+                //count += 1
+                //console.log("animate.js count:", count)
+                //count = 0
                 fn.call(ctx, 1);
             } else {
+                //count += 1
                 var k = (now - start) / dur;
                 fn.call(ctx, k);
                 _frame(tick);
@@ -1298,6 +1310,7 @@
 
             //this.current_step = snapped_step
 
+            //console.log('transform.js St_new:', St_new)
             //console.log('transform.js snapped_step:', snapped_step)
             //console.log('transform.js snapped_St:', snapped_St)
             //console.log('transform.js St / snapped_St:', St / snapped_St)
@@ -2939,18 +2952,21 @@
 
         //e.g., this.tree_setting.tree_root_href: '/data/'
         //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
-        //e.g., this.tree_setting.step_event_nm: 'step_event.json'
+        //e.g., this.tree_setting.step_event_exc_link: 'step_event.json'
         var step_highs = null;
         var if_snap = false;
-        var step_event_nm = 'step_event_nm';
-        if (step_event_nm in this.tree_setting) {
+        var step_event_exc_link = 'step_event_exc_link';
+        if (step_event_exc_link in this.tree_setting) {
             if_snap = true;
-            fetch(this.tree_setting.tree_root_href + this.tree_setting[step_event_nm])
+                
+            fetch(this.tree_setting[step_event_exc_link])
                 .then(function (r) {
-                    step_highs = [0]; //if the file exists, we will do parallel merging
+                    //console.log('ssctree.js r:', r)
+                    step_highs = [0]; //initilize a list; if the file exists, we will do parallel merging
                     return r.json()
                 })
                 .then(function (filecontent) {
+                    //console.log('ssctree.js filecontent:', filecontent)
                     var current_face_num = filecontent.face_num;
                     var parallel_param = filecontent.parallel_param;
                     var step_event_exceptions = filecontent.step_event_exceptions;
@@ -2969,12 +2985,12 @@
                         current_face_num -= eventnum;
                     } 
 
-                    //console.log('ssctree.js step_diff_ltlt.length:', step_diff_ltlt.length)
+                    //console.log('ssctree.js step_highs1:', step_highs)
                 })
                 .then(function () {
                     this$1.step_highs = step_highs;
                     //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('ssctree.js step_highs:', step_highs);
+                    //console.log('ssctree.js step_highs:', step_highs)
                 })
                 .catch(function () {
                     this$1.step_highs = null;
@@ -3223,16 +3239,10 @@
 
             snapped_step = step_highs[snapped_index];
 
-            //console.log('ssctree.js new step:', step)
-
+            //console.log('ssctree.js new step:', newstep)
             //console.log('ssctree.js snapped_step:', snapped_step)
         }
 
-            
-        //console.log('ssctree.js new step:', step)
-        //console.log('ssctree.js snapped_step:', snapped_step)
-
-        //return Math.max(0, step)
         return snapped_step
     };
 
@@ -3618,7 +3628,7 @@
             throw new Error(("Container '" + container + "' not found."))
         }
 
-        //if we want to include the canvas name in the check box name
+        //if we want to include the canvas name in the check box name (cbnm)
         //when we have two canvases in a comparer, we should have this.canvasnm_in_cbnm == true
         this.canvasnm_in_cbnm = canvasnm_in_cbnm;
 
@@ -3639,7 +3649,7 @@
         this._interaction_settings = {
             zoom_factor: 1,
             zoom_duration: 1000,
-            time_factor: 1, //we prolong the time because we merge parallelly
+            time_factor: 1, //we changed the factor because we snap when merging parallelly
             pan_duration: 1000
         };
         this.if_snap = false; //if we want to snap, then we only snap according to the first dataset
@@ -3669,7 +3679,6 @@
         });
 
         this.msgbus.subscribe("settings.rendering.boundary-width", function (topic, message, sender) {
-            console.log('map.js parseFloat(message):', parseFloat(message));
             this$1.renderer.settings.boundary_width = parseFloat(message);
             this$1.abortAndRender();
         });

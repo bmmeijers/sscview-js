@@ -66,18 +66,21 @@ export class SSCTree {
 
         //e.g., this.tree_setting.tree_root_href: '/data/'
         //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
-        //e.g., this.tree_setting.step_event_nm: 'step_event.json'
+        //e.g., this.tree_setting.step_event_exc_link: 'step_event.json'
         var step_highs = null
         var if_snap = false
-        var step_event_nm = 'step_event_nm'
-        if (step_event_nm in this.tree_setting) {
+        var step_event_exc_link = 'step_event_exc_link'
+        if (step_event_exc_link in this.tree_setting) {
             if_snap = true
-            fetch(this.tree_setting.tree_root_href + this.tree_setting[step_event_nm])
+            
+            fetch(this.tree_setting[step_event_exc_link])
                 .then(r => {
-                    step_highs = [0] //if the file exists, we will do parallel merging
+                    //console.log('ssctree.js r:', r)
+                    step_highs = [0] //initilize a list; if the file exists, we will do parallel merging
                     return r.json()
                 })
                 .then(filecontent => {
+                    //console.log('ssctree.js filecontent:', filecontent)
                     var current_face_num = filecontent.face_num
                     var parallel_param = filecontent.parallel_param
                     var step_event_exceptions = filecontent.step_event_exceptions
@@ -96,12 +99,12 @@ export class SSCTree {
                         current_face_num -= eventnum
                     } 
 
-                    //console.log('ssctree.js step_diff_ltlt.length:', step_diff_ltlt.length)
+                    //console.log('ssctree.js step_highs1:', step_highs)
                 })
                 .then(() => {
                     this.step_highs = step_highs
                     //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('ssctree.js step_highs:', step_highs)
+                    //console.log('ssctree.js step_highs:', step_highs)
                 })
                 .catch(() => {
                     this.step_highs = null
@@ -346,16 +349,10 @@ export class SSCTree {
 
             snapped_step = step_highs[snapped_index]
 
-            //console.log('ssctree.js new step:', step)
-
+            //console.log('ssctree.js new step:', newstep)
             //console.log('ssctree.js snapped_step:', snapped_step)
         }
 
-        
-        //console.log('ssctree.js new step:', step)
-        //console.log('ssctree.js snapped_step:', snapped_step)
-
-        //return Math.max(0, step)
         return snapped_step
     }
 
