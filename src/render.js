@@ -46,9 +46,9 @@ export class Renderer {
     render_ssctrees(steps, transform, St) {
 
         this._clearColor()
-        
-        
-        
+
+
+
         //this.renderer._clearDepth()
         //console.log('render.js steps.length:', steps.length)
 
@@ -78,7 +78,7 @@ export class Renderer {
             //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
             //because the strategy of the fragmentShaderText in ImageFboDrawProgram
             this._clearColorFbo()
-            
+
             //console.log('render.js render ssctree:', ssctree)
             let step = steps[i] - 0.001 //to compensate with the rounding problems
 
@@ -127,6 +127,8 @@ export class Renderer {
         //console.log('render.js box3d:', box3d)
         //console.log('render.js near_St:', near_St)
 
+        //console.log('render.js step:', near_St[0])
+
         var tiles = ssctree.get_relevant_tiles(box3d)
 
         //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
@@ -140,7 +142,6 @@ export class Renderer {
                 tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
                     polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    //console.log('render.js fbo:', fbo)
                 })
 
                 var image_fbo_program = new ImageFboDrawProgram(gl)
@@ -149,7 +150,7 @@ export class Renderer {
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
-                
+
                 if (this.settings.boundary_width > 0) {
                     var line_draw_program = this.programs[1];
                     tiles.forEach(tile => {
@@ -167,11 +168,10 @@ export class Renderer {
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];
                 tiles.filter(tile => { // tile should have image data                    
-                        return tile.texture !== null
-                    })
-                    .forEach(tile => {
-                        image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
-                    })
+                    return tile.texture !== null
+                }).forEach(tile => {
+                    image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
+                })
             }
 
 
@@ -204,19 +204,17 @@ export class Renderer {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    _clearColor() {
+    _clearColor(r = 1.0, b = 1.0, g = 1.0, a = 0.0) {
+    //_clearColor(r = 0.0, g = 0, b = 0, a = 0.0) {
         let gl = this.gl;
-        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        gl.clearColor(r, g, b, a);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
     }
 
     _clearColorFbo() {
         let gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
-        gl.clearColor(1, 1, 1, 0.0);
-        //gl.clearColor(0, 0, 0, 1.0);
-        //gl.clearColor(0, 0, 0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
+        this._clearColor(1.0, 1.0, 1.0, 0)
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 

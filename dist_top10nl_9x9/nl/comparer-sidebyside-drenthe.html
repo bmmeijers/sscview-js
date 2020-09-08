@@ -338,14 +338,14 @@
                     <fieldset>
                         <legend> zooming duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation"
+                            short (0s) <input type="range" value="2001" step="25" min="0" max="5001" id="zoom-animation"
                                 style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
                     <fieldset>
                         <legend> panning duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation"
+                            short (0s) <input type="range" value="2001" step="500" min="0" max="5001" id="pan-animation"
                                 style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
@@ -378,31 +378,6 @@
         </div>
     </div>
 
-    <footer class="w3-container w3-display-left">
-        <div class="w3-left">
-            <!--class="w3-bar-item w3-padding-small" -->
-
-            <div class="w3-dropdown-click">
-                <button onclick="toggleLegend()" class="w3-button w3-black">Legend</button>
-                <div id="Demo" class="w3-dropdown-content w3-bar-block w3-border">
-                    <!-- see https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
-                    <div class='my-legend'>
-                        <!-- <div class='legend-title'>The Title or Explanation of your Map</div> -->
-                        <div class='legend-scale'>
-                            <ul class='legend-labels'>
-                                <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
-                                <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
-                                <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
-                                <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
-                                <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
     <footer class="w3-container w3-bottom" style="pointer-events: none;">
         <!--
         <p class="w3-left w3-margin-top">
@@ -428,6 +403,7 @@
                 class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
         </div>
     </footer>
+
 
     <script>
 
@@ -476,73 +452,50 @@
                 'layer_nm': 'sample',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
-                // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-                'tree_root_href': window_location + 'data/',    // use the local folder are default value
-                'tile_root_href': window_location + 'data/',    // use the local folder are default value
+                // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                'tree_root_href': window_location + 'data/',    // use the local folder as default value
+                'tile_root_href': window_location + 'data/',    // use the local folder as default value
                 'low_scale': null,
                 'high_scale': null,
-                'draw_cw_faces': true, //draw clockwise 
+                'draw_cw_faces': true, //draw clockwise (cull back faces) 
                 'do_depth_test': true,
                 'do_blend': true,
                 'opacity': 0.5,
                 'do_draw': true,
             }
 
-            let tree_setting_example_7 = {
+            let tree_setting_multiple = {
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Example-7',
-                    'tree_root_file_nm': 'tree_smooth.json',
-                    // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
-                    'draw_cw_faces': false, //draw counterclockwise 
-                }
-            }
-
-            let tree_setting_drenthe_gradual = { //"metadata": {"start_scale_Sb": 10000, "no_of_objects_Nb": 288726, "no_of_steps_Ns": 288257, "view_scale_Sv": 50000}
-                ...tree_setting_sample,
-                ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Drenthe',
-                    // 'step_event_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+                    'layer_nm': 'Multi-scale',
+                    // 'tree_root_file_nm': 'tree_smooth.json',
+                    // 'tree_root_href': window_location + 'data/top10nl-single-merging/',    // with trailing slash!
+                    // 'tile_root_href': window_location + 'data/top10nl-single-merging/',
+                    // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
                     'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                     'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
-                }
-            }
-
-            let tree_setting_aan_20200302_drenthe = {
-                ...tree_setting_sample,
-                ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Aan_20200302_Drenthe',
-                    'tree_root_file_nm': 'aan_20200302_drenthe.json',
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
-                    'high_scale': 500000,
+                    // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    'discrete_scales': [10000, 20000, 40000, 80000, 160000, 248117],
+                    // 'draw_cw_faces': false, //draw counterclockwise 
+                    'opacity': 0.6,
                 }
             }
 
 
-            let tree_setting_aanvoergebieden2_drenthe = {
+            let tree_setting_variable = {
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Aanvoergebieden2_Drenthe',
-                    'tree_root_file_nm': 'aanvoergebieden2_drenthe.json',
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
-                    // 'low_scale': 300000,
-                    'low_scale': 500000,
-                    'high_scale': 1000000,
-                }
-            }
-
-            let tree_setting_waterschappen2017 = {
-                ...tree_setting_sample,
-                ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Watershappen2017',
-                    'tree_root_file_nm': 'waterschappen2017.json',
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/',
-                    'low_scale': 1000000,
+                    'layer_nm': 'Vario-scale',
+                    // 'tree_root_file_nm': 'tree_smooth.json',
+                    // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
+                    // 'tile_root_href': window_location + 'data/top10nl-0.001/',
+                    // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+                    'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                    // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    // 'discrete_scales': [10000, 20000],
+                    // 'draw_cw_faces': false, //draw counterclockwise (cull front faces)
+                    'opacity': 0.6,
                 }
             }
 
@@ -554,14 +507,15 @@
                     'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tree-nl/',
                     'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/11/large-raster-tiles/tiles-nl/',
                     'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaartgrijs/EPSG:28992/',
+                    'opacity': 1,
                 }
             }
 
             let common_tree_settings = [
-            tree_setting_aan_20200302_drenthe,
+                // tree_setting_aan_20200302_drenthe,
                 // tree_setting_drenthe_gradual,
-                tree_setting_aanvoergebieden2_drenthe,
-                tree_setting_waterschappen2017,
+                // tree_setting_aanvoergebieden2_drenthe,
+                // tree_setting_waterschappen2017,
                 // tree_setting_nl_raster,
                 // tree_setting_drenthe_gradual,
 
@@ -569,13 +523,15 @@
                 // tree_setting_example_7, 
                 // tree_setting8,
             ]
-            // let lcenter2d = [186500.0, 312450.0]    //top10nl, center
-            let lcenter2d = [257148.828, 533408.562]   //Drenthe
+
+            // let center2d = [186500.0, 312450.0]    //top10nl, center
+            let center2d = [257148.828, 533408.562]   //Drenthe
+            // let center2d = [186500.0, 312250.0]     //example of 7 objects
             var lmap_setting = {
                 'initialization': {
-                    'scale_den': 100000, //top10nl, start_scale
-                    'center2d': lcenter2d,     //top10nl, center
-                    // 'center2d': [150000, 400000],
+                    'scale_den': 500000, //top10nl, start_scale
+                    // 'scale_den': 10000, // example of 7 objects
+                    'center2d': center2d,
                     // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
                     // 'navigationBar_title': 'Top10NL',
                     'navigationBar_title': 'Drenthe',
@@ -583,12 +539,13 @@
                 'canvas_nm': lcanvas_nm,
                 'tree_settings': [
                     ...common_tree_settings,
+
+                    tree_setting_multiple,
                     tree_setting_nl_raster,
+                    // tree_setting_example_7_single,
                 ],
                 'interaction_defaults': []
             }
-
-            lmap_setting.tree_settings.push()
 
             // var rcenter2d = [(lcanvas.width + rcanvas.width)/2 +lcenter2d[0], lcenter2d[1]]
             let rcommon_tree_settings = []
@@ -601,9 +558,9 @@
 
             rmap_setting.canvas_nm = rcanvas_nm
             rmap_setting.tree_settings = [
-                ...rcommon_tree_settings,
-                // tree_setting_nl_raster,
-                tree_setting_drenthe_gradual,
+                ...rcommon_tree_settings,                
+                tree_setting_variable,
+                tree_setting_nl_raster,
             ]
 
 
@@ -846,10 +803,7 @@
                 }
             }
 
-        }
-
-
-        );
+        });
 
         function getX(e) {
             // fixme: also handle touch events

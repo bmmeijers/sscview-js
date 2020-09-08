@@ -26,6 +26,7 @@ class Map {
         //console.log('map.js test:')
         //console.log('map.js map_setting:', map_setting)
         this.ssctrees = []
+        this.map_setting = map_setting
         let container = map_setting['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
@@ -211,32 +212,59 @@ class Map {
 
     render(k = 0) {
         //console.log('')
+
+        let ssctrees = this.ssctrees
+        let St = this.getTransform().getScaleDenominator()
+        let St_for_step = St
+        let steps = []  //record a step for each layer
+
+        //snapped_step and snapped_St have been computed by this.getTransform().updateViewportTransform()
+        let snapped_step = this.getTransform().snapped_step 
+        let snapped_St = this.getTransform().snapped_St //the St obtained from a snapped step
+
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
-        let St = 0
-        let steps = []
-        let snapped_step = this.getTransform().snapped_step
-        //console.log('map.js render snapped_step:', snapped_step)
-        //let step = 
-        //FIXME: to cooperate with multiple snapped steps
-        if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
+        if (k == 1 && this.if_snap == true &&
+            this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
-            St = this.getTransform().snapped_St
+            St_for_step = snapped_St
             steps.push(snapped_step)  //we only snap according to the first dataset
         }
         else {
-            St = this.getTransform().getScaleDenominator()
-            //console.log('')
-            //console.log('map.js St:', St)
-            this.ssctrees.forEach((ssctree) => {
-                steps.push(ssctree.get_step_from_St(St))
-            })
+            steps.push(ssctrees[0].get_step_from_St(St_for_step))
         }
 
-        //console.log('map.js St:', St)
-        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
+        //If we want to have multi-scale map intead of vario-scale map
+        let discrete_scales_nm = 'discrete_scales'
+        if (discrete_scales_nm in this.map_setting.tree_settings[0]) {
 
-        this.renderer.render_ssctrees(steps, this.getTransform(), St)
+            //console.log('map.js St_for_step:', St_for_step)
+
+            let scale_snapped_St = snap_to_existing_Sts(St_for_step, this.map_setting.tree_settings[0].discrete_scales)
+            //console.log('map.js scale_snapped_St:', scale_snapped_St)
+            
+            if (this.if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
+                steps[0] = ssctrees[0].get_snappedstep_from_newSt(scale_snapped_St)
+            }
+            else {
+                steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+            }
+
+        }
+        else {
+            //console.log('map.js steps[0]:', steps[0])
+            //console.log('map.js St_for_step:', St_for_step)
+        }
+
+        //add steps of other layers
+        for (var i = 1; i < ssctrees.length; i++) {
+            steps.push(ssctrees[i].get_step_from_St(St_for_step))
+        }
+
+
+        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step])
+
+        this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step)
     }
 
 
@@ -279,7 +307,7 @@ class Map {
         return interpolate;
     }
 
-    doEaseOutSine(start, end) { //start: the start world square; end: the end world square
+    doEaseOutSine(start, end) { //start and end: the world squares
         let interpolate = (k) => {
             var m = new Float32Array(16);
             let D = (Math.sin(k * (Math.PI * 0.5)));
@@ -322,7 +350,7 @@ class Map {
 
     animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
-        this._interaction_settings.time_factor = this.getTransform().zoom(
+        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
@@ -356,7 +384,7 @@ class Map {
     }
 
     zoom(x, y, zoom_factor) {
-        this._interaction_settings.time_factor = this.getTransform().zoom(
+        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     }
@@ -441,7 +469,8 @@ class Map {
         let msgbus = this.msgbus;
         msgbus.subscribe('map.scale', (topic, message, sender) => {
             if (sender !== msgbus.id) return;
-            const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+            const scale = Math.round(message[1]).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+            //const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             let el = document.getElementById("scale-denominator");
             el.textContent = " 1:" + scale;
         })
@@ -467,6 +496,49 @@ class Map {
     
 }
 
+function snap_to_existing_Sts(St, Sts) {
 
+    if (St <= Sts[0]) {
+        return Sts[0]
+    }
+    else if (St >= Sts[Sts.length -1]) {
+        return Sts[Sts.length - 1]
+    }
+
+
+
+    let start = 0, end = Sts.length - 1;
+    // Iterate while start not meets end 
+    while (start <= end) {
+
+        // Find the mid index 
+        let mid = Math.floor((start + end) / 2);
+
+        // If element is present at mid, return True 
+        if (Sts[mid] == St) {
+            //return mid;
+            return St
+        }
+
+        // Else look in left or right half accordingly 
+        else if (Sts[mid] < St)
+            start = mid + 1;
+        else
+            end = mid - 1;
+    }
+
+    //at this point, start - end == 1
+    return Sts[end]
+
+    ////console.log('ssctree.js start and end:', start, end)
+    ////console.log('Sts[start], St, Sts[end]:', Sts[start], St, Sts[end])
+    ////console.log('Sts[start] - St, St - Sts[end]:', Sts[start] - St, St - Sts[end])
+    //if (Sts[start] - St <= St - Sts[end]) { //start is already larger than end by 1
+    //    return Math.min(start, Sts.length - 1) //start will be larger than the last value of Sts[0] if St is larger than all the values of Sts    
+    //}
+    //else {
+    //    return Math.max(end, 0) //end will be negtive if St is smaller than Sts[0]
+    //}
+}
 
 export default Map

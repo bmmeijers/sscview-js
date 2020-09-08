@@ -73,11 +73,6 @@ class LayerControl {
 
             let topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider'
 
-
-
-
-
-
             //subscription of the displayed opacity value
             msgbus.subscribe(topic, (topic, message, sender) => {
                 opacity_div.innerHTML = 'opacity value: ' + message;
@@ -104,14 +99,5 @@ class LayerControl {
     }
 
 }
-
-////this function is indeed used in class LayerControl
-//function toggleLayer(cb) { //better to put this function into map.js if we can
-//    let msgbus = new varioscale.MessageBusConnector();
-//    let topic = cb.value;
-
-//    //this topic is subscribed in method add_layercontrols of class LayerControl
-//    msgbus.publish(topic, cb.checked);
-//}
 
 export default LayerControl

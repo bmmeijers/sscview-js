@@ -1276,7 +1276,7 @@
         this.update_world_square_viewport(visible_world, center[0], center[1]);
     };
 
-    Transform.prototype.zoom = function zoom (ssctree, zoom_factor, x, y, if_snap) {
+    Transform.prototype.compute_zoom_parameters = function compute_zoom_parameters (ssctree, zoom_factor, x, y, if_snap) {
         //console.log(' ')
         //let if_snap = true
         //console.log('transform.js St before:', this.getScaleDenominator())
@@ -1284,7 +1284,7 @@
 
         var St_current = this.getScaleDenominator();
         var current_step = ssctree.get_step_from_St(St_current); //current_step should be compute instantly because of aborting actions
-        this.compute_zoom_parameters(zoom_factor, x, y);
+        this.compute_matrix_parameters(zoom_factor, x, y);
         var time_factor = 1;
 
 
@@ -1314,7 +1314,7 @@
             //console.log('transform.js snapped_step:', snapped_step)
             //console.log('transform.js snapped_St:', snapped_St)
             //console.log('transform.js St / snapped_St:', St / snapped_St)
-            this.compute_zoom_parameters(St_new / snapped_St, x, y);
+            this.compute_matrix_parameters(St_new / snapped_St, x, y);
             //let final_St = this.getScaleDenominator()
             //console.log('transform.js final St:', final_St)
             //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
@@ -1323,7 +1323,7 @@
         return time_factor
     };
 
-    Transform.prototype.compute_zoom_parameters = function compute_zoom_parameters (zoom_factor, x, y) {
+    Transform.prototype.compute_matrix_parameters = function compute_matrix_parameters (zoom_factor, x, y) {
     //zoom(ssctree, factor, x, y) {
         //console.log('transform.js test')
 
@@ -1662,11 +1662,17 @@
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
             //        gl.disable(gl.BLEND);
-            gl.enable(gl.DEPTH_TEST);
-            //gl.disable(gl.DEPTH_TEST);
+            //gl.enable(gl.DEPTH_TEST);
+            gl.disable(gl.DEPTH_TEST);
 
             //gl.clearColor(0.0, 0.0, 0.0, 1.0);
             //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer
+
+            //gl.clearDepth(1.0);
+            //gl.clear(gl.DEPTH_BUFFER_BIT);
+            //gl.clearColor(1.0, 1.0, 1.0, 0.0);
+            //gl.clear(gl.COLOR_BUFFER_BIT);
+
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
             gl.bindTexture(gl.TEXTURE_2D, null);
             //gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
@@ -1884,6 +1890,8 @@
             var shaderProgram = this.shaderProgram;
             gl.useProgram(shaderProgram);
             gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
+
+            //var readout = new Uint8Array(4);
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
@@ -1901,21 +1909,18 @@
 
                 var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
                 //console.log('drawprograms.js tree_setting.opacity 2:', tree_setting.opacity)
-                //gl.uniform1f(opacity_location, tree_setting.opacity);
-                gl.uniform1f(opacity_location, 1);
+                gl.uniform1f(opacity_location, tree_setting.opacity);
+                //gl.uniform1f(opacity_location, 1);
             }
 
-            //gl.enable(gl.CULL_FACE);
-            ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-            
-                   
-            //if (tree_setting.draw_cw_faces == true) {
-            //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
-            //}
-            //else {
-            //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
-            //}
+            gl.enable(gl.CULL_FACE); //must ENABLE       
+            if (tree_setting.draw_cw_faces == true) {
+                gl.cullFace(gl.BACK); //triangles from FME are clockwise
+            }
+            else {
+                gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+            }
             //gl.cullFace(gl.BACK);
             //gl.cullFace(gl.FRONT);
 
@@ -1925,8 +1930,8 @@
             else {            
                 gl.disable(gl.DEPTH_TEST);
             }
-            gl.enable(gl.DEPTH_TEST);
-            //gl.depthFunc(gl.LEQUAL);
+            //if a fragment is closer to the camera, then it has a smaller depth value
+            gl.depthFunc(gl.LEQUAL); 
 
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
@@ -1935,7 +1940,10 @@
                 gl.enable(gl.BLEND);
             }
             else {
-                gl.disable(gl.BLEND); //disable blending can remove boundary slivers
+                //After an area merges another area, we can see a thin sliver.
+                //disable blending can avoid those slivers,
+                //but the alpha value does not have influence anymore
+                gl.disable(gl.BLEND); 
             }        
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             //renderer._clearDepth()
@@ -1963,8 +1971,8 @@
             gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
             gl.viewport(0, 0, width, height);
 
-            //var readout = new Uint8Array(4);
-            //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            var readout = new Uint8Array(4);
+            gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
             //console.log('drawprograms.js color of the center before drawing:', readout)
@@ -1986,22 +1994,39 @@
                 //gl.uniform1f(opacity_location, tree_setting.opacity);
                 gl.uniform1f(opacity_location, 1);
             }
+            
+            //gl.enable(gl.CULL_FACE); //must ENABLE 
+            //console.log('')
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT)
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK)
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK)
+
+            //FIXME
+            //To my understanding, we should enable face culling.
+            //However, if face culling is enabled, color white is drawn to the screen, which is strange.
+            //gl.enable(gl.CULL_FACE); //must ENABLE
+            gl.disable(gl.CULL_FACE);
 
 
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT)
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK)
+            //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK:',
+            //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK)
 
-            //gl.enable(gl.CULL_FACE);
-            ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
-
-
-
-            //if (tree_setting.draw_cw_faces == true) {
-            //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
-            //}
-            //else {
-            //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
-            //}
+            if (tree_setting.draw_cw_faces == true) {
+                gl.cullFace(gl.BACK); //triangles from FME are clockwise
+            }
+            else {
+                gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+            }
             //gl.cullFace(gl.BACK);
             //gl.cullFace(gl.FRONT);
+            //gl.cullFace(gl.FRONT_AND_BACK);
 
             if (tree_setting.do_depth_test == true) {
                 gl.enable(gl.DEPTH_TEST);
@@ -2009,29 +2034,31 @@
             else {
                 gl.disable(gl.DEPTH_TEST);
             }
+            //if a fragment is closer to the camera, then it has a smaller depth value
             //gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);
+            //gl.depthFunc(gl.ALWAYS);
 
 
-            //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
-            //if (tree_setting.do_blend == true) {
-            //    gl.enable(gl.BLEND)
-            //}
-            //else {
-            //    gl.disable(gl.BLEND) //disable blending can remove boundary slivers
-            //}
-            //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
             gl.disable(gl.BLEND); //we always opaquely draw into Fbo
+
+            //gl.enable(gl.BLEND);
+            //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
 
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-            //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            ////gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
             //console.log('drawprograms.js color of the center after drawing:', readout)
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+            //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            ////gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+            //console.log('drawprograms.js color of the center original:', readout)
             //return triangleVertexPosBufr.numItems
         };
 
@@ -2293,9 +2320,9 @@
     Renderer.prototype.render_ssctrees = function render_ssctrees (steps, transform, St) {
 
         this._clearColor();
-            
-            
-            
+
+
+
         //this.renderer._clearDepth()
         //console.log('render.js steps.length:', steps.length)
 
@@ -2325,7 +2352,7 @@
             //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
             //because the strategy of the fragmentShaderText in ImageFboDrawProgram
             this._clearColorFbo();
-                
+
             //console.log('render.js render ssctree:', ssctree)
             var step = steps[i] - 0.001; //to compensate with the rounding problems
 
@@ -2376,6 +2403,8 @@
         //console.log('render.js box3d:', box3d)
         //console.log('render.js near_St:', near_St)
 
+        //console.log('render.js step:', near_St[0])
+
         var tiles = ssctree.get_relevant_tiles(box3d);
 
         //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
@@ -2389,7 +2418,6 @@
                 tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
                     //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
                     polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    //console.log('render.js fbo:', fbo)
                 });
 
                 var image_fbo_program = new ImageFboDrawProgram(gl);
@@ -2398,7 +2426,7 @@
 
                 // If we want to draw lines twice -> thick line under / small line over
                 // we need to do this twice + move the code for determining line width here...
-                    
+
                 if (this.settings.boundary_width > 0) {
                     var line_draw_program = this.programs[1];
                     tiles.forEach(function (tile) {
@@ -2416,11 +2444,10 @@
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];
                 tiles.filter(function (tile) { // tile should have image data                    
-                        return tile.texture !== null
-                    })
-                    .forEach(function (tile) {
-                        image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
-                    });
+                    return tile.texture !== null
+                }).forEach(function (tile) {
+                    image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
+                });
             }
 
 
@@ -2453,19 +2480,22 @@
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     };
 
-    Renderer.prototype._clearColor = function _clearColor () {
+    Renderer.prototype._clearColor = function _clearColor (r, b, g, a) {
+            if ( r === void 0 ) r = 1.0;
+            if ( b === void 0 ) b = 1.0;
+            if ( g === void 0 ) g = 1.0;
+            if ( a === void 0 ) a = 0.0;
+
+    //_clearColor(r = 0.0, g = 0, b = 0, a = 0.0) {
         var gl = this.gl;
-        gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        gl.clearColor(r, g, b, a);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
     };
 
     Renderer.prototype._clearColorFbo = function _clearColorFbo () {
         var gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
-        gl.clearColor(1, 1, 1, 0.0);
-        //gl.clearColor(0, 0, 0, 1.0);
-        //gl.clearColor(0, 0, 0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
+        this._clearColor(1.0, 1.0, 1.0, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     };
 
@@ -2545,11 +2575,6 @@
 
 
             var topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider';
-
-
-
-
-
 
             //subscription of the displayed opacity value
             msgbus.subscribe(topic, function (topic, message, sender) {
@@ -2990,7 +3015,7 @@
                 .then(function () {
                     this$1.step_highs = step_highs;
                     //this.msgbus.publish('data.step_highs.loaded')
-                    //console.log('ssctree.js step_highs:', step_highs)
+                    console.log('ssctree.js step_highs:', step_highs);
                 })
                 .catch(function () {
                     this$1.step_highs = null;
@@ -3073,15 +3098,11 @@
         var far = -0.5;
         matrix[10] = -2.0 / (near - far);
         matrix[14] = (near + far) / (near - far);
+
         var box2d = transform.getVisibleWorld();
-        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near];
-        //console.log('ssctree.js facecount:', readfacecount())
-        //setfacecount();
-        //box3d = [0, 300000, 0, 280000, 620000, 0]
-        //let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        var box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]; 
         this.fetch_tiles(box3d, gl);
+
         return [matrix, box3d]
     };
 
@@ -3171,7 +3192,7 @@
         return step
     };
 
-    SSCTree.prototype.get_snappedstep_from_newSt = function get_snappedstep_from_newSt (St_new,zoom_factor, current_step) {
+    SSCTree.prototype.get_snappedstep_from_newSt = function get_snappedstep_from_newSt (St_new, zoom_factor, current_step) {
             if ( zoom_factor === void 0 ) zoom_factor = 1;
             if ( current_step === void 0 ) current_step = Number.MAX_SAFE_INTEGER;
 
@@ -3582,14 +3603,6 @@
                     console.log('ssctree.js evict box3ds[i]:', box3ds[i]);
                     console.log('ssctree.js evict tile.box:', tile.box);
                 }
-
-
-                //if (box3ds[i] == null) {
-                //console.log('ssctree.js evict box3ds[i] is null')
-                //}
-                //if (tile.box == null) {
-                //console.log('ssctree.js evict tile.box is null')
-                //}
             });
             //console.log('number of tiles for which memory will be released: ' + to_evict.length)
             to_evict.forEach(function (tile) {
@@ -3617,6 +3630,7 @@
         //console.log('map.js test:')
         //console.log('map.js map_setting:', map_setting)
         this.ssctrees = [];
+        this.map_setting = map_setting;
         var container = map_setting['canvas_nm'];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
@@ -3806,32 +3820,59 @@
             if ( k === void 0 ) k = 0;
 
         //console.log('')
+
+        var ssctrees = this.ssctrees;
+        var St = this.getTransform().getScaleDenominator();
+        var St_for_step = St;
+        var steps = [];  //record a step for each layer
+
+        //snapped_step and snapped_St have been computed by this.getTransform().updateViewportTransform()
+        var snapped_step = this.getTransform().snapped_step; 
+        var snapped_St = this.getTransform().snapped_St; //the St obtained from a snapped step
+
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
-        var St = 0;
-        var steps = [];
-        var snapped_step = this.getTransform().snapped_step;
-        //console.log('map.js render snapped_step:', snapped_step)
-        //let step = 
-        //FIXME: to cooperate with multiple snapped steps
-        if (k == 1 && this.if_snap == true && this._action == 'zoomAnimated' &&
+        if (k == 1 && this.if_snap == true &&
+            this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
-            St = this.getTransform().snapped_St;
+            St_for_step = snapped_St;
             steps.push(snapped_step);  //we only snap according to the first dataset
         }
         else {
-            St = this.getTransform().getScaleDenominator();
-            //console.log('')
-            //console.log('map.js St:', St)
-            this.ssctrees.forEach(function (ssctree) {
-                steps.push(ssctree.get_step_from_St(St));
-            });
+            steps.push(ssctrees[0].get_step_from_St(St_for_step));
         }
 
-        //console.log('map.js St:', St)
-        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
+        //If we want to have multi-scale map intead of vario-scale map
+        var discrete_scales_nm = 'discrete_scales';
+        if (discrete_scales_nm in this.map_setting.tree_settings[0]) {
 
-        this.renderer.render_ssctrees(steps, this.getTransform(), St);
+            //console.log('map.js St_for_step:', St_for_step)
+
+            var scale_snapped_St = snap_to_existing_Sts(St_for_step, this.map_setting.tree_settings[0].discrete_scales);
+            //console.log('map.js scale_snapped_St:', scale_snapped_St)
+                
+            if (this.if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
+                steps[0] = ssctrees[0].get_snappedstep_from_newSt(scale_snapped_St);
+            }
+            else {
+                steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St);
+            }
+
+        }
+        else {
+            console.log('map.js steps[0]:', steps[0]);
+            console.log('map.js St_for_step:', St_for_step);
+        }
+
+        //add steps of other layers
+        for (var i = 1; i < ssctrees.length; i++) {
+            steps.push(ssctrees[i].get_step_from_St(St_for_step));
+        }
+
+
+        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step]);
+
+        this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step);
     };
 
 
@@ -3878,7 +3919,7 @@
 
     Map.prototype.doEaseOutSine = function doEaseOutSine (start, end) {
             var this$1 = this;
-     //start: the start world square; end: the end world square
+     //start and end: the world squares
         var interpolate = function (k) {
             var m = new Float32Array(16);
             var D = (Math.sin(k * (Math.PI * 0.5)));
@@ -3921,7 +3962,7 @@
 
     Map.prototype.animateZoom = function animateZoom (x, y, zoom_factor) {
         var start = this.getTransform().world_square;
-        this._interaction_settings.time_factor = this.getTransform().zoom(
+        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         var end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
@@ -3955,7 +3996,7 @@
     };
 
     Map.prototype.zoom = function zoom (x, y, zoom_factor) {
-        this._interaction_settings.time_factor = this.getTransform().zoom(
+        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
         this.render();
     };
@@ -4040,11 +4081,57 @@
         var msgbus = this.msgbus;
         msgbus.subscribe('map.scale', function (topic, message, sender) {
             if (sender !== msgbus.id) { return; }
-            var scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            var scale = Math.round(message[1]).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            //const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             var el = document.getElementById("scale-denominator");
             el.textContent = " 1:" + scale;
         });
     };
+
+    function snap_to_existing_Sts(St, Sts) {
+
+        if (St <= Sts[0]) {
+            return Sts[0]
+        }
+        else if (St >= Sts[Sts.length -1]) {
+            return Sts[Sts.length - 1]
+        }
+
+
+
+        var start = 0, end = Sts.length - 1;
+        // Iterate while start not meets end 
+        while (start <= end) {
+
+            // Find the mid index 
+            var mid = Math.floor((start + end) / 2);
+
+            // If element is present at mid, return True 
+            if (Sts[mid] == St) {
+                //return mid;
+                return St
+            }
+
+            // Else look in left or right half accordingly 
+            else if (Sts[mid] < St)
+                { start = mid + 1; }
+            else
+                { end = mid - 1; }
+        }
+
+        //at this point, start - end == 1
+        return Sts[end]
+
+        ////console.log('ssctree.js start and end:', start, end)
+        ////console.log('Sts[start], St, Sts[end]:', Sts[start], St, Sts[end])
+        ////console.log('Sts[start] - St, St - Sts[end]:', Sts[start] - St, St - Sts[end])
+        //if (Sts[start] - St <= St - Sts[end]) { //start is already larger than end by 1
+        //    return Math.min(start, Sts.length - 1) //start will be larger than the last value of Sts[0] if St is larger than all the values of Sts    
+        //}
+        //else {
+        //    return Math.max(end, 0) //end will be negtive if St is smaller than Sts[0]
+        //}
+    }
 
     // import  Rectangle from "./rect"
     //let r = new Rectangle(1, 2, 3, 4);

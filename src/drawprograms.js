@@ -253,11 +253,17 @@ export class ImageFboDrawProgram extends DrawProgram {
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         //        gl.disable(gl.BLEND);
-        gl.enable(gl.DEPTH_TEST);
-        //gl.disable(gl.DEPTH_TEST);
+        //gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.DEPTH_TEST);
 
         //gl.clearColor(0.0, 0.0, 0.0, 1.0);
         //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear the color buffer
+
+        //gl.clearDepth(1.0);
+        //gl.clear(gl.DEPTH_BUFFER_BIT);
+        //gl.clearColor(1.0, 1.0, 1.0, 0.0);
+        //gl.clear(gl.COLOR_BUFFER_BIT);
+
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
         gl.bindTexture(gl.TEXTURE_2D, null);
         //gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
@@ -518,7 +524,7 @@ void main()
         gl.useProgram(shaderProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
 
-        var readout = new Uint8Array(4);
+        //var readout = new Uint8Array(4);
         //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
@@ -536,21 +542,18 @@ void main()
 
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
             //console.log('drawprograms.js tree_setting.opacity 2:', tree_setting.opacity)
-            //gl.uniform1f(opacity_location, tree_setting.opacity);
-            gl.uniform1f(opacity_location, 1);
+            gl.uniform1f(opacity_location, tree_setting.opacity);
+            //gl.uniform1f(opacity_location, 1);
         }
 
-        //gl.enable(gl.CULL_FACE);
-        ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
 
-        
-               
-        //if (tree_setting.draw_cw_faces == true) {
-        //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
-        //}
-        //else {
-        //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
-        //}
+        gl.enable(gl.CULL_FACE); //must ENABLE       
+        if (tree_setting.draw_cw_faces == true) {
+            gl.cullFace(gl.BACK); //triangles from FME are clockwise
+        }
+        else {
+            gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+        }
         //gl.cullFace(gl.BACK);
         //gl.cullFace(gl.FRONT);
 
@@ -560,8 +563,8 @@ void main()
         else {            
             gl.disable(gl.DEPTH_TEST);
         }
-        gl.enable(gl.DEPTH_TEST);
-        //gl.depthFunc(gl.LEQUAL);
+        //if a fragment is closer to the camera, then it has a smaller depth value
+        gl.depthFunc(gl.LEQUAL); 
 
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
@@ -570,7 +573,10 @@ void main()
             gl.enable(gl.BLEND)
         }
         else {
-            gl.disable(gl.BLEND) //disable blending can remove boundary slivers
+            //After an area merges another area, we can see a thin sliver.
+            //disable blending can avoid those slivers,
+            //but the alpha value does not have influence anymore
+            gl.disable(gl.BLEND) 
         }        
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         //renderer._clearDepth()
@@ -598,8 +604,8 @@ void main()
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
         gl.viewport(0, 0, width, height)
 
-        //var readout = new Uint8Array(4);
-        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        var readout = new Uint8Array(4);
+        gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //console.log('drawprograms.js width / 2, height / 2:', width / 2, height / 2)
         //console.log('drawprograms.js color of the center before drawing:', readout)
@@ -621,22 +627,39 @@ void main()
             //gl.uniform1f(opacity_location, tree_setting.opacity);
             gl.uniform1f(opacity_location, 1);
         }
+        
+        //gl.enable(gl.CULL_FACE); //must ENABLE 
+        //console.log('')
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT)
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK)
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK)
+
+        //FIXME
+        //To my understanding, we should enable face culling.
+        //However, if face culling is enabled, color white is drawn to the screen, which is strange.
+        //gl.enable(gl.CULL_FACE); //must ENABLE
+        gl.disable(gl.CULL_FACE);
 
 
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT)
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.BACK)
+        //console.log('drawprograms.js gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK:',
+        //    gl.getParameter(gl.CULL_FACE_MODE) === gl.FRONT_AND_BACK)
 
-        //gl.enable(gl.CULL_FACE);
-        ////gl.disable(gl.CULL_FACE); // FIXME: should we be explicit about face orientation and use culling?
-
-
-
-        //if (tree_setting.draw_cw_faces == true) {
-        //    gl.cullFace(gl.BACK); //triangles from FME are clockwise
-        //}
-        //else {
-        //    gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
-        //}
+        if (tree_setting.draw_cw_faces == true) {
+            gl.cullFace(gl.BACK); //triangles from FME are clockwise
+        }
+        else {
+            gl.cullFace(gl.FRONT); //triangles from SSC are counterclockwise; 
+        }
         //gl.cullFace(gl.BACK);
         //gl.cullFace(gl.FRONT);
+        //gl.cullFace(gl.FRONT_AND_BACK);
 
         if (tree_setting.do_depth_test == true) {
             gl.enable(gl.DEPTH_TEST);
@@ -644,29 +667,31 @@ void main()
         else {
             gl.disable(gl.DEPTH_TEST);
         }
+        //if a fragment is closer to the camera, then it has a smaller depth value
         //gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        //gl.depthFunc(gl.ALWAYS);
 
 
-        //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
 
-        //if (tree_setting.do_blend == true) {
-        //    gl.enable(gl.BLEND)
-        //}
-        //else {
-        //    gl.disable(gl.BLEND) //disable blending can remove boundary slivers
-        //}
-        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         gl.disable(gl.BLEND) //we always opaquely draw into Fbo
+
+        //gl.enable(gl.BLEND);
+        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
 
         //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
-        //gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        ////gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
         //console.log('drawprograms.js color of the center after drawing:', readout)
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        ////gl.readPixels(0.5, 0.5, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
+        //console.log('drawprograms.js color of the center original:', readout)
         //return triangleVertexPosBufr.numItems
     }
 

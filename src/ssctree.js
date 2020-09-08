@@ -104,7 +104,7 @@ export class SSCTree {
                 .then(() => {
                     this.step_highs = step_highs
                     //this.msgbus.publish('data.step_highs.loaded')
-                    //console.log('ssctree.js step_highs:', step_highs)
+                    console.log('ssctree.js step_highs:', step_highs)
                 })
                 .catch(() => {
                     this.step_highs = null
@@ -185,15 +185,11 @@ export class SSCTree {
         const far = -0.5
         matrix[10] = -2.0 / (near - far)
         matrix[14] = (near + far) / (near - far)
+
         const box2d = transform.getVisibleWorld()
-        let box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-        //console.log('ssctree.js facecount:', readfacecount())
-        //setfacecount();
-        //box3d = [0, 300000, 0, 280000, 620000, 0]
-        //let gl = this.getWebGLContext();
-        //this.ssctrees.forEach(ssctree => { ssctree.fetch_tiles(box3d, gl)})
-        //console.log('map.js _prepare_active_tiles ssctree:', ssctree)
+        let box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near] 
         this.fetch_tiles(box3d, gl)
+
         return [matrix, box3d]
     }
 
@@ -281,7 +277,7 @@ export class SSCTree {
         return step
     }
 
-    get_snappedstep_from_newSt(St_new,zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
+    get_snappedstep_from_newSt(St_new, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
         
         // FIXME: these 2 variables should be adjusted
         //         based on which tGAP is used...
@@ -691,14 +687,6 @@ export class Evictor {
                     console.log('ssctree.js evict box3ds[i]:', box3ds[i])
                     console.log('ssctree.js evict tile.box:', tile.box)
                 }
-
-
-                //if (box3ds[i] == null) {
-                //    console.log('ssctree.js evict box3ds[i] is null')
-                //}
-                //if (tile.box == null) {
-                //    console.log('ssctree.js evict tile.box is null')
-                //}
             })
             //console.log('number of tiles for which memory will be released: ' + to_evict.length)
             to_evict.forEach(tile => {

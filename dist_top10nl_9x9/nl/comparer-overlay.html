@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://pengdlzn.github.io/webmaps/decorations/w3.css">
 
     <script type="text/javascript" src="index.js?id=5"></script>
+    <script src="htmlfuns.js"></script>
     <link rel="prefetch" href="worker.js">
 
 
@@ -909,14 +910,14 @@
             }
         }
 
-        //this function is indeed used in class LayerControl
-        function toggleLayer(cb) { //better to put this function into map.js if we can
-            let msgbus = new varioscale.MessageBusConnector();
-            let topic = cb.value;
+        // //this function is indeed used in class LayerControl
+        // function toggleLayer(cb) { //better to put this function into map.js if we can
+        //     let msgbus = new varioscale.MessageBusConnector();
+        //     let topic = cb.value;
 
-            //this topic is subscribed in method add_layercontrols of class LayerControl
-            msgbus.publish(topic, cb.checked);
-        }
+        //     //this topic is subscribed in method add_layercontrols of class LayerControl
+        //     msgbus.publish(topic, cb.checked);
+        // }
     </script>
 </body>
 

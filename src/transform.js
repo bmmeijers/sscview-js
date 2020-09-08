@@ -142,7 +142,7 @@ class Transform {
         this.update_world_square_viewport(visible_world, center[0], center[1])
     }
 
-    zoom(ssctree, zoom_factor, x, y, if_snap) {
+    compute_zoom_parameters(ssctree, zoom_factor, x, y, if_snap) {
         //console.log(' ')
         //let if_snap = true
         //console.log('transform.js St before:', this.getScaleDenominator())
@@ -150,7 +150,7 @@ class Transform {
 
         let St_current = this.getScaleDenominator()
         let current_step = ssctree.get_step_from_St(St_current) //current_step should be compute instantly because of aborting actions
-        this.compute_zoom_parameters(zoom_factor, x, y)
+        this.compute_matrix_parameters(zoom_factor, x, y)
         let time_factor = 1
 
 
@@ -180,7 +180,7 @@ class Transform {
             //console.log('transform.js snapped_step:', snapped_step)
             //console.log('transform.js snapped_St:', snapped_St)
             //console.log('transform.js St / snapped_St:', St / snapped_St)
-            this.compute_zoom_parameters(St_new / snapped_St, x, y)
+            this.compute_matrix_parameters(St_new / snapped_St, x, y)
             //let final_St = this.getScaleDenominator()
             //console.log('transform.js final St:', final_St)
             //console.log('transform.js final step:', ssctree.get_step_from_St(St, false))
@@ -189,7 +189,7 @@ class Transform {
         return time_factor
     }
 
-    compute_zoom_parameters(zoom_factor, x, y) {
+    compute_matrix_parameters(zoom_factor, x, y) {
     //zoom(ssctree, factor, x, y) {
         //console.log('transform.js test')
 

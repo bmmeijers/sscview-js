@@ -36,8 +36,6 @@
             }
         };
 
-
-        
         //let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
 
 
@@ -50,26 +48,6 @@
             //in order to remove the empty element, .replace(/\s*$/, '') is used.
             line = line.replace(/\s*$/, ''); //remove all the spaces at the end.
             var words = line.split(' ');
-            //if (words[0] == 'l') {
-            //    //console.log('words:', words)
-            //    //console.log('words[words.length - 1]:', words[words.length - 1])
-            //    console.log('words[1].length:', words[1].length)
-            //    console.log('words[words.length - 1].length:', words[words.length - 1].length)
-            //    if (String(words[words.length - 1]) == null ||
-            //        String(words[words.length - 1]) == '' ||
-            //        String(words[words.length - 1]) == "" ||
-            //        String(words[words.length - 1]) == ' ' ||
-            //        String(words[words.length - 1]) == " ") {
-            //        words.pop();
-            //        console.log('words after pop:', words)
-            //    }
-            //    console.log('words:', words)
-
-            //    let s = ''
-            //    let ss = ' '
-            //    console.log('s.length', s.length)
-            //    console.log('ss.length', ss.length)
-            //}
 
             // dispatch based on first character on the line
             switch (words[0])
