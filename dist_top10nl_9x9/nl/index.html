@@ -418,16 +418,17 @@
                 'layer_nm': 'sample',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
-                'step_event_exc_nm': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // use the local folder are default value
                 'tile_root_href': window_location + 'data/',    // use the local folder are default value
                 'low_scale': null,
                 'high_scale': null,
                 'draw_cw_faces': true, //draw clockwise (cull back faces) 
                 'do_depth_test': true,
-                'do_blend': true,
+                'do_blend': true, //so that the opacity is useful
                 'opacity': 0.5,
                 'do_draw': true,
+                'do_color_adapt': false, //the eaten area changes its color to target color
             }
 
             let tree_setting_single = {
@@ -446,7 +447,7 @@
                 }
             }
 
-
+            
             let tree_setting_parallel = {
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
@@ -454,12 +455,13 @@
                     'tree_root_file_nm': 'tree_smooth.json',
                     // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
                     // 'tile_root_href': window_location + 'data/top10nl-0.001/',
-                    // 'step_event_exc_link': window_location + 'data/top10nl-0.001/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    // 'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',    // with trailing slash!
-                    // 'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',
-                    // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',    // with trailing slash!
+                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',
+                    'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
                     'draw_cw_faces': false, //draw counterclockwise (cull front faces)
                     'opacity': 0.8,
+                    'do_color_adapt': true,
                 }
             }
 
@@ -468,34 +470,18 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            let tree_setting_example_7 = {
-                ...tree_setting_sample,
-                ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Example-7',
-                    'tree_root_file_nm': 'tree_smooth.json',
-                    // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
-                    'draw_cw_faces': false, //draw counterclockwise 
-                }
-            }
+            // let tree_setting_example_7 = {
+            //     ...tree_setting_sample,
+            //     ...{ //the values of the same keys will be updated by this dictionary 
+            //         'layer_nm': 'Example-7',
+            //         'tree_root_file_nm': 'tree_smooth.json',
+            //         // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
+            //         'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
+            //         'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
+            //         'draw_cw_faces': false, //draw counterclockwise 
+            //         'opacity': 0.1,
+            //     }
+            // }
 
 
 
@@ -563,25 +549,24 @@
             }
 
 
-            // let center2d = [186500.0, 312450.0]    //top10nl, center
+            let center2d = [186500.0, 312450.0]    //top10nl, center
             // let center2d = [257148.828, 533408.562]   //Drenthe
-            let center2d = [186500.0, 312250.0],     //example of 7 objects
+            // let center2d = [300000, 480000],   //Drenthe south east
+            // let center2d = [186500.0, 312250.0]     //example of 7 objects
+            // 'center2d': [140000, 460000],   //Netherlands
 
             var map_setting = {
                 'initialization': {
 
                     // 'scale_den': 12000, //top10nl, start_scale
-                    // 'center2d': [186500.0, 312450.0],     //top10nl
                     'center2d': center2d,
 
                     // 'scale_den': 300000, //Drenthe overview
-                    // 'scale_den': 100000, //Drenthe overview
-                    'scale_den': 5000, // example of 7 objects
-                    // 'center2d': [257148.828, 533408.562],   //Drenthe
-                    // 'center2d': [300000, 480000],   //Drenthe south east
+                    'scale_den': 100000, //Drenthe overview
+                    // 'scale_den': 5000, // example of 7 objects                    // 
 
                     // 'scale_den': 1200000, //Netherlands
-                    // 'center2d': [140000, 460000],   //Netherlands
+                    
 
                     // 'navigationBar_title': 'Top10NL',
                     'navigationBar_title': 'Drenthe',
@@ -595,6 +580,7 @@
                     // tree_setting_waterschappen2017,
                     // // tree_setting_nl_raster,
                     tree_setting_parallel,
+                    // tree_setting_single,
 
                     // small data sets for testing
                     // tree_setting_example_7, 

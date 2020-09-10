@@ -43,41 +43,27 @@ export class Renderer {
     // }
 
 
-    render_ssctrees(steps, transform, St) {
+    render_ssctrees(steps, transform, St, local_statelows, local_statehighs) {
 
         this._clearColor()
-
-
-
-        //this.renderer._clearDepth()
-        //console.log('render.js steps.length:', steps.length)
-
-        //console.log('render.js render this.ssctrees.length:', this.ssctrees.length)
-        //console.log('render.js this.ssctrees[0]:', this.ssctrees[0])
-
+        
         //draw from the last layer to the first layer; first layer will be on top
         for (var i = steps.length - 1; i >= 0; i--) {
             let ssctree = this.ssctrees[i]
+            let tree_setting = ssctree.tree_setting
 
             //If both low_scale and high_scale do not exist, the map will be drawn
             //If low_scale or high_scale exists, we will check if we should draw the map
-            let low_scale = ssctree.tree_setting.low_scale
-            let high_scale = ssctree.tree_setting.high_scale
-            if (low_scale != null && low_scale > St) {
-                continue
-            }
-            if (high_scale != null && high_scale < St) {
-                continue
-            }
+            let low_scale = tree_setting.low_scale
+            let high_scale = tree_setting.high_scale
+            if ((low_scale != null && low_scale > St) ||
+                (high_scale != null && high_scale < St) ||
+                ssctree.tree == null ||  //before the tree is loaded, ssctree.tree == null
+                tree_setting.do_draw == false ||
+                tree_setting.opacity <= 0) {
 
-            //clear the depth before drawing the new layer 
-            //so that the new layer will not be discarded by the depth test
-            this._clearDepth()
-            this._clearDepthFbo()
-            //the image in Fbo has been drawn to the screen, so it is safe to clear the color in Fbo
-            //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
-            //because the strategy of the fragmentShaderText in ImageFboDrawProgram
-            this._clearColorFbo()
+                continue
+            }
 
             //console.log('render.js render ssctree:', ssctree)
             let step = steps[i] - 0.001 //to compensate with the rounding problems
@@ -99,41 +85,115 @@ export class Renderer {
             //console.log('render.js, step after snapping:', step)
 
             //console.log('render.js, step after snapping:', step)
-            var matrix_box3d = ssctree.prepare_active_tiles(step, transform, this.gl)
-            this.render_relevant_tiles(ssctree, matrix_box3d[0], matrix_box3d[1], [step, St]);
+
+
+
+            let inputopacity = tree_setting.opacity
+            let opacity1 = inputopacity
+            let opacity2 = 0 //the layer will not be drawn if opacity is 0
+            if (tree_setting.do_color_adapt == true) {
+                if (local_statelows[i] == local_statehighs[i]) { 
+                    //do nothing, draw normally
+                }
+                else {
+                    //if step == local_statelows[i], then local_statehighs[i] == local_statelows[i] because of snapping in map.js
+                    let step_progress = (step - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
+                    opacity2 = step_progress * inputopacity
+                    opacity1 = (inputopacity - opacity2) / (1 - opacity2)
+                }
+            }
+
+            //get relevant tiles
+            const box2d = transform.getVisibleWorld()
+            let box3d = [box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step]
+            var tiles = ssctree.get_relevant_tiles(box3d, this.gl)
+
+            //draw the layer according to the slicing plane
+            var matrix = ssctree.prepare_matrix(step, transform)
+            this.render_relevant_tiles(ssctree, tiles, matrix, opacity1);
+
+
+            if (tree_setting.do_color_adapt == true && opacity2 > 0) {
+                //console.log('render.js:', tree_setting.do_color_adapt)
+                //console.log('render.js step:', step)
+                //console.log('render.js opacity1:', opacity1)
+                //console.log('render.js opacity2:', opacity2)
+                var matrix2 = ssctree.prepare_matrix(local_statehighs[i], transform)
+
+                this.render_relevant_tiles(ssctree, tiles, matrix2, opacity2);
+            }
+
+            // If we want to draw lines twice -> thick line under / small line over
+            // we need to do this twice + move the code for determining line width here...
+            if (this.settings.boundary_width > 0 && tree_setting.datatype == 'polygon') {
+                var line_draw_program = this.programs[1];
+                tiles.forEach(tile => {
+                    // FIXME: would be nice to specify width here in pixels.
+                    // bottom lines (black)
+                    // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
+                    // interior (color)
+                    line_draw_program.draw_tile(matrix, tile, [step, St], this.settings, tree_setting);
+                })
+            }
         }
+
+
+
+
+
+        //let opacities1 = []
+        //let opacities2 = []
+        //for (var i = 0; i < local_statehighs.length; i++) {
+        //    let inputopacity = ssctrees[i].tree_setting.opacity
+        //    opacities1.push(inputopacity)
+        //    opacities2.push(0) //the layer will not be drawn if opacity is 0
+        //    if (ssctrees[i].tree_setting.do_color_adapt == true) {
+        //        if (local_statelows[i] == local_statehighs[i]) {
+        //            opacities1[i] = inputopacity
+        //            opacities2[i] = 0 //the layer will not be drawn if opacity is 0
+        //        }
+        //        else {
+        //            let step_progress = (steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
+        //            let adjusted_opacity2 = step_progress * inputopacity
+        //            let adjusted_opacity1 = (inputopacity - adjusted_opacity2) / (1 - adjusted_opacity2)
+
+        //            opacities1[i] = adjusted_opacity1
+        //            opacities2[i] = adjusted_opacity2
+
+        //            //step_progresses.push((steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i]))
+        //            //console.log('map.js steps[i]:', steps[i])
+        //            //console.log('map.js local_statelows[i]:', local_statelows[i])
+        //            //console.log('map.js local_statehighs[i]:', local_statehighs[i])
+        //            //console.log('map.js step_progress:', step_progress)
+
+        //        }
+        //    }
+
+        //}
     }
 
-    render_relevant_tiles(ssctree, matrix, box3d, near_St) {
+    render_relevant_tiles(ssctree, tiles, matrix, opacity) {
         // FIXME: 
         // should a bucket have a method to 'draw' itself?
         // e.g. by associating multiple programs with a bucket
         // when the bucket is constructed?
 
+        //clear the depth before drawing the new layer 
+        //so that the new layer will not be discarded by the depth test
+        this._clearDepth()
+        this._clearDepthFbo()
+        //the image in Fbo has been drawn to the screen, so it is safe to clear the color in Fbo
+        //On the other hand, we must clear the color in Fbo; otherwise, the next drawing will be influenced
+        //because the strategy of the fragmentShaderText in ImageFboDrawProgram
+        this._clearColorFbo()
 
 
-        //this._clearDepth()
-        if (ssctree.tree == null) { //before the tree is loaded, ssctree.tree == null
-            return
-        }
 
         let gl = this.gl
         let tree_setting = ssctree.tree_setting
         let canvas = this.canvas;
-        //console.log('render.js tree_setting:', tree_setting)
-        //console.log('render.js tree_setting.do_draw:', tree_setting.do_draw)
-        //console.log('render.js tree_setting:', &tree_setting)
-        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-        //console.log('render.js box3d:', box3d)
-        //console.log('render.js near_St:', near_St)
-
-        //console.log('render.js step:', near_St[0])
-
-        var tiles = ssctree.get_relevant_tiles(box3d)
-
-        //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
-        //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
-        if (tiles.length > 0 && tree_setting.do_draw == true && tree_setting.opacity > 0) {
+        
+        if (tiles.length > 0 && opacity > 0) {
 
             if (tree_setting.datatype == 'polygon') {
                 var polygon_draw_program = this.programs[0];
@@ -145,25 +205,14 @@ export class Renderer {
                 })
 
                 var image_fbo_program = new ImageFboDrawProgram(gl)
-                image_fbo_program.draw_fbo(gl.fbo, tree_setting)
+                image_fbo_program.draw_fbo(gl.fbo, opacity)
+
+                //tiles.forEach(tile => {
+                //    polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
+                //    //polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                //})
 
 
-                // If we want to draw lines twice -> thick line under / small line over
-                // we need to do this twice + move the code for determining line width here...
-
-                if (this.settings.boundary_width > 0) {
-                    var line_draw_program = this.programs[1];
-                    tiles.forEach(tile => {
-                        // FIXME: would be nice to specify width here in pixels.
-                        // bottom lines (black)
-                        // line_draw_program.draw_tile(matrix, tile, near_St, 2.0);
-                        // interior (color)
-                        line_draw_program.draw_tile(matrix, tile, near_St, this.settings, tree_setting);
-                    })
-                }
-
-                // Unbind the fbo.
-                //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];
@@ -174,9 +223,9 @@ export class Renderer {
                 })
             }
 
-
         }
 
+        //return tiles
         // this.buckets.forEach(bucket => {
         //     this.programs[0].draw(matrix, bucket);
         // })

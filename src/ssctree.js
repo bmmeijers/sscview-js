@@ -32,7 +32,8 @@ export class SSCTree {
         this.msgbus = msgbus
         this.tree = null
         this.tree_setting = tree_setting
-        this.step_highs = null
+        this.states = null
+        this.if_snap = false
         // FIXME: as the pool of workers is owned by the ssctree, adding a new SSCTree makes again (many) more workers
         // There should be just 1 pool of workers, e.g. in the map object, that is used by all
         // SSCTrees for data retrieval -> also images should be retrieved by a
@@ -44,7 +45,7 @@ export class SSCTree {
         //console.log('ssctree.js window.navigator.hardwareConcurrency:', window.navigator.hardwareConcurrency)
         //console.log('ssctree.js pool_size:', pool_size)
         this.worker_helpers = []
-        for (let i = 0; i< pool_size+1; i++) {
+        for (let i = 0; i < pool_size + 1; i++) {
             this.worker_helpers.push(new WorkerHelper())
         }
         console.log(pool_size + ' workers made')
@@ -59,7 +60,7 @@ export class SSCTree {
 
         //we specify folder 'dist_test', 'dist_buchholz_greedy', or 'dist_buchholz_astar' in sscview-js\rollup.config.js
         //let data_folder = 'data/';
-//        let jsonfile = 'nodes.json';
+        //        let jsonfile = 'nodes.json';
         //let jsonfile = 'tree_buchholz.json';
         //let jsonfile = 'tree.json';
         //console.log('fetching root' + this.tree_setting.tree_root_href + this.tree_setting.tree_root_file_nm)
@@ -67,16 +68,14 @@ export class SSCTree {
         //e.g., this.tree_setting.tree_root_href: '/data/'
         //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
         //e.g., this.tree_setting.step_event_exc_link: 'step_event.json'
-        var step_highs = null
-        var if_snap = false
+        var states = [0]
         var step_event_exc_link = 'step_event_exc_link'
         if (step_event_exc_link in this.tree_setting) {
-            if_snap = true
-            
+            this.if_snap = true
+
             fetch(this.tree_setting[step_event_exc_link])
                 .then(r => {
                     //console.log('ssctree.js r:', r)
-                    step_highs = [0] //initilize a list; if the file exists, we will do parallel merging
                     return r.json()
                 })
                 .then(filecontent => {
@@ -92,22 +91,21 @@ export class SSCTree {
                             eventnum = step_event_exceptions[exception_index][1]
                             exception_index += 1
                         }
-                        
-                        step_highs.push(step_highs[step_highs.length - 1] + eventnum)
+
+                        states.push(states[states.length - 1] + eventnum)
 
                         step += 1
                         current_face_num -= eventnum
-                    } 
+                    }
 
-                    //console.log('ssctree.js step_highs1:', step_highs)
+                    //console.log('ssctree.js states1:', states)
                 })
                 .then(() => {
-                    this.step_highs = step_highs
-                    //this.msgbus.publish('data.step_highs.loaded')
-                    console.log('ssctree.js step_highs:', step_highs)
+                    //this.msgbus.publish('data.states.loaded')
+                    console.log('ssctree.js states:', states)
                 })
                 .catch(() => {
-                    this.step_highs = null
+                    states = null
                 })
         }
 
@@ -119,7 +117,7 @@ export class SSCTree {
                 this.tree = tree
                 //let box3d = tree.box;
                 //tree.center2d = [(box3d[0] + box3d[3]) / 2, (box3d[1] + box3d[4]) / 2]
-                let dataelements = obtain_dataelements(this.tree)  //all the dataelements recorded in .json file
+                let dataelements = obtain_dataelements(tree)  //all the dataelements recorded in .json file
                 dataelements.forEach(element => { //originally, each element has attributes "id", "box", "info"
                     element.content = null
                     element.last_touched = null
@@ -127,6 +125,13 @@ export class SSCTree {
                     //console.log('ssctree.js element.href:', element.href)
                     element.loaded = false;
                 })
+
+                if (this.if_snap == false) { //i.e., states == [0]
+                    let step_num = tree.metadata.no_of_steps_Ns
+                    for (var i = 0; i < step_num; i++) {
+                        states.push(states[states.length - 1] + 1)
+                    }
+                }
             })
             .then(() => {
                 // Notify via PubSub that tree has loaded 
@@ -137,7 +142,7 @@ export class SSCTree {
                 console.error(err)
             })
 
-        return if_snap
+        this.states = states
     }
 
     // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
@@ -155,7 +160,7 @@ export class SSCTree {
                     element.content = null
                     element.last_touched = null
                     //e.g., element.info: 10/502/479.json
-                    
+
                     element.url = this.tree_setting.tile_root_href + element.info // FIXME:  was: element.href
                     //console.log('ssctree.js element.url:', element.url)
                     //console.log('ssctree.js element.info:', element.info)
@@ -169,9 +174,9 @@ export class SSCTree {
             })
     }
 
-    get_relevant_tiles(box3d) {
+    get_relevant_tiles(box3d, gl) {
         if (this.tree === null) { return [] }
-
+        this.fetch_tiles(box3d, gl)
         let overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d)
         return overlapped_dataelements
             .map(elem => { // set for each tile to be rendered the last accessed time
@@ -180,17 +185,13 @@ export class SSCTree {
             })
     }
 
-    prepare_active_tiles(near, transform, gl) {
+    prepare_matrix(near, transform) {
         let matrix = transform.world_square
         const far = -0.5
         matrix[10] = -2.0 / (near - far)
         matrix[14] = (near + far) / (near - far)
 
-        const box2d = transform.getVisibleWorld()
-        let box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near] 
-        this.fetch_tiles(box3d, gl)
-
-        return [matrix, box3d]
+        return matrix
     }
 
     fetch_tiles(box3d, gl) {
@@ -223,14 +224,14 @@ export class SSCTree {
             }
         )
         to_retrieve.sort(
-            (a, b) => { 
-                    if (a[0] < b[0]) { return -1 }
-                    else if (a[0] > b[0]) { return 1 }
-                    else {return 0}
+            (a, b) => {
+                if (a[0] < b[0]) { return -1 }
+                else if (a[0] > b[0]) { return 1 }
+                else { return 0 }
             }
         )
         to_retrieve = to_retrieve.map(
-            elem => {return elem[1]}
+            elem => { return elem[1] }
         )
 
 
@@ -249,7 +250,7 @@ export class SSCTree {
             content.load(elem.url, gl) //e.g., elem.url = /gpudemo/2020/03/merge/0.1/data/sscgen_smooth.obj
             //console.log('ssctree.js fetch_tiles, this.helper_idx_current:', this.helper_idx_current)
             //console.log('ssctree.js fetch_tiles, content.polygon_triangleVertexPosBufr:', content.polygon_triangleVertexPosBufr)
-            
+
             elem.content = content
             elem.loaded = true
             elem.last_touched = now()
@@ -277,82 +278,230 @@ export class SSCTree {
         return step
     }
 
-    get_snappedstep_from_newSt(St_new, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
-        
-        // FIXME: these 2 variables should be adjusted
-        //         based on which tGAP is used...
-        // FIXME: this step mapping should move to the data side (the tiles)
-        //         and be kept there (for every tree_setting visualized on the map)
-        // FIXME: should use this.getScaleDenominator()
+    //when current_step != Number.MAX_SAFE_INTEGER, St is the new one after computing zoom parameters
+    get_zoom_snappedstep_from_St(St, zoom_factor = 1) {
 
-        // let Sb = 48000  // (start scale denominator)
-        // let total_steps = 65536 - 1   // how many generalization steps did the process take?
+        let if_floor = false
+        let if_ceil = false
 
-        //let Sb = 24000  // (start scale denominator)
-        //let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-        if (this.tree === null)
-        {
-             return 0
+        if (zoom_factor < 1) { //zoom out
+            if_ceil = true
         }
-        //console.log('')
+        if (zoom_factor > 1) { //zoom in
+            if_floor = true
+        }
 
-        // reduction in percentage
-        //let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        //console.log('ssctree.js reductionf:', reductionf)
-        //let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        let newstep = this.get_step_from_St(St_new)
-        let snapped_step = newstep
-        let step_highs = this.step_highs
-        if (step_highs != null
-            && newstep > step_highs[0] - 0.001
-            && newstep < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        return this.get_snappedstep_from_St(St, if_floor, if_ceil)
+
+        //let snapped_index = 0
+        //if (zoom_factor == 1) {
+        //    //console.log('ssctree.js panning')
+        //    snapped_index = snap_to_state(newstep, states)
+        //}
+        //else if (zoom_factor < 1) { //zoom out
+        //    //console.log('ssctree.js zoom out')
+        //    snapped_index = snap_to_state(newstep, states, false, true)
+        //}
+        //else if (zoom_factor > 1) { //zoom in
+        //    //console.log('ssctree.js zoom in')
+        //    snapped_index = snap_to_state(newstep, states, true, false)
+        //}
+
+
+        //// FIXME: these 2 variables should be adjusted
+        ////         based on which tGAP is used...
+        //// FIXME: this step mapping should move to the data side (the tiles)
+        ////         and be kept there (for every tree_setting visualized on the map)
+        //// FIXME: should use this.getScaleDenominator()
+
+        //// let Sb = 48000  // (start scale denominator)
+        //// let total_steps = 65536 - 1   // how many generalization steps did the process take?
+
+        ////let Sb = 24000  // (start scale denominator)
+        ////let total_steps = 262144 - 1   // how many generalization steps did the process take?
+
+        //if (this.tree === null)
+        //{
+        //     return 0
+        //}
+        ////console.log('')
+
+        //// reduction in percentage
+        ////let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
+        ////console.log('ssctree.js reductionf:', reductionf)
+        ////let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
+        //let newstep = this.get_step_from_St(St)
+        //let snapped_step = newstep
+        //let states = this.states
+        //if (states != null
+        //    && newstep > states[0] - 0.001
+        //    && newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        //) {
+        //    //console.log('ssctree.js states:', states)
+        //    //console.log('ssctree.js step:', newstep)
+
+
+        //    //let current_step_index = snap_to_state(current_step, states)
+        //    //if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+        //    //    current_step = states[current_step_index]
+        //    //}
+
+
+        //    //if we scroll too little, the map doesn't zoom because of the snapping.
+        //    //we force snapping for at least one step. 
+        //    //let snapped_St = this.get_St_from_step(states[step_index])
+        //    //console.log('ssctree.js normal_step_diff:', normal_step_diff)
+        //    //console.log('ssctree.js current_step:', current_step)
+        //    //console.log('ssctree.js states[step_index]:', states[step_index])
+
+        //    //console.log(' ')
+        //    //console.log('ssctree.js zoom_factor:', zoom_factor)
+        //    let snapped_index = 0
+        //    if (zoom_factor == 1) {
+        //        //console.log('ssctree.js panning')
+        //        snapped_index = snap_to_state(newstep, states)
+        //    }
+        //    else if (zoom_factor < 1) { //zoom out
+        //        //console.log('ssctree.js zoom out')
+        //        snapped_index = snap_to_state(newstep, states, false, true)
+        //    }
+        //    else if (zoom_factor > 1) { //zoom in
+        //        //console.log('ssctree.js zoom in')
+        //        snapped_index = snap_to_state(newstep, states, true, false)
+        //    }
+
+
+        //    //console.log('ssctree.js snapped_index:', snapped_index)
+
+
+        //    //let snapped_index = snap_to_state(newstep, states)
+        //    //snapped_step = states[snapped_index]
+
+
+        //    //if (zoom_factor < 1 //zoom out
+        //    //    && snapped_step <= current_step) { //wrong direction because of snapping
+        //    //    snapped_index += 1
+        //    //}
+        //    //else if (zoom_factor > 1 //zoom in
+        //    //    && snapped_step >= current_step) { //wrong direction because of snapping
+        //    //    snapped_index -= 1
+        //    //}
+
+        //    //if (current_step != Number.MAX_SAFE_INTEGER) {
+        //    //    if (zoom_factor < 1 //zoom out
+        //    //        && snapped_step <= current_step) { //wrong direction because of snapping
+        //    //        snapped_index += 1
+        //    //    }
+        //    //    else if (zoom_factor > 1 //zoom in
+        //    //        && snapped_step >= current_step) { //wrong direction because of snapping
+        //    //        snapped_index -= 1
+        //    //    }
+        //    //}
+        //    //else {
+        //    //    //do nothing
+        //    //}
+
+        //    snapped_step = states[snapped_index]
+
+        //    //console.log('ssctree.js new step:', newstep)
+        //    //console.log('ssctree.js snapped_step:', snapped_step)
+        //}
+
+        //return snapped_step
+    }
+
+    //if (if_floor == false && if_ceil == false), then we snap to the cloest step
+    get_snappedstep_from_St(St, if_floor = false, if_ceil = false) {
+
+        if (this.tree === null) {
+            return 0
+        }
+
+        let step = this.get_step_from_St(St)
+        let snapped_step = step
+        let states = this.states
+        if (this.if_snap == true
+            && step > states[0] - 0.001
+            && step < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('ssctree.js step_highs:', step_highs)
-            //console.log('ssctree.js step:', newstep)
-            
-
-            let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
-            if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
-                current_step = step_highs[current_step_index]
-            }
-
-
-            //if we scroll too little, the map doesn't zoom because of the snapping.
-            //we force snapping for at least one step. 
-            //let snapped_St = this.get_St_from_step(step_highs[step_index])
+            //let snapped_St = this.get_St_from_step(states[step_index])
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
             //console.log('ssctree.js current_step:', current_step)
-            //console.log('ssctree.js step_highs[step_index]:', step_highs[step_index])
-            let snapped_index = snap_to_existing_stephigh(newstep, step_highs)
-            snapped_step = step_highs[snapped_index]
-
-
-
-            if (current_step != Number.MAX_SAFE_INTEGER) {
-                if (zoom_factor < 1 //zoom out
-                    && snapped_step <= current_step) { //wrong direction because of snapping
-                    snapped_index += 1
-                }
-                else if (zoom_factor > 1 //zoom in
-                    && snapped_step >= current_step) { //wrong direction because of snapping
-                    snapped_index -= 1
-                }
-            }
-            else {
-                //do nothing
-            }
-
-            snapped_step = step_highs[snapped_index]
-
-            //console.log('ssctree.js new step:', newstep)
-            //console.log('ssctree.js snapped_step:', snapped_step)
+            //console.log('ssctree.js states[step_index]:', states[step_index])
+            snapped_step = this.snap_to_state(step, if_floor, if_ceil)
+            //snapped_step = states[snapped_index]
         }
 
         return snapped_step
     }
 
-    get_time_factor(St_new, zoom_factor = 1, current_step = Number.MAX_SAFE_INTEGER) {
+    snap_to_state(state, if_floor = false, if_ceil = false) {
+        return this.states[this.snap_to_stateindex(state, if_floor, if_ceil)]
+    }
+
+    snap_to_stateindex(state, if_floor = false, if_ceil = false) {
+        let states = this.states
+        let start = 0, end = states.length - 1;
+
+        if (state < states[0]) {
+            return 0
+        }
+        if (state > states[end]) {
+            return end
+        }
+
+
+
+        // Iterate while start not meets end 
+        while (start <= end) {
+
+            // Find the mid index 
+            let mid = Math.floor((start + end) / 2);
+
+            // If element is present at mid, return True 
+            if (states[mid] == state) return mid;
+
+            // Else look in left or right half accordingly 
+            else if (states[mid] < state)
+                start = mid + 1;
+            else
+                end = mid - 1;
+        }
+
+
+        //console.log('ssctree.js snap_to_state step:', step)
+        //console.log('ssctree.js snap_to_state if_floor:', if_floor)
+        //console.log('ssctree.js snap_to_state start and end:', start, end)
+        //console.log('ssctree.js start and end:', start, end)
+        //console.log('states[start], step, states[end]:', states[start], step, states[end])
+        //console.log('states[start] - step, step - states[end]:', states[start] - step, step - states[end])
+        //if (states[start] - step <= step - states[end]) { //start is already larger than end by 1
+        //    return Math.min(start, states.length - 1) //start will be larger than the last value of states[0] if step is larger than all the values of states    
+        //}
+        //else {
+        //    return Math.max(end, 0) //end will be negtive if step is smaller than states[0]
+        //}
+
+        //at this point, start - end == 1
+        if (if_floor) {
+            return end
+        }
+        else if (if_ceil) {
+            return start
+        }
+        else if (state - states[end] <= states[start] - state) {
+            return end
+            //return Math.min(start, states.length - 1) //start will be larger than the last value of states[0] if step is larger than all the values of states    
+        }
+        else {
+            return start
+
+            //return Math.max(end, 0) //end will be negtive if step is smaller than states[0]
+        }
+    }
+
+
+    get_time_factor(St_new, zoom_factor, current_step) {
 
         if (this.tree === null) {
             return 1
@@ -364,40 +513,55 @@ export class SSCTree {
         let newstep = this.get_step_from_St(St_new)
 
         let snapped_step = newstep
-        let step_highs = this.step_highs
+        let states = this.states
         let time_factor = 1
-        if (step_highs != null
-            && newstep > step_highs[0] - 0.001
-            && newstep < step_highs[step_highs.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        if (this.if_snap == true
+            && newstep > states[0] - 0.001
+            && newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('ssctree.js --------------------------------------')
-            //console.log('ssctree.js step_highs:', step_highs)
+            //console.log('ssctree.js states:', states)
             //console.log('ssctree.js current_step:', current_step)
-            let current_step_index = snap_to_existing_stephigh(current_step, step_highs)
-            if (Math.abs(current_step - step_highs[current_step_index]) < 0.001) {
-                current_step = step_highs[current_step_index]
-            }
+            //let current_step_index = snap_to_state(current_step, states)
+            //if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+            //    current_step = states[current_step_index]
+            //}
 
 
 
             //console.log('ssctree.js current_step_index:', current_step_index)
 
             //console.log('ssctree.js step:', step)
-            //console.log('ssctree.js step_highs[current_step_index]:', step_highs[current_step_index])
+            //console.log('ssctree.js states[current_step_index]:', states[current_step_index])
             let normal_step_diff = Math.abs(newstep - current_step)
 
-            let snapped_index = snap_to_existing_stephigh(newstep, step_highs)
+
+            //let snapped_index = 0
+            if (zoom_factor == 1) {
+                //console.log('ssctree.js panning')
+                snapped_step = this.snap_to_state(newstep)
+            }
+            else if (zoom_factor < 1) { //zoom out
+                //console.log('ssctree.js zoom out')
+                snapped_step = this.snap_to_state(newstep, false, true)
+            }
+            else if (zoom_factor > 1) { //zoom in
+                //console.log('ssctree.js zoom in')
+                snapped_step = this.snap_to_state(newstep, true, false)
+            }
+
+            //let snapped_index = snap_to_state(newstep, states)
 
 
             //if we scroll too little, the map doesn't zoom because of the snapping.
             //we force snapping for at least one step. 
 
-            //let snapped_St = this.get_St_from_step(step_highs[step_index])
+            //let snapped_St = this.get_St_from_step(states[step_index])
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
             //console.log('ssctree.js snapped_index:', snapped_index)
-            //console.log('ssctree.js step_highs[snapped_index]:', step_highs[snapped_index])
+            //console.log('ssctree.js states[snapped_index]:', states[snapped_index])
             //console.log('ssctree.js zoom_factor:', zoom_factor)
-            //if (current_step == step_highs[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
+            //if (current_step == states[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
             //    if (zoom_factor > 1) { //zooming in 
             //        snapped_index -= 1
             //    }
@@ -406,27 +570,29 @@ export class SSCTree {
             //    }
             //}
 
-            snapped_step = step_highs[snapped_index]
-            if (current_step != Number.MAX_SAFE_INTEGER) {
-                if (//current_step < step //zoom out
-                    zoom_factor < 1
-                    && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
-                    snapped_index += 1
-                }
-                else if (//current_step > step //zoom in
-                    zoom_factor > 1
-                    && snapped_step >= current_step) { //wrong direction because of snapping
-                    snapped_index -= 1
-                }
-            }
-            snapped_step = step_highs[snapped_index]
+            //snapped_step = states[snapped_index]
+            //if (current_step != Number.MAX_SAFE_INTEGER) {
+            //    if (//current_step < step //zoom out
+            //        zoom_factor < 1
+            //        && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
+            //        snapped_index += 1
+            //    }
+            //    else if (//current_step > step //zoom in
+            //        zoom_factor > 1
+            //        && snapped_step >= current_step) { //wrong direction because of snapping
+            //        snapped_index -= 1
+            //    }
+            //}
+            //snapped_step = states[snapped_index]
             //console.log('ssctree.js snapped_step:', snapped_step)
 
             let adjusted_step_diff = Math.abs(snapped_step - current_step)
 
-            if (current_step != Number.MAX_SAFE_INTEGER) {
-                time_factor = adjusted_step_diff / normal_step_diff
-            }
+            time_factor = adjusted_step_diff / normal_step_diff
+
+            //if (current_step != Number.MAX_SAFE_INTEGER) {
+            //    time_factor = adjusted_step_diff / normal_step_diff
+            //}
 
             //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
@@ -451,35 +617,7 @@ export class SSCTree {
 }
 
 
-function snap_to_existing_stephigh(step, step_highs) {
 
-    let start = 0, end = step_highs.length - 1;
-    // Iterate while start not meets end 
-    while (start <= end) {
-
-        // Find the mid index 
-        let mid = Math.floor((start + end) / 2);
-
-        // If element is present at mid, return True 
-        if (step_highs[mid] == step) return mid;
-
-        // Else look in left or right half accordingly 
-        else if (step_highs[mid] < step)
-            start = mid + 1;
-        else
-            end = mid - 1;
-    }
-
-    //console.log('ssctree.js start and end:', start, end)
-    //console.log('step_highs[start], step, step_highs[end]:', step_highs[start], step, step_highs[end])
-    //console.log('step_highs[start] - step, step - step_highs[end]:', step_highs[start] - step, step - step_highs[end])
-    if (step_highs[start] - step <= step - step_highs[end]) { //start is already larger than end by 1
-        return Math.min(start, step_highs.length - 1) //start will be larger than the last value of step_highs[0] if step is larger than all the values of step_highs    
-    }
-    else {
-        return Math.max(end, 0) //end will be negtive if step is smaller than step_highs[0]
-    }
-}
 
 
 function obtain_overlapped_dataelements(node, box3d) {
@@ -672,7 +810,9 @@ export class Evictor {
 
         //this.ssctrees.forEach(ssctree => {})
         for (var i = 0; i < this.ssctrees.length; i++) {
-            let dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(elem => { return elem.loaded })
+            let dataelements = obtain_dataelements(this.ssctrees[i].tree).filter(elem => {
+                return elem.loaded
+            })
             //console.log('number of loaded tiles: ' + dataelements.length)
             dataelements.forEach(tile => {
                 try {

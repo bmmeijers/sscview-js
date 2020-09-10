@@ -197,7 +197,7 @@ export class ImageFboDrawProgram extends DrawProgram {
     }
 
     //    draw(matrix, tilecontent)
-    draw_fbo(fbo, tree_setting) {
+    draw_fbo(fbo, opacity) {
         //console.log('drawprograms.js fbo:', fbo)
         if (fbo === null) {
             console.log('drawprograms.js fbo is null:', fbo)
@@ -217,7 +217,7 @@ export class ImageFboDrawProgram extends DrawProgram {
 
         {
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-            gl.uniform1f(opacity_location, tree_setting.opacity);
+            gl.uniform1f(opacity_location, opacity);
 
 
         }
@@ -670,15 +670,30 @@ void main()
         //if a fragment is closer to the camera, then it has a smaller depth value
         //gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        //gl.depthFunc(gl.GEQUAL);
         //gl.depthFunc(gl.ALWAYS);
 
 
 
-        gl.disable(gl.BLEND) //we always opaquely draw into Fbo
+        //gl.disable(gl.BLEND) //we always opaquely draw into Fbo
 
         //gl.enable(gl.BLEND);
         //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
+
+
+        //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+
+        if (tree_setting.do_blend == true) {
+            gl.enable(gl.BLEND)
+        }
+        else {
+            //After an area merges another area, we can see a thin sliver.
+            //disable blending can avoid those slivers,
+            //but the alpha value does not have influence anymore
+            gl.disable(gl.BLEND)
+        }
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 

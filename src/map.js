@@ -62,7 +62,7 @@ class Map {
             time_factor: 1, //we changed the factor because we snap when merging parallelly
             pan_duration: 1000
         };
-        this.if_snap = false //if we want to snap, then we only snap according to the first dataset
+        //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
 
 
@@ -158,30 +158,30 @@ class Map {
             this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]) 
         }
 
-        this.evictor = new Evictor(this.ssctrees, this.gl)
-        // every 30 seconds release resources
-        window.setInterval(
-            () => {
-                let St = this.getTransform().getScaleDenominator()
+        //this.evictor = new Evictor(this.ssctrees, this.gl)
+        //// every 30 seconds release resources
+        //window.setInterval(
+        //    () => {
+        //        let St = this.getTransform().getScaleDenominator()
 
-                let box3ds = []
-                const box2d = this.getTransform().getVisibleWorld()
-                this.ssctrees.forEach((ssctree) => {
-                    var step = ssctree.get_step_from_St(St)
+        //        let box3ds = []
+        //        const box2d = this.getTransform().getVisibleWorld()
+        //        this.ssctrees.forEach((ssctree) => {
+        //            var step = ssctree.get_step_from_St(St)
 
-                    //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
-                    //const near = near_St[0]
+        //            //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
+        //            //const near = near_St[0]
 
-                    box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step])
+        //            box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step])
 
-                })
-                this.evictor.evict(box3ds)
-                this.render()
+        //        })
+        //        this.evictor.evict(box3ds)
+        //        this.render()
 
-            },
-            60 * 1000 * 2.5 // every X mins (expressed in millisec)
-            //10000 // every X mins (expressed in millisec)
-        )
+        //    },
+        //    60 * 1000 * 2.5 // every X mins (expressed in millisec)
+        //    //10000 // every X mins (expressed in millisec)
+        //)
 
     }
 
@@ -190,10 +190,11 @@ class Map {
 
         this.ssctrees.forEach((ssctree) => {
             //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
-            var if_snap = ssctree.load()
-            if (if_snap == true ) {
-                this.if_snap = true
-            }
+            ssctree.load()
+            //var if_snap = ssctree.load()
+            //if (if_snap == true ) {
+            //    this.if_snap = true
+            //}
         })
     }
 
@@ -217,21 +218,35 @@ class Map {
         let St = this.getTransform().getScaleDenominator()
         let St_for_step = St
         let steps = []  //record a step for each layer
+        let local_statehighs = [] //a state of current step for each layer
+        let local_statelows = [] //a step_low of current step for each layer
 
         //snapped_step and snapped_St have been computed by this.getTransform().updateViewportTransform()
-        let snapped_step = this.getTransform().snapped_step 
+        let snapped_step = this.getTransform().snapped_step
         let snapped_St = this.getTransform().snapped_St //the St obtained from a snapped step
 
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
-        if (k == 1 && this.if_snap == true &&
+        if (k == 1 && ssctrees[0].if_snap == true &&
             this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
             snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
             St_for_step = snapped_St
             steps.push(snapped_step)  //we only snap according to the first dataset
+            //console.log('map.js snapped_step:', snapped_step)
+            local_statehighs.push(snapped_step)
+            local_statelows.push(snapped_step)
         }
         else {
             steps.push(ssctrees[0].get_step_from_St(St_for_step))
+
+            //Notice that the two snapped states can be the same
+            local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true))
+            local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false))
+
+
+            //console.log('map.js steps[0]:', steps[0])
+            //console.log('map.js local_statehighs[0]:', local_statehighs[0])
+            //console.log('map.js local_statelows[0]:', local_statelows[0])
         }
 
         //If we want to have multi-scale map intead of vario-scale map
@@ -242,12 +257,19 @@ class Map {
 
             let scale_snapped_St = snap_to_existing_Sts(St_for_step, this.map_setting.tree_settings[0].discrete_scales)
             //console.log('map.js scale_snapped_St:', scale_snapped_St)
-            
-            if (this.if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
-                steps[0] = ssctrees[0].get_snappedstep_from_newSt(scale_snapped_St)
+
+            if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
+                //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+                steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
+
+                local_statehighs.push(steps[0])
+                local_statelows.push(steps[0])
             }
             else {
                 steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+
+                local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true))
+                local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false))
             }
 
         }
@@ -259,12 +281,20 @@ class Map {
         //add steps of other layers
         for (var i = 1; i < ssctrees.length; i++) {
             steps.push(ssctrees[i].get_step_from_St(St_for_step))
+            local_statehighs.push(ssctrees[i].snap_to_state(steps[i], false, true))
+            local_statelows.push(ssctrees[i].snap_to_state(steps[i], true, false))
         }
 
 
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step])
 
-        this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step)
+        //this.renderer._clearColor()
+        this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs)
+        //this.renderer.render_ssctrees(local_statehighs, this.getTransform(), St_for_step, opacities2)
+        //if (true) {
+            
+        //}
+        
     }
 
 
@@ -351,7 +381,7 @@ class Map {
     animateZoom(x, y, zoom_factor) {
         const start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
-            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
         return interpolate;
@@ -385,7 +415,7 @@ class Map {
 
     zoom(x, y, zoom_factor) {
         this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
-            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.if_snap);
+            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
         this.render();
     }
 
