@@ -65,8 +65,20 @@ export class Renderer {
                 continue
             }
 
-            //console.log('render.js render ssctree:', ssctree)
-            let step = steps[i] - 0.001 //to compensate with the rounding problems
+            //console.log('render.js steps[i]:', steps[i])
+
+            //let step = steps[i] - 0.01 
+
+            let default_comp = 0.001 //default compsensation number
+            let step = steps[i] - default_comp //to compensate with the rounding problems; default value is 0.001
+            
+            if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
+                step = steps[i] - tree_setting['state_compensation']
+            }
+
+
+            
+            //console.log('render.js step:', step)
 
             //let last_step = ssctree.tree.metadata.no_of_steps_Ns
             let last_step = Number.MAX_SAFE_INTEGER
@@ -81,7 +93,7 @@ export class Renderer {
             else if (step >= last_step) {
                 step = last_step
             }
-            steps[i] = step
+            //steps[i] = step
             //console.log('render.js, step after snapping:', step)
 
             //console.log('render.js, step after snapping:', step)
@@ -91,8 +103,10 @@ export class Renderer {
             let inputopacity = tree_setting.opacity
             let opacity1 = inputopacity
             let opacity2 = 0 //the layer will not be drawn if opacity is 0
+            let local_statehigh = 0
             if (tree_setting.do_color_adapt == true) {
                 if (local_statelows[i] == local_statehighs[i]) { 
+                    //console.log('render.js equality happened!')
                     //do nothing, draw normally
                 }
                 else {
@@ -100,6 +114,11 @@ export class Renderer {
                     let step_progress = (step - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
                     opacity2 = step_progress * inputopacity
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2)
+
+                    local_statehigh = local_statehighs[i] - default_comp
+                    if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
+                        local_statehigh = local_statehighs[i] - tree_setting['state_compensation']
+                    }
                 }
             }
 
@@ -109,16 +128,16 @@ export class Renderer {
             var tiles = ssctree.get_relevant_tiles(box3d, this.gl)
 
             //draw the layer according to the slicing plane
+            //console.log()
             var matrix = ssctree.prepare_matrix(step, transform)
             this.render_relevant_tiles(ssctree, tiles, matrix, opacity1);
 
 
             if (tree_setting.do_color_adapt == true && opacity2 > 0) {
-                //console.log('render.js:', tree_setting.do_color_adapt)
                 //console.log('render.js step:', step)
                 //console.log('render.js opacity1:', opacity1)
                 //console.log('render.js opacity2:', opacity2)
-                var matrix2 = ssctree.prepare_matrix(local_statehighs[i], transform)
+                var matrix2 = ssctree.prepare_matrix(local_statehigh, transform)
 
                 this.render_relevant_tiles(ssctree, tiles, matrix2, opacity2);
             }
@@ -136,40 +155,6 @@ export class Renderer {
                 })
             }
         }
-
-
-
-
-
-        //let opacities1 = []
-        //let opacities2 = []
-        //for (var i = 0; i < local_statehighs.length; i++) {
-        //    let inputopacity = ssctrees[i].tree_setting.opacity
-        //    opacities1.push(inputopacity)
-        //    opacities2.push(0) //the layer will not be drawn if opacity is 0
-        //    if (ssctrees[i].tree_setting.do_color_adapt == true) {
-        //        if (local_statelows[i] == local_statehighs[i]) {
-        //            opacities1[i] = inputopacity
-        //            opacities2[i] = 0 //the layer will not be drawn if opacity is 0
-        //        }
-        //        else {
-        //            let step_progress = (steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
-        //            let adjusted_opacity2 = step_progress * inputopacity
-        //            let adjusted_opacity1 = (inputopacity - adjusted_opacity2) / (1 - adjusted_opacity2)
-
-        //            opacities1[i] = adjusted_opacity1
-        //            opacities2[i] = adjusted_opacity2
-
-        //            //step_progresses.push((steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i]))
-        //            //console.log('map.js steps[i]:', steps[i])
-        //            //console.log('map.js local_statelows[i]:', local_statelows[i])
-        //            //console.log('map.js local_statehighs[i]:', local_statehighs[i])
-        //            //console.log('map.js step_progress:', step_progress)
-
-        //        }
-        //    }
-
-        //}
     }
 
     render_relevant_tiles(ssctree, tiles, matrix, opacity) {

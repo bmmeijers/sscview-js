@@ -745,7 +745,7 @@
     }
 
     function createvec3() {
-        var out = new Float32Array(3);
+        var out = new Float64Array(3);
         out[0] = 0;
         out[1] = 0;
         out[2] = 0;
@@ -759,7 +759,7 @@
      * @returns {mat4} a new 4x4 matrix
      */
     function create() {
-        var out = new Float32Array(16);
+        var out = new Float64Array(16);
         out[0] = 1;
         out[1] = 0;
         out[2] = 0;
@@ -1581,6 +1581,7 @@
     var ImageFboDrawProgram = /*@__PURE__*/(function (DrawProgram) {
         function ImageFboDrawProgram(gl) {
             var vertexShaderText =
+                'precision highp float;\n' +
                 'attribute vec4 a_Position;\n' +
                 'attribute vec2 a_TexCoord;\n' +
                 'varying vec2 v_TexCoord;\n' +
@@ -1607,7 +1608,6 @@
         ImageFboDrawProgram.prototype = Object.create( DrawProgram && DrawProgram.prototype );
         ImageFboDrawProgram.prototype.constructor = ImageFboDrawProgram;
 
-        //    draw(matrix, tilecontent)
         ImageFboDrawProgram.prototype.draw_fbo = function draw_fbo (fbo, opacity) {
             //console.log('drawprograms.js fbo:', fbo)
             if (fbo === null) {
@@ -1689,7 +1689,7 @@
 
             var vertexShaderText = "\nprecision highp float;\n\nattribute vec2 displacement;\nattribute vec4 vertexPosition_modelspace;\nuniform mat4 M;\nuniform float near;\nuniform float half_width_reality;\n\nvoid main()\n{\n    vec4 pos = vertexPosition_modelspace;\n\n    if (pos.z <= near && pos.w > near)\n    {\n        pos.x +=  displacement.x * half_width_reality;\n        pos.y +=  displacement.y * half_width_reality;\n        gl_Position = M * vec4(pos.xyz, 1.0);\n\n    } else {\n        gl_Position = vec4(-10.0,-10.0,-10.0,1.0);\n        return;\n    }\n}\n";
 
-            var fragmentShaderText = "\nprecision mediump float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
+            var fragmentShaderText = "\nprecision highp float;\nuniform vec4 uColor;\n\nvoid main()\n{\n    gl_FragColor = uColor; // color of the lines\n}\n";
 
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
 
@@ -1838,7 +1838,7 @@
         function PolygonDrawProgram(gl) {
 
             var vertexShaderText = "\nprecision highp float;\n\nattribute vec3 vertexPosition_modelspace;\nattribute vec3 vertexColor;\nuniform mat4 M;\nvarying vec4 fragColor;\nuniform float opacity;\n\nvoid main()\n{\n    fragColor = vec4(vertexColor, opacity);\n    gl_Position = M * vec4(vertexPosition_modelspace, 1);\n}\n";
-            var fragmentShaderText = "\nprecision mediump float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
+            var fragmentShaderText = "\nprecision highp float;\n\nvarying vec4 fragColor;\nvoid main()\n{\n    gl_FragColor = vec4(fragColor);\n}\n";
 
             //        let vertexShaderText = `
     //precision highp float;
@@ -2081,6 +2081,18 @@
 
         return PolygonDrawProgram;
     }(DrawProgram));
+
+    //function Float64ArrayTo32(array64) {
+    //    var array32 = new Float32Array(array64.length)
+    //    for (var i = 0; i < array64.length; i++) {
+    //        array32[i] = array64[i]
+    //    }
+
+    //    //console.log('drawprograms.js array64:', array64)
+
+    //    return array64
+
+    //}
 
     function initVertexBuffers(gl) {
         var verticesTexCoords = new Float32Array([
@@ -2358,8 +2370,20 @@
                 return
             }
 
-            //console.log('render.js render ssctree:', ssctree)
-            var step = steps[i] - 0.001; //to compensate with the rounding problems
+            //console.log('render.js steps[i]:', steps[i])
+
+            //let step = steps[i] - 0.01 
+
+            var default_comp = 0.001; //default compsensation number
+            var step = steps[i] - default_comp; //to compensate with the rounding problems; default value is 0.001
+                
+            if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
+                step = steps[i] - tree_setting['state_compensation'];
+            }
+
+
+                
+            //console.log('render.js step:', step)
 
             //let last_step = ssctree.tree.metadata.no_of_steps_Ns
             var last_step = Number.MAX_SAFE_INTEGER;
@@ -2374,7 +2398,7 @@
             else if (step >= last_step) {
                 step = last_step;
             }
-            steps[i] = step;
+            //steps[i] = step
             //console.log('render.js, step after snapping:', step)
 
             //console.log('render.js, step after snapping:', step)
@@ -2384,6 +2408,7 @@
             var inputopacity = tree_setting.opacity;
             var opacity1 = inputopacity;
             var opacity2 = 0; //the layer will not be drawn if opacity is 0
+            var local_statehigh = 0;
             if (tree_setting.do_color_adapt == true) {
                 if (local_statelows[i] == local_statehighs[i]) ;
                 else {
@@ -2391,6 +2416,11 @@
                     var step_progress = (step - local_statelows[i]) / (local_statehighs[i] - local_statelows[i]);
                     opacity2 = step_progress * inputopacity;
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2);
+
+                    local_statehigh = local_statehighs[i] - default_comp;
+                    if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
+                        local_statehigh = local_statehighs[i] - tree_setting['state_compensation'];
+                    }
                 }
             }
 
@@ -2400,16 +2430,16 @@
             var tiles = ssctree.get_relevant_tiles(box3d, this$1.gl);
 
             //draw the layer according to the slicing plane
+            //console.log()
             var matrix = ssctree.prepare_matrix(step, transform);
             this$1.render_relevant_tiles(ssctree, tiles, matrix, opacity1);
 
 
             if (tree_setting.do_color_adapt == true && opacity2 > 0) {
-                //console.log('render.js:', tree_setting.do_color_adapt)
                 //console.log('render.js step:', step)
                 //console.log('render.js opacity1:', opacity1)
                 //console.log('render.js opacity2:', opacity2)
-                var matrix2 = ssctree.prepare_matrix(local_statehighs[i], transform);
+                var matrix2 = ssctree.prepare_matrix(local_statehigh, transform);
 
                 this$1.render_relevant_tiles(ssctree, tiles, matrix2, opacity2);
             }
@@ -2429,40 +2459,6 @@
         };
 
             for (var i = steps.length - 1; i >= 0; i--) loop( i );
-
-
-
-
-
-        //let opacities1 = []
-        //let opacities2 = []
-        //for (var i = 0; i < local_statehighs.length; i++) {
-        //let inputopacity = ssctrees[i].tree_setting.opacity
-        //opacities1.push(inputopacity)
-        //opacities2.push(0) //the layer will not be drawn if opacity is 0
-        //if (ssctrees[i].tree_setting.do_color_adapt == true) {
-        //    if (local_statelows[i] == local_statehighs[i]) {
-        //        opacities1[i] = inputopacity
-        //        opacities2[i] = 0 //the layer will not be drawn if opacity is 0
-        //    }
-        //    else {
-        //        let step_progress = (steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
-        //        let adjusted_opacity2 = step_progress * inputopacity
-        //        let adjusted_opacity1 = (inputopacity - adjusted_opacity2) / (1 - adjusted_opacity2)
-
-        //        opacities1[i] = adjusted_opacity1
-        //        opacities2[i] = adjusted_opacity2
-
-        //        //step_progresses.push((steps[i] - local_statelows[i]) / (local_statehighs[i] - local_statelows[i]))
-        //        //console.log('map.js steps[i]:', steps[i])
-        //        //console.log('map.js local_statelows[i]:', local_statelows[i])
-        //        //console.log('map.js local_statehighs[i]:', local_statehighs[i])
-        //        //console.log('map.js step_progress:', step_progress)
-
-        //    }
-        //}
-
-        //}
     };
 
     Renderer.prototype.render_relevant_tiles = function render_relevant_tiles (ssctree, tiles, matrix, opacity) {
@@ -2485,19 +2481,7 @@
         var gl = this.gl;
         var tree_setting = ssctree.tree_setting;
         var canvas = this.canvas;
-        //console.log('render.js tree_setting:', tree_setting)
-        //console.log('render.js tree_setting.do_draw:', tree_setting.do_draw)
-        //console.log('render.js tree_setting:', &tree_setting)
-        //console.log('render.js ssctree.tree_setting.tree_root_file_nm:', ssctree.tree_setting.tree_root_file_nm)
-        //console.log('render.js box3d:', box3d)
-        //console.log('render.js near_St:', near_St)
-
-        //console.log('render.js step:', near_St[0])
-
             
-
-        //console.log('render.js layer_nm, opacity', tree_setting.layer_nm, tree_setting.opacity)
-        //console.log('render.js, render_relevant_tiles, tiles.length:', tiles.length)
         if (tiles.length > 0 && opacity > 0) {
 
             if (tree_setting.datatype == 'polygon') {
@@ -2518,8 +2502,6 @@
                 //})
 
 
-
-
             }
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];
@@ -2529,7 +2511,6 @@
                     image_tile_draw_program.draw_tile(matrix, tile, tree_setting);
                 });
             }
-
 
         }
 
@@ -2769,7 +2750,8 @@
 
                 function create_data_buffer(gl, data_array, itemSize) {
                     var data_buffer = gl.createBuffer();
-                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer);
+                    //Unfortunately, the data that is buffered must be with type Float32Array (not Float64Array)
+                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer); 
                     gl.bufferData(gl.ARRAY_BUFFER, data_array, gl.STATIC_DRAW);
                     data_buffer.itemSize = itemSize; //x, y, z, r_frac, g_frac, b_frac
                     //console.log('tiles.js data_array.length:', data_array.length)
@@ -3182,8 +3164,18 @@
     SSCTree.prototype.prepare_matrix = function prepare_matrix (near, transform) {
         var matrix = transform.world_square;
         var far = -0.5;
-        matrix[10] = -2.0 / (near - far);
+        matrix[10] = -2.0 / (near - far);        
         matrix[14] = (near + far) / (near - far);
+
+        //let test = []
+        //let test64 = new Float64Array(16);
+        //test.push(- 2.0 / (near - far))
+        //test64[5] = - 2.0 / (near - far)
+        //console.log('')
+        //console.log('ssctree.js -2.0 / (near - far):', - 2.0 / (near - far))
+        //console.log('ssctree.js matrix[10]:', matrix[10])
+        //console.log('ssctree.js test:', test)
+        //console.log('ssctree.js test64[5]:', test64[5])
 
         return matrix
     };
@@ -3332,15 +3324,15 @@
         //let snapped_step = newstep
         //let states = this.states
         //if (states != null
-        //&& newstep > states[0] - 0.001
-        //&& newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        //&& newstep > states[0] - 0.0001
+        //&& newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         //) {
         ////console.log('ssctree.js states:', states)
         ////console.log('ssctree.js step:', newstep)
 
 
         ////let current_step_index = snap_to_state(current_step, states)
-        ////if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+        ////if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
         ////current_step = states[current_step_index]
         ////}
 
@@ -3422,8 +3414,8 @@
         var snapped_step = step;
         var states = this.states;
         if (this.if_snap == true
-            && step > states[0] - 0.001
-            && step < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+            && step > states[0] - 0.0001
+            && step < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
             //let snapped_St = this.get_St_from_step(states[step_index])
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
@@ -3523,14 +3515,14 @@
         var states = this.states;
         var time_factor = 1;
         if (this.if_snap == true
-            && newstep > states[0] - 0.001
-            && newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+            && newstep > states[0] - 0.0001
+            && newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('ssctree.js --------------------------------------')
             //console.log('ssctree.js states:', states)
             //console.log('ssctree.js current_step:', current_step)
             //let current_step_index = snap_to_state(current_step, states)
-            //if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+            //if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
             //current_step = states[current_step_index]
             //}
 
@@ -4072,7 +4064,7 @@
             var this$1 = this;
 
         var interpolate = (function (k) {
-            var m = new Float32Array(16);
+            var m = new Float64Array(16);
             for (var i = 0; i < 16; i++) {
                 var delta = start[i] + k * (end[i] - start[i]);
                 m[i] = delta;
@@ -4090,11 +4082,11 @@
 
     Map.prototype.doEaseInOutSine = function doEaseInOutSine (start, end) {
         function interpolate(k) {
-            var m = new Float32Array(16);
-            var D = Math.cos(Math.PI * k) - 1;
+            var m = new Float64Array(16);
+            var D = Math.cos(Math.PI * k) + 1;
             for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
-                var delta = -c * 0.5 * D + start[i];
+                var delta = c * 0.5 * D + start[i];
                 m[i] = delta;
             }
             // update the world_square matrix
@@ -4112,8 +4104,8 @@
             var this$1 = this;
      //start and end: the world squares
         var interpolate = function (k) {
-            var m = new Float32Array(16);
-            var D = (Math.sin(k * (Math.PI * 0.5)));
+            var m = new Float64Array(16);
+            var D = Math.sin(k * Math.PI * 0.5);
             for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
                 var delta = c * D + start[i];
@@ -4134,7 +4126,7 @@
         function interpolate(k) {
             var t = k - 1;
             var t5p1 = Math.pow(t, 5) + 1;
-            var m = new Float32Array(16);
+            var m = new Float64Array(16);
             for (var i = 0; i < 16; i++) {
                 var c = end[i] - start[i];
                 var delta = c * t5p1 + start[i];
@@ -4157,6 +4149,7 @@
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
         var end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
+        //var interpolate = this.doEaseNone(start, end);
         return interpolate;
     };
 
@@ -4165,6 +4158,7 @@
         this.getTransform().pan(dx, -dy);
         var end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
+        //var interpolate = this.doEaseNone(start, end);
         return interpolate;
     };
 

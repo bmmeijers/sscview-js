@@ -301,7 +301,7 @@ class Map {
 
     doEaseNone(start, end) {
         let interpolate = ((k) => {
-            var m = new Float32Array(16);
+            var m = new Float64Array(16);
             for (let i = 0; i < 16; i++) {
                 let delta = start[i] + k * (end[i] - start[i]);
                 m[i] = delta;
@@ -319,11 +319,11 @@ class Map {
 
     doEaseInOutSine(start, end) {
         function interpolate(k) {
-            var m = new Float32Array(16);
-            let D = Math.cos(Math.PI * k) - 1
+            var m = new Float64Array(16);
+            let D = Math.cos(Math.PI * k) + 1
             for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
-                let delta = -c * 0.5 * D + start[i];
+                let delta = c * 0.5 * D + start[i];
                 m[i] = delta;
             }
             // update the world_square matrix
@@ -339,8 +339,8 @@ class Map {
 
     doEaseOutSine(start, end) { //start and end: the world squares
         let interpolate = (k) => {
-            var m = new Float32Array(16);
-            let D = (Math.sin(k * (Math.PI * 0.5)));
+            var m = new Float64Array(16);
+            let D = Math.sin(k * Math.PI * 0.5);
             for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
                 let delta = c * D + start[i];
@@ -361,7 +361,7 @@ class Map {
         function interpolate(k) {
             let t = k - 1
             let t5p1 = Math.pow(t, 5) + 1
-            var m = new Float32Array(16);
+            var m = new Float64Array(16);
             for (let i = 0; i < 16; i++) {
                 let c = end[i] - start[i];
                 let delta = c * t5p1 + start[i];
@@ -384,6 +384,7 @@ class Map {
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
+        //var interpolate = this.doEaseNone(start, end);
         return interpolate;
     }
 
@@ -392,6 +393,7 @@ class Map {
         this.getTransform().pan(dx, -dy);
         const end = this.getTransform().world_square;
         var interpolate = this.doEaseOutSine(start, end);
+        //var interpolate = this.doEaseNone(start, end);
         return interpolate;
     }
 

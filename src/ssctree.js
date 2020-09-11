@@ -188,8 +188,18 @@ export class SSCTree {
     prepare_matrix(near, transform) {
         let matrix = transform.world_square
         const far = -0.5
-        matrix[10] = -2.0 / (near - far)
+        matrix[10] = -2.0 / (near - far)        
         matrix[14] = (near + far) / (near - far)
+
+        //let test = []
+        //let test64 = new Float64Array(16);
+        //test.push(- 2.0 / (near - far))
+        //test64[5] = - 2.0 / (near - far)
+        //console.log('')
+        //console.log('ssctree.js -2.0 / (near - far):', - 2.0 / (near - far))
+        //console.log('ssctree.js matrix[10]:', matrix[10])
+        //console.log('ssctree.js test:', test)
+        //console.log('ssctree.js test64[5]:', test64[5])
 
         return matrix
     }
@@ -334,15 +344,15 @@ export class SSCTree {
         //let snapped_step = newstep
         //let states = this.states
         //if (states != null
-        //    && newstep > states[0] - 0.001
-        //    && newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+        //    && newstep > states[0] - 0.0001
+        //    && newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         //) {
         //    //console.log('ssctree.js states:', states)
         //    //console.log('ssctree.js step:', newstep)
 
 
         //    //let current_step_index = snap_to_state(current_step, states)
-        //    //if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+        //    //if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
         //    //    current_step = states[current_step_index]
         //    //}
 
@@ -421,8 +431,8 @@ export class SSCTree {
         let snapped_step = step
         let states = this.states
         if (this.if_snap == true
-            && step > states[0] - 0.001
-            && step < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+            && step > states[0] - 0.0001
+            && step < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
             //let snapped_St = this.get_St_from_step(states[step_index])
             //console.log('ssctree.js normal_step_diff:', normal_step_diff)
@@ -516,14 +526,14 @@ export class SSCTree {
         let states = this.states
         let time_factor = 1
         if (this.if_snap == true
-            && newstep > states[0] - 0.001
-            && newstep < states[states.length - 1] + 0.001 //without this line, the map will stop zooming out when at the last step
+            && newstep > states[0] - 0.0001
+            && newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
             //console.log('ssctree.js --------------------------------------')
             //console.log('ssctree.js states:', states)
             //console.log('ssctree.js current_step:', current_step)
             //let current_step_index = snap_to_state(current_step, states)
-            //if (Math.abs(current_step - states[current_step_index]) < 0.001) {
+            //if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
             //    current_step = states[current_step_index]
             //}
 

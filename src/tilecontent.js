@@ -84,7 +84,8 @@ export class TileContent {
 
                 function create_data_buffer(gl, data_array, itemSize) {
                     let data_buffer = gl.createBuffer();
-                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer);
+                    //Unfortunately, the data that is buffered must be with type Float32Array (not Float64Array)
+                    gl.bindBuffer(gl.ARRAY_BUFFER, data_buffer); 
                     gl.bufferData(gl.ARRAY_BUFFER, data_array, gl.STATIC_DRAW);
                     data_buffer.itemSize = itemSize; //x, y, z, r_frac, g_frac, b_frac
                     //console.log('tiles.js data_array.length:', data_array.length)

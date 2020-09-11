@@ -290,7 +290,7 @@
                     <fieldset>
                         <legend> zooming duration</legend>
                         <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation"
+                            short (0s) <input type="range" value="2001" step="25" min="0" max="5001" id="zoom-animation"
                                 style="margin: 0 16px 0 16px;"> long (5s)
                         </div>
                     </fieldset>
@@ -331,7 +331,7 @@
         </div>
     </div>
 
-    <footer class="w3-container w3-display-left">
+    <!-- <footer class="w3-container w3-display-left">
         <div class="w3-left">
             <!--class="w3-bar-item w3-padding-small" -->
 
@@ -354,7 +354,7 @@
                 </div>
             </div>
         </div>
-    </footer>
+    </footer> -->
 
     <!-- <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
         <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
@@ -448,40 +448,41 @@
             }
 
             
-            let tree_setting_parallel = {
+            // let tree_setting_parallel = {
+            //     ...tree_setting_sample,
+            //     ...{ //the values of the same keys will be updated by this dictionary 
+            //         'layer_nm': 'Parallel-merging',
+            //         'tree_root_file_nm': 'tree_smooth.json',
+            //         // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
+            //         // 'tile_root_href': window_location + 'data/top10nl-0.001/',
+            //         // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+            //         'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.01/',    // with trailing slash!
+            //         'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.01/',
+            //         'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.01/step_event_exc.json', //activate this entry if we want to snap to certain steps
+            //         'draw_cw_faces': false, //draw counterclockwise (cull front faces)
+            //         'opacity': 0.8,
+            //         'do_color_adapt': true,
+            //     }
+            // }
+
+
+
+
+
+
+            let tree_setting_example_7 = {
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
-                    'layer_nm': 'Parallel-merging',
+                    'layer_nm': 'Example-7',
                     'tree_root_file_nm': 'tree_smooth.json',
-                    // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
-                    // 'tile_root_href': window_location + 'data/top10nl-0.001/',
-                    // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',    // with trailing slash!
-                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/',
-                    'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'draw_cw_faces': false, //draw counterclockwise (cull front faces)
+                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/',    // with trailing slash!
+                    'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/',
+                    'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/step_event_exc.json', //activate this entry if we want to snap to certain steps
+                    'draw_cw_faces': false, //draw counterclockwise 
                     'opacity': 0.8,
                     'do_color_adapt': true,
                 }
             }
-
-
-
-
-
-
-            // let tree_setting_example_7 = {
-            //     ...tree_setting_sample,
-            //     ...{ //the values of the same keys will be updated by this dictionary 
-            //         'layer_nm': 'Example-7',
-            //         'tree_root_file_nm': 'tree_smooth.json',
-            //         // 'step_event_exc_nm': 'eventdiff.json', //activate this entry if we want to snap to certain steps
-            //         'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',    // with trailing slash!
-            //         'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/05/merge/example-parallel-merging/data/',
-            //         'draw_cw_faces': false, //draw counterclockwise 
-            //         'opacity': 0.1,
-            //     }
-            // }
 
 
 
@@ -562,8 +563,8 @@
                     'center2d': center2d,
 
                     // 'scale_den': 300000, //Drenthe overview
-                    'scale_den': 100000, //Drenthe overview
-                    // 'scale_den': 5000, // example of 7 objects                    // 
+                    // 'scale_den': 100000, //Drenthe overview
+                    'scale_den': 5000, // example of 7 objects                    // 
 
                     // 'scale_den': 1200000, //Netherlands
                     
@@ -579,11 +580,11 @@
                     // tree_setting_aanvoergebieden2_drenthe,
                     // tree_setting_waterschappen2017,
                     // // tree_setting_nl_raster,
-                    tree_setting_parallel,
+                    // tree_setting_parallel,
                     // tree_setting_single,
 
                     // small data sets for testing
-                    // tree_setting_example_7, 
+                    tree_setting_example_7, 
                     // tree_setting8,
                 ],
                 'interaction_defaults': []

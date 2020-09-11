@@ -161,6 +161,7 @@ void main()
 export class ImageFboDrawProgram extends DrawProgram {
     constructor(gl) {
         let vertexShaderText =
+            'precision highp float;\n' +
             'attribute vec4 a_Position;\n' +
             'attribute vec2 a_TexCoord;\n' +
             'varying vec2 v_TexCoord;\n' +
@@ -196,7 +197,6 @@ export class ImageFboDrawProgram extends DrawProgram {
         super(gl, vertexShaderText, fragmentShaderText)
     }
 
-    //    draw(matrix, tilecontent)
     draw_fbo(fbo, opacity) {
         //console.log('drawprograms.js fbo:', fbo)
         if (fbo === null) {
@@ -301,7 +301,7 @@ void main()
 `;
 
         let fragmentShaderText = `
-precision mediump float;
+precision highp float;
 uniform vec4 uColor;
 
 void main()
@@ -466,7 +466,7 @@ void main()
 }
 `;
         let fragmentShaderText = `
-precision mediump float;
+precision highp float;
 
 varying vec4 fragColor;
 void main()
@@ -712,6 +712,18 @@ void main()
 
 
 }
+
+//function Float64ArrayTo32(array64) {
+//    var array32 = new Float32Array(array64.length)
+//    for (var i = 0; i < array64.length; i++) {
+//        array32[i] = array64[i]
+//    }
+
+//    //console.log('drawprograms.js array64:', array64)
+
+//    return array64
+
+//}
 
 function initVertexBuffers(gl) {
     var verticesTexCoords = new Float32Array([

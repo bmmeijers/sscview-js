@@ -22,7 +22,7 @@ export function vec3transform (out, a, m) {
 }
 
 export function createvec3() {
-    var out = new Float32Array(3);
+    var out = new Float64Array(3);
     out[0] = 0;
     out[1] = 0;
     out[2] = 0;
@@ -36,7 +36,7 @@ export function createvec3() {
  * @returns {mat4} a new 4x4 matrix
  */
 export function create() {
-    var out = new Float32Array(16);
+    var out = new Float64Array(16);
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -64,7 +64,7 @@ export function create() {
  * @returns {mat4} a new 4x4 matrix
  */
 export function clone(a) {
-    var out = new Float32Array(16);
+    var out = new Float64Array(16);
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -135,7 +135,7 @@ export function copy (out, a) {
  * @returns {mat4} A new mat4
  */
 export function fromValues (m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
-    var out = new Float32Array(16);
+    var out = new Float64Array(16);
     out[0] = m00;
     out[1] = m01;
     out[2] = m02;
