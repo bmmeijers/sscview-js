@@ -139,9 +139,11 @@ void main()
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.textureCoordBuffer)
-        const textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
-        gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(textureAttrib);
+        this._specify_data_for_shaderProgram(gl, shaderProgram, 'aTextureCoord', 2, 0, 0)
+        //console.log('test')
+        //const textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
+        //gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
+        //gl.enableVertexAttribArray(textureAttrib);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tile.content.texture);

@@ -1557,9 +1557,11 @@
             }
 
             gl.bindBuffer(gl.ARRAY_BUFFER, tile.content.textureCoordBuffer);
-            var textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
-            gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(textureAttrib);
+            this._specify_data_for_shaderProgram(gl, shaderProgram, 'aTextureCoord', 2, 0, 0);
+            //console.log('test')
+            //const textureAttrib = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
+            //gl.vertexAttribPointer(textureAttrib, 2, gl.FLOAT, false, 0, 0);
+            //gl.enableVertexAttribArray(textureAttrib);
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, tile.content.texture);
@@ -2377,7 +2379,7 @@
             var default_comp = 0.001; //default compsensation number
             var step = steps[i] - default_comp; //to compensate with the rounding problems; default value is 0.001
                 
-            if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
+            if ('state_compensation' in tree_setting) {
                 step = steps[i] - tree_setting['state_compensation'];
             }
 
@@ -2393,7 +2395,7 @@
             }
 
             if (step < 0) {
-                step = 0;
+                step = 0.001;
             }
             else if (step >= last_step) {
                 step = last_step;
@@ -3100,7 +3102,8 @@
                     element.loaded = false;
                 });
 
-                if (this$1.if_snap == false) { //i.e., states == [0]
+                //if we don't snap, then we make states == [0, 1, 2, 3, 4, 5, ...]
+                if (this$1.if_snap == false) {
                     var step_num = tree.metadata.no_of_steps_Ns;
                     for (var i = 0; i < step_num; i++) {
                         states.push(states[states.length - 1] + 1);
@@ -3119,36 +3122,7 @@
         this.states = states;
     };
 
-    // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
-    // when we have made new tree serialization for tiles, we should change the code here!
-    SSCTree.prototype.load_subtree = function load_subtree (node) {
-            var this$1 = this;
 
-        fetch(this.tree_setting.tree_root_href + node.uri) // FIXME: was: node.href
-            .then(function (r) {
-                return r.json()
-            })
-            .then(function (j) {
-
-                node.children = j.children;
-                var dataelements = obtain_dataelements(node);  //all the dataelements recorded in .json file
-                dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
-                    element.content = null;
-                    element.last_touched = null;
-                    //e.g., element.info: 10/502/479.json
-
-                    element.url = this$1.tree_setting.tile_root_href + element.info; // FIXME:  was: element.href
-                    //console.log('ssctree.js element.url:', element.url)
-                    //console.log('ssctree.js element.info:', element.info)
-                    element.loaded = false;
-                });
-
-                this$1.msgbus.publish('data.tree.loaded', 'tree.ready');
-            })
-            .catch(function (err) {
-                console.error(err);
-            });
-    };
 
     SSCTree.prototype.get_relevant_tiles = function get_relevant_tiles (box3d, gl) {
         if (this.tree === null) { return [] }
@@ -3167,16 +3141,6 @@
         matrix[10] = -2.0 / (near - far);        
         matrix[14] = (near + far) / (near - far);
 
-        //let test = []
-        //let test64 = new Float64Array(16);
-        //test.push(- 2.0 / (near - far))
-        //test64[5] = - 2.0 / (near - far)
-        //console.log('')
-        //console.log('ssctree.js -2.0 / (near - far):', - 2.0 / (near - far))
-        //console.log('ssctree.js matrix[10]:', matrix[10])
-        //console.log('ssctree.js test:', test)
-        //console.log('ssctree.js test64[5]:', test64[5])
-
         return matrix
     };
 
@@ -3189,9 +3153,10 @@
         //console.log('ssctree.js fetch_tiles, this.tree:', this.tree)
         //console.log('ssctree.js fetch_tiles, box3d:', box3d)
         //e.g., this.tree: the content in file tree_smooth.json
-        var subtrees = obtain_overlapped_subtrees(this.tree, box3d);
-        subtrees.map(function (node) {
-            this$1.load_subtree(node);
+        var leaves = obtain_overlapped_unloaded_leaves(this.tree, box3d);
+
+        leaves.map(function (leaf) {
+            this$1.load_subtree(leaf); //each leaf points to a subtree
         });
 
         var overlapped_dataelements = obtain_overlapped_dataelements(this.tree, box3d);
@@ -3245,6 +3210,46 @@
             // FIXME: is this really 'retrieved' ? Or more, scheduled for loading ?
         });
 
+    };
+
+
+    // differences of uri, info, href
+    // tree.json points to many "uri" files; e.g., "uri": "tree_728022.json"
+    // uri: saved in a child of an image tree; e.g., uri: "tree_728022.json",
+    //  which points to many "info" files of names like "info": "8/255/16.json".
+    //  file "tree_728022.json" save the z-range for each polyhedron
+    // info: saved in a dataelement of an image tree; e.g., "info": "8/255/16.json"
+    //  each file like "8/255/16.json" saves the picture "texture_href": "8/255/16.png", the 2d box,
+    //  and the six points for the two triangles of the box
+    // href: saved in a dataelement of a vector tree; e.g., "sscgen_smooth.obj"    
+    // FIXME: a tree can load other trees, however, the property .uri has been renamed in other parts of the code
+    // when we have made new tree serialization for tiles, we should change the code here!
+    SSCTree.prototype.load_subtree = function load_subtree (node) {
+            var this$1 = this;
+
+        fetch(this.tree_setting.tree_root_href + node.uri) // FIXME: was: node.href
+            .then(function (r) {
+                return r.json()
+            })
+            .then(function (j) {
+                node.children = j.children;
+                var dataelements = obtain_dataelements(node);  //all the dataelements recorded in .json file
+                dataelements.forEach(function (element) { //originally, each element has attributes "id", "box", "info"
+                    element.content = null;
+                    element.last_touched = null;
+                    //e.g., element.info: 10/502/479.json
+
+                    element.url = this$1.tree_setting.tile_root_href + element.info; // FIXME:  was: element.href
+                    //console.log('ssctree.js element.url:', element.url)
+                    //console.log('ssctree.js element.info:', element.info)
+                    element.loaded = false;
+                });
+
+                this$1.msgbus.publish('data.tree.loaded', 'tree.ready');
+            })
+            .catch(function (err) {
+                console.error(err);
+            });
     };
 
 
@@ -3613,12 +3618,34 @@
     };
 
 
+    function obtain_dataelements(root) {
+        // FIXME: make iterator/generator function* 
+        // to avoid making the whole result list in memory
+        var dataelements = [];
+        var stack = [root];
+        while (stack.length > 0) {
+            var node = stack.pop();
 
+            if (node.hasOwnProperty('children') === true) {
+                // visit chids, if they overlap
+                node.children.forEach(function (child) {
+                    stack.push(child);
+                });
+            }
+            if (node.hasOwnProperty('dataelements') === true) {
+                // add data elements to result list
+                node.dataelements.forEach(function (element) {
+                    dataelements.push(element);
+                });
+            }
+        }
+        return dataelements
+    }
 
 
     function obtain_overlapped_dataelements(node, box3d) {
         // console.log(box)
-        var result = [];
+        var dataelements = [];
         var stack = [node];
         //console.log('ssctree.js, obtain_overlapped_dataelements node:', node)
         //console.log('ssctree.js, obtain_overlapped_dataelements box3d:', box3d)
@@ -3640,7 +3667,7 @@
             {
                 node$1.dataelements.forEach(function (element) {
                     if (overlaps3d(element.box, box3d)) {
-                        result.push(element);
+                        dataelements.push(element);
                     }
                 });
             }
@@ -3648,12 +3675,12 @@
 
         while (stack.length > 0) loop();
         //console.log('ssctree.js, obtain_overlapped_dataelements result.length:', result.length)
-        return result
+        return dataelements
     }
 
 
-    function obtain_overlapped_subtrees(node, box3d) {
-        var result = [];
+    function obtain_overlapped_unloaded_leaves(node, box3d) {
+        var leaves = [];
         var stack = [node];
         while (stack.length > 0) {
             var node$1 = stack.pop();
@@ -3667,42 +3694,18 @@
                     }
                     else if (child.hasOwnProperty('uri') && !child.hasOwnProperty('loaded')
                         && overlaps3d(child.box, box3d)) {
-                        result.push(child);
+                        leaves.push(child);
                         child.loaded = true;
                     }
                 });
             }
 
         }
-        return result
+        return leaves
     }
 
 
-    function obtain_dataelements(root) {
-        // FIXME: make iterator/generator function* 
-        // to avoid making the whole result list in memory
-        var result = [];
-        var stack = [root];
-        while (stack.length > 0) {
-            var node = stack.pop();
 
-            if (node.hasOwnProperty('children') === true)
-            {
-                // visit chids, if they overlap
-                node.children.forEach(function (child) {
-                    stack.push(child);
-                });
-            }
-            if (node.hasOwnProperty('dataelements') === true)
-            {
-                // add data elements to result list
-                node.dataelements.forEach(function (element) {
-                    result.push(element);
-                });
-            }
-        }
-        return result
-    }
 
     /*
     function overlaps2d(one, other) {
@@ -3719,8 +3722,9 @@
     }
     */
 
-    function overlaps3d(one, other) {
+    function overlaps3d(sscbox, slicebox) {
         // Separating axes theorem, nD -> 3D
+        // one represents the ssc, and other represents the slicing plane
         // e.g., one: [182000, 308000, 0, 191000, 317000, 7]
         // e.g., other: [185210.15625, 311220.96875, 0, 187789.84375, 313678.9375, 0]
 
@@ -3728,7 +3732,8 @@
         var are_overlapping = true;
         for (var min = 0; min < dims; min++) {
             var max = min + dims;
-            if ((one[max] < other[min]) || (one[min] > other[max])) {
+            //if zooming out to a very small scale (above the SSC), the map will disappear
+            if ((sscbox[max] < slicebox[min]) || (sscbox[min] >= slicebox[max])) { 
                 are_overlapping = false;
                 break
             }

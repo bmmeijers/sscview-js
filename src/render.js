@@ -69,13 +69,11 @@ export class Renderer {
 
             //let step = steps[i] - 0.01 
 
-            let default_comp = 0.001 //default compsensation number
-            let step = steps[i] - default_comp //to compensate with the rounding problems; default value is 0.001
-            
-            if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
-                step = steps[i] - tree_setting['state_compensation']
+            let default_comp = 0.001 //default compsensation number            
+            if ('state_compensation' in tree_setting) {
+                default_comp = tree_setting['state_compensation']
             }
-
+            let step = steps[i] - default_comp //to compensate with the rounding problems; default value is 0.001
 
             
             //console.log('render.js step:', step)
@@ -88,7 +86,9 @@ export class Renderer {
             }
 
             if (step < 0) {
-                step = 0
+                //so that the slicing plane will intersect with the SSC, 
+                //this is also related how to decide whether they intersect; see function overlaps3d in ssctree.js
+                step = default_comp 
             }
             else if (step >= last_step) {
                 step = last_step

@@ -475,7 +475,7 @@
                     'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
                     'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
                     // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'discrete_scales': [10000, 20000, 40000, 80000, 160000, 248117],
+                    'discrete_scales': [10000, 20000, 40000, 80000, 160000, 248117], // St = Sb / sqrt(1 - Et/Nb); 248117 = 10000 / sqrt(1 - 288257/288726)
                     // 'draw_cw_faces': false, //draw counterclockwise 
                     'opacity': 0.6,
                 }
@@ -752,15 +752,15 @@
                 swiper.style.transform = `translateX(${innerhalf}px)`
                 swiper.style.WebkitTransform = `translateX(${innerhalf}px)`
 
-                //create the handle of the swiper and added it to the swiper
-                let swiper_handle = document.createElement('div');
-                swiper_handle.id = 'swiper-handle'
-                swiper_handle.classList.add('compare-swiper');
-                //By default, the center of the handle is aligned with the left boundary of the swipe
-                swiper.appendChild(swiper_handle)
-                swiper_handle.style.transform = `translateX(${swiper_halfwidth}px)`
-                swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
-                swiper_handle.addEventListener('mousedown', onDown);
+                // //create the handle of the swiper and added it to the swiper
+                // let swiper_handle = document.createElement('div');
+                // swiper_handle.id = 'swiper-handle'
+                // swiper_handle.classList.add('compare-swiper');
+                // //By default, the center of the handle is aligned with the left boundary of the swipe
+                // swiper.appendChild(swiper_handle)
+                // swiper_handle.style.transform = `translateX(${swiper_halfwidth}px)`
+                // swiper_handle.style.WebkitTransform = `translateX(${swiper_halfwidth}px)`
+                // swiper_handle.addEventListener('mousedown', onDown);
 
 
                 function onMouseUp(e) {
