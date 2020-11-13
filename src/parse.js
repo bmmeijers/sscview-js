@@ -589,7 +589,7 @@ function generate_class_color() {
 
         // according to dryness
         'drynessunknown': { r: 128, g: 128, b: 128 },  //dryness unknown
-        'wet': { r: 255, g: 255, b: 178 },  //wet
+        'wet': { r: 255, g: 255, b: 178 },  //wet, normal
         'dry': { r: 254, g: 204, b: 92 },  //dry
         'verydry': { r: 253, g: 141, b: 60 },  //very dry
         'extremelydry': { r: 227, g: 26, b: 28 },  //extremely dry

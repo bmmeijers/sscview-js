@@ -67,13 +67,12 @@ export class SSCTree {
 
         //e.g., this.tree_setting.tree_root_href: '/data/'
         //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
-        //e.g., this.tree_setting.step_event_exc_link: 'step_event.json'
+        //e.g., this.tree_setting.step_event_exc_link: link to 'step_event_exc.json'
         var states = [0]
-        var step_event_exc_link = 'step_event_exc_link'
-        if (step_event_exc_link in this.tree_setting) {
+        if (this.tree_setting.step_event_exc_link != null) {
             this.if_snap = true
 
-            fetch(this.tree_setting[step_event_exc_link])
+            fetch(this.tree_setting.step_event_exc_link)
                 .then(r => {
                     //console.log('ssctree.js r:', r)
                     return r.json()
@@ -739,11 +738,24 @@ export function overlaps3d(sscbox, slicebox) {
     // e.g., other: [185210.15625, 311220.96875, 0, 187789.84375, 313678.9375, 0]
 
     const dims = 3
+    let cmpbox = sscbox
+    //sscbox[2]: z_min, sscbox[5]: z_max
+    //console.log('sscbox[2], sscbox[5]:', sscbox[2], sscbox[5])
+
+    //console.log('*************slicebox[2], slicebox[5]:', slicebox[2], slicebox[5])
+    //if (sscbox[2] == sscbox[5]) { //this is a special case at the top of the ssc, where the box of level 0 of raster layer has height 0
+
+
+    //    let newbox = [...sscbox] //copy the values
+    //    newbox[5] += 1 //increase z-max
+    //    cmpbox = newbox
+    //}
+
+
     let are_overlapping = true;
     for (let min = 0; min < dims; min++) {
         let max = min + dims
-        //if zooming out to a very small scale (above the SSC), the map will disappear
-        if ((sscbox[max] < slicebox[min]) || (sscbox[min] >= slicebox[max])) { 
+        if (cmpbox[max] <= slicebox[min] || cmpbox[min] > slicebox[max]) { 
             are_overlapping = false
             break
         }
@@ -751,6 +763,7 @@ export function overlaps3d(sscbox, slicebox) {
     //console.log('ssctree.js are_overlapping:', are_overlapping)
     return are_overlapping
 }
+
 
 function center2d(box3d) {
     // 2D center of bottom of box

@@ -250,8 +250,7 @@ class Map {
         }
 
         //If we want to have multi-scale map intead of vario-scale map
-        let discrete_scales_nm = 'discrete_scales'
-        if (discrete_scales_nm in this.map_setting.tree_settings[0]) {
+        if (this.map_setting.tree_settings[0].discrete_scales != null) {
 
             //console.log('map.js St_for_step:', St_for_step)
 

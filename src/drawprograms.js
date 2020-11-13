@@ -570,15 +570,16 @@ void main()
 
 
         //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-        
-        if (tree_setting.do_blend == true) {
-            gl.enable(gl.BLEND)
-        }
-        else {
+
+        if (tree_setting.do_blend == false || tree_setting.opacity == 1) {
             //After an area merges another area, we can see a thin sliver.
             //disable blending can avoid those slivers,
             //but the alpha value does not have influence anymore
+            //when the opacity is 1, we do not need to blend
             gl.disable(gl.BLEND) 
+        }
+        else {
+            gl.enable(gl.BLEND)
         }        
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         //renderer._clearDepth()

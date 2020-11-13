@@ -69,11 +69,10 @@ export class Renderer {
 
             //let step = steps[i] - 0.01 
 
-            let default_comp = 0.001 //default compsensation number            
-            if ('state_compensation' in tree_setting) {
-                default_comp = tree_setting['state_compensation']
-            }
-            let step = steps[i] - default_comp //to compensate with the rounding problems; default value is 0.001
+            //to compensate with the rounding problems; default value is 0.001
+            let default_comp = tree_setting['state_compensation'] //default compsensation number            
+
+            let step = steps[i] - default_comp 
 
             
             //console.log('render.js step:', step)
@@ -85,14 +84,35 @@ export class Renderer {
                 //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
             }
 
+
+
+
             if (step < 0) {
                 //so that the slicing plane will intersect with the SSC, 
                 //this is also related how to decide whether they intersect; see function overlaps3d in ssctree.js
-                step = default_comp 
+                step = 0
+                //step = 0.000001
             }
             else if (step >= last_step) {
-                step = last_step
+                step = last_step - 0.000001
             }
+
+            //***********************************************//
+            //A better solution would be like the following
+            //because the displaced surface is below the slicing plane with z-coordinate step.
+            //However, this requires that the top box's height is larger than 0; 
+            //otherwise, no intersection at the top of the ssc; see function overlaps3d in ssctree.js
+            //if (step < 0) {
+            //    //so that the slicing plane will intersect with the SSC, 
+            //    //this is also related how to decide whether they intersect; see function overlaps3d in ssctree.js
+            //    //step = 0.000001
+            //}
+            //else if (step >= last_step) {
+            //    step = last_step 
+            //}
+
+
+
             //steps[i] = step
             //console.log('render.js, step after snapping:', step)
 
@@ -116,9 +136,6 @@ export class Renderer {
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2)
 
                     local_statehigh = local_statehighs[i] - default_comp
-                    if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
-                        local_statehigh = local_statehighs[i] - tree_setting['state_compensation']
-                    }
                 }
             }
 
@@ -183,21 +200,21 @@ export class Renderer {
             if (tree_setting.datatype == 'polygon') {
                 var polygon_draw_program = this.programs[0];
 
-                //console.log('')
-                tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                    //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                })
+                if (opacity == 1) {
+                    tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    })
+                }
+                else { 
+                    //drawing first into offline fbo and second on screen 
+                    //will result in flickering on some poor computers (e.g., Dongliang's HP 15-bs183nd)
+                    tiles.forEach(tile => { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    })
 
-                var image_fbo_program = new ImageFboDrawProgram(gl)
-                image_fbo_program.draw_fbo(gl.fbo, opacity)
-
-                //tiles.forEach(tile => {
-                //    polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                //    //polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                //})
-
-
+                    var image_fbo_program = new ImageFboDrawProgram(gl)
+                    image_fbo_program.draw_fbo(gl.fbo, opacity)
+                }
             }
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];

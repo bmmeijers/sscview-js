@@ -1939,15 +1939,16 @@
 
 
             //see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-            
-            if (tree_setting.do_blend == true) {
-                gl.enable(gl.BLEND);
-            }
-            else {
+
+            if (tree_setting.do_blend == false || tree_setting.opacity == 1) {
                 //After an area merges another area, we can see a thin sliver.
                 //disable blending can avoid those slivers,
                 //but the alpha value does not have influence anymore
+                //when the opacity is 1, we do not need to blend
                 gl.disable(gl.BLEND); 
+            }
+            else {
+                gl.enable(gl.BLEND);
             }        
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             //renderer._clearDepth()
@@ -2376,13 +2377,10 @@
 
             //let step = steps[i] - 0.01 
 
-            var default_comp = 0.001; //default compsensation number
-            var step = steps[i] - default_comp; //to compensate with the rounding problems; default value is 0.001
-                
-            if ('state_compensation' in tree_setting) {
-                step = steps[i] - tree_setting['state_compensation'];
-            }
+            //to compensate with the rounding problems; default value is 0.001
+            var default_comp = tree_setting['state_compensation']; //default compsensation number            
 
+            var step = steps[i] - default_comp; 
 
                 
             //console.log('render.js step:', step)
@@ -2394,12 +2392,35 @@
                 //last_step = this.ssctrees[i].tree.metadata.no_of_steps_Ns
             }
 
+
+
+
             if (step < 0) {
-                step = 0.001;
+                //so that the slicing plane will intersect with the SSC, 
+                //this is also related how to decide whether they intersect; see function overlaps3d in ssctree.js
+                step = 0;
+                //step = 0.000001
             }
             else if (step >= last_step) {
-                step = last_step;
+                step = last_step - 0.000001;
             }
+
+            //***********************************************//
+            //A better solution would be like the following
+            //because the displaced surface is below the slicing plane with z-coordinate step.
+            //However, this requires that the top box's height is larger than 0; 
+            //otherwise, no intersection at the top of the ssc; see function overlaps3d in ssctree.js
+            //if (step < 0) {
+            ////so that the slicing plane will intersect with the SSC, 
+            ////this is also related how to decide whether they intersect; see function overlaps3d in ssctree.js
+            ////step = 0.000001
+            //}
+            //else if (step >= last_step) {
+            //step = last_step 
+            //}
+
+
+
             //steps[i] = step
             //console.log('render.js, step after snapping:', step)
 
@@ -2420,9 +2441,6 @@
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2);
 
                     local_statehigh = local_statehighs[i] - default_comp;
-                    if ('state_compensation' in tree_setting && tree_setting['state_compensation'] != 0.001) {
-                        local_statehigh = local_statehighs[i] - tree_setting['state_compensation'];
-                    }
                 }
             }
 
@@ -2489,21 +2507,21 @@
             if (tree_setting.datatype == 'polygon') {
                 var polygon_draw_program = this.programs[0];
 
-                //console.log('')
-                tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
-                    //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                    polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                });
+                if (opacity == 1) {
+                    tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    });
+                }
+                else { 
+                    //drawing first into offline fbo and second on screen 
+                    //will result in flickering on some poor computers (e.g., Dongliang's HP 15-bs183nd)
+                    tiles.forEach(function (tile) { // .filter(tile => {tile.}) // FIXME tile should only have polygon data
+                        polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
+                    });
 
-                var image_fbo_program = new ImageFboDrawProgram(gl);
-                image_fbo_program.draw_fbo(gl.fbo, opacity);
-
-                //tiles.forEach(tile => {
-                //polygon_draw_program.draw_tile(matrix, tile, tree_setting, canvas.width, canvas.height);
-                ////polygon_draw_program.draw_tile_into_fbo(matrix, tile, tree_setting, canvas.width, canvas.height);
-                //})
-
-
+                    var image_fbo_program = new ImageFboDrawProgram(gl);
+                    image_fbo_program.draw_fbo(gl.fbo, opacity);
+                }
             }
             else if (tree_setting.datatype == 'image') {
                 var image_tile_draw_program = this.programs[2];
@@ -3043,13 +3061,12 @@
 
         //e.g., this.tree_setting.tree_root_href: '/data/'
         //e.g., this.tree_setting.tree_root_file_nm: 'tree.json'
-        //e.g., this.tree_setting.step_event_exc_link: 'step_event.json'
+        //e.g., this.tree_setting.step_event_exc_link: link to 'step_event_exc.json'
         var states = [0];
-        var step_event_exc_link = 'step_event_exc_link';
-        if (step_event_exc_link in this.tree_setting) {
+        if (this.tree_setting.step_event_exc_link != null) {
             this.if_snap = true;
 
-            fetch(this.tree_setting[step_event_exc_link])
+            fetch(this.tree_setting.step_event_exc_link)
                 .then(function (r) {
                     //console.log('ssctree.js r:', r)
                     return r.json()
@@ -3729,11 +3746,24 @@
         // e.g., other: [185210.15625, 311220.96875, 0, 187789.84375, 313678.9375, 0]
 
         var dims = 3;
+        var cmpbox = sscbox;
+        //sscbox[2]: z_min, sscbox[5]: z_max
+        //console.log('sscbox[2], sscbox[5]:', sscbox[2], sscbox[5])
+
+        //console.log('*************slicebox[2], slicebox[5]:', slicebox[2], slicebox[5])
+        //if (sscbox[2] == sscbox[5]) { //this is a special case at the top of the ssc, where the box of level 0 of raster layer has height 0
+
+
+        //    let newbox = [...sscbox] //copy the values
+        //    newbox[5] += 1 //increase z-max
+        //    cmpbox = newbox
+        //}
+
+
         var are_overlapping = true;
         for (var min = 0; min < dims; min++) {
             var max = min + dims;
-            //if zooming out to a very small scale (above the SSC), the map will disappear
-            if ((sscbox[max] < slicebox[min]) || (sscbox[min] >= slicebox[max])) { 
+            if (cmpbox[max] <= slicebox[min] || cmpbox[min] > slicebox[max]) { 
                 are_overlapping = false;
                 break
             }
@@ -3741,6 +3771,7 @@
         //console.log('ssctree.js are_overlapping:', are_overlapping)
         return are_overlapping
     }
+
 
     function center2d(box3d) {
         // 2D center of bottom of box
@@ -4020,8 +4051,7 @@
         }
 
         //If we want to have multi-scale map intead of vario-scale map
-        var discrete_scales_nm = 'discrete_scales';
-        if (discrete_scales_nm in this.map_setting.tree_settings[0]) {
+        if (this.map_setting.tree_settings[0].discrete_scales != null) {
 
             //console.log('map.js St_for_step:', St_for_step)
 
