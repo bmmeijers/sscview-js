@@ -48,8 +48,10 @@
     //var count = 0
 
 
-
-    //e.g., fn is one of the interpolating functions defined in map.js
+    //For example,
+    //fn is one of the interpolating functions defined in map.js
+    //dur is the duration in seconds
+    //ctx is this, which is the Map class itself
     function timed(fn, dur, ctx) {
         if (!dur) {
             fn.call(ctx, 1);
@@ -58,6 +60,9 @@
 
         var abort = false;
         var start = _now();
+        var durms = dur * 1000; // duration in milliseconds
+
+        //console.log('animate.js durms:', durms)
 
         //the tick method runs about 60 times per second
         //see https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
@@ -68,14 +73,14 @@
             now = _now();
             //console.log("animate.js now:", now)
 
-            if (now >= (start + dur)) {
+            if (now >= (start + durms)) {
                 //count += 1
                 //console.log("animate.js count:", count)
                 //count = 0
                 fn.call(ctx, 1);
             } else {
                 //count += 1
-                var k = (now - start) / dur;
+                var k = (now - start) / durms;
                 fn.call(ctx, k);
                 _frame(tick);
             }
@@ -262,8 +267,8 @@
             // FIXME: settings
             var duration = parseFloat(map._interaction_settings.pan_duration);
             // var duration = 1000; // parseFloat(document.getElementById('panduration').value);
-            var tx = (vx * 0.5) * (duration / 1000);
-            var ty = (vy * 0.5) * (duration / 1000);
+            var tx = (vx * 0.5) * duration;
+            var ty = (vy * 0.5) * duration;
             _trace = null;
             map.panAnimated(tx, ty);
             // console.log('mouseup')
@@ -707,8 +712,8 @@
                     // (to prevent map moving too far: heuristic, half the window size)
                     // var tx = Math.max(Math.min((vx * 0.5) * (duration / 1000), max_distance), -max_distance)
                     // var ty = Math.max(Math.min((vy * 0.5) * (duration / 1000), max_distance), -max_distance)
-                    var tx = (vx * 0.5) * (duration / 1000);
-                    var ty = (vy * 0.5) * (duration / 1000);
+                    var tx = (vx * 0.5) * duration;
+                    var ty = (vy * 0.5) * duration;
 
                     console.log('touch drag end - ANIMATE');
                     console.log([tx, ty]);
@@ -1281,6 +1286,8 @@
         //let if_snap = true
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
+
+        console.log('transform.js zoom_factor:', zoom_factor);
 
         var St_current = this.getScaleDenominator();
         var current_step = ssctree.get_step_from_St(St_current); //current_step should be compute instantly because of aborting actions
@@ -2738,9 +2745,9 @@
                 // buffer for triangles of polygons
                 // itemSize = 6: x, y, z, r_frac, g_frac, b_frac (see parse.js)
                 //console.log('tilecontent.js data[0]:', data[0])
-                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, gl.fbo); //FIXME: could we remove this line?
                 this$1.polygon_triangleVertexPosBufr = create_data_buffer(gl, new Float32Array(data[0]), 6);
-                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);  //FIXME: could we remove this line?
                 //console.log('tilecontent.js load_ssc_tile, this.polygon_triangleVertexPosBufr:', this.polygon_triangleVertexPosBufr)
                 //if (this.polygon_triangleVertexPosBufr == null) {
                 //console.log('tilecontent.js load_ssc_tile, url:', url)
@@ -3857,9 +3864,9 @@
         /* settings for zooming and panning */
         this._interaction_settings = {
             zoom_factor: 1,
-            zoom_duration: 1000,
+            zoom_duration: 1, //1 second
             time_factor: 1, //we changed the factor because we snap when merging parallelly
-            pan_duration: 1000
+            pan_duration: 1,  //1 second
         };
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
@@ -3887,33 +3894,35 @@
             this$1.panAnimated(0, 0); // animate for a small time, so that when new tiles are loaded, we are already rendering
         });
 
-        this.msgbus.subscribe("settings.rendering.boundary-width", function (topic, message, sender) {
+        this.msgbus.subscribe("settings.boundary-width", function (topic, message, sender) {
             this$1.renderer.settings.boundary_width = parseFloat(message);
             this$1.abortAndRender();
         });
 
-        //this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
+        //this.msgbus.subscribe("settings.backdrop-opacity", (topic, message, sender) => {
         //this.renderer.settings.backdrop_opacity = parseFloat(message);
         //this.abortAndRender();
         //});
 
-        //this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
+        //this.msgbus.subscribe("settings.foreground-opacity", (topic, message, sender) => {
         //this.renderer.settings.foreground_opacity = parseFloat(message);
         //this.abortAndRender();
         //});
 
-        this.msgbus.subscribe("settings.interaction.zoom-factor", function (topic, message, sender) {
+        this.msgbus.subscribe("settings.zoom-factor", function (topic, message, sender) {
     //        console.log(message);
+                
             this$1._interaction_settings.zoom_factor = parseFloat(message);
+            console.log('map.js zoom_factor:', this$1._interaction_settings.zoom_factor);
             this$1.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.interaction.zoom-animation", function (topic, message, sender) {
+        this.msgbus.subscribe("settings.zoom-duration", function (topic, message, sender) {
     //        console.log(message);
             this$1._interaction_settings.zoom_duration = parseFloat(message);
             this$1.abortAndRender();
         });
-        this.msgbus.subscribe("settings.interaction.pan-animation", function (topic, message, sender) {
+        this.msgbus.subscribe("settings.pan-duration", function (topic, message, sender) {
     //        console.log('setting pan_duration: ' + message);
             this$1._interaction_settings.pan_duration = parseFloat(message);
             this$1.abortAndRender();
@@ -4233,11 +4242,13 @@
     };
 
     Map.prototype.zoomInAnimated = function zoomInAnimated (x, y, op_factor) {
-        this.zoomAnimated(x, y, 1.0 + op_factor); //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
+        //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
+        this.zoomAnimated(x, y, 1.0 + op_factor * this._interaction_settings.zoom_factor); 
     };
 
     Map.prototype.zoomOutAnimated = function zoomOutAnimated (x, y, op_factor) {
-        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor)); //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
+        //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
+        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor)); 
     };
 
     Map.prototype.zoomAnimated = function zoomAnimated (x, y, zoom_factor) {
@@ -4246,13 +4257,9 @@
             this._abort();
         }
         this._action = 'zoomAnimated';
-        //console.log('map.js test2')
         //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
         //console.log('map.js zoom_factor:', zoom_factor)
         var interpolator = this.animateZoom(x, y, zoom_factor);
-        this._interaction_settings.zoom_factor = zoom_factor;
-        //this.zoom_factor = zoom_factor
-        // FIXME: settings
 
         var zoom_duration = this._interaction_settings.zoom_duration * this._interaction_settings.time_factor;
         //console.log('map.js this._interaction_settings.zoom_duration:', this._interaction_settings.zoom_duration)

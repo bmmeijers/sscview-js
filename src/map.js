@@ -58,9 +58,9 @@ class Map {
         /* settings for zooming and panning */
         this._interaction_settings = {
             zoom_factor: 1,
-            zoom_duration: 1000,
+            zoom_duration: 1, //1 second
             time_factor: 1, //we changed the factor because we snap when merging parallelly
-            pan_duration: 1000
+            pan_duration: 1,  //1 second
         };
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
@@ -88,33 +88,35 @@ class Map {
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
-        this.msgbus.subscribe("settings.rendering.boundary-width", (topic, message, sender) => {
+        this.msgbus.subscribe("settings.boundary-width", (topic, message, sender) => {
             this.renderer.settings.boundary_width = parseFloat(message);
             this.abortAndRender();
         });
 
-        //this.msgbus.subscribe("settings.rendering.backdrop-opacity", (topic, message, sender) => {
+        //this.msgbus.subscribe("settings.backdrop-opacity", (topic, message, sender) => {
         //    this.renderer.settings.backdrop_opacity = parseFloat(message);
         //    this.abortAndRender();
         //});
 
-        //this.msgbus.subscribe("settings.rendering.foreground-opacity", (topic, message, sender) => {
+        //this.msgbus.subscribe("settings.foreground-opacity", (topic, message, sender) => {
         //    this.renderer.settings.foreground_opacity = parseFloat(message);
         //    this.abortAndRender();
         //});
 
-        this.msgbus.subscribe("settings.interaction.zoom-factor", (topic, message, sender) => {
+        this.msgbus.subscribe("settings.zoom-factor", (topic, message, sender) => {
 //            console.log(message);
+            
             this._interaction_settings.zoom_factor = parseFloat(message);
+            console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
             this.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.interaction.zoom-animation", (topic, message, sender) => {
+        this.msgbus.subscribe("settings.zoom-duration", (topic, message, sender) => {
 //            console.log(message);
             this._interaction_settings.zoom_duration = parseFloat(message);
             this.abortAndRender();
         });
-        this.msgbus.subscribe("settings.interaction.pan-animation", (topic, message, sender) => {
+        this.msgbus.subscribe("settings.pan-duration", (topic, message, sender) => {
 //            console.log('setting pan_duration: ' + message);
             this._interaction_settings.pan_duration = parseFloat(message);
             this.abortAndRender();
@@ -432,11 +434,13 @@ class Map {
     }
 
     zoomInAnimated(x, y, op_factor) {
-        this.zoomAnimated(x, y, 1.0 + op_factor) //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
+        //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
+        this.zoomAnimated(x, y, 1.0 + op_factor * this._interaction_settings.zoom_factor) 
     }
 
     zoomOutAnimated(x, y, op_factor) {
-        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor)) //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
+        //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
+        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor)) 
     }
 
     zoomAnimated(x, y, zoom_factor) {
@@ -445,13 +449,9 @@ class Map {
             this._abort();
         }
         this._action = 'zoomAnimated'
-        //console.log('map.js test2')
         //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
         //console.log('map.js zoom_factor:', zoom_factor)
         var interpolator = this.animateZoom(x, y, zoom_factor);
-        this._interaction_settings.zoom_factor = zoom_factor
-        //this.zoom_factor = zoom_factor
-        // FIXME: settings
 
         let zoom_duration = this._interaction_settings.zoom_duration * this._interaction_settings.time_factor
         //console.log('map.js this._interaction_settings.zoom_duration:', this._interaction_settings.zoom_duration)

@@ -139,8 +139,8 @@ export function touchDragHandler(map) {
                 // (to prevent map moving too far: heuristic, half the window size)
                 // var tx = Math.max(Math.min((vx * 0.5) * (duration / 1000), max_distance), -max_distance)
                 // var ty = Math.max(Math.min((vy * 0.5) * (duration / 1000), max_distance), -max_distance)
-                let tx = (vx * 0.5) * (duration / 1000);
-                let ty = (vy * 0.5) * (duration / 1000);
+                let tx = (vx * 0.5) * duration;
+                let ty = (vy * 0.5) * duration;
 
                 console.log('touch drag end - ANIMATE');
                 console.log([tx, ty]);

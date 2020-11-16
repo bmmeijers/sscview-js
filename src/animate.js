@@ -50,8 +50,10 @@ export function cancelFrame(id) {
 //var count = 0
 
 
-
-//e.g., fn is one of the interpolating functions defined in map.js
+//For example,
+//fn is one of the interpolating functions defined in map.js
+//dur is the duration in seconds
+//ctx is this, which is the Map class itself
 export function timed(fn, dur, ctx) {
     if (!dur) {
         fn.call(ctx, 1);
@@ -60,6 +62,9 @@ export function timed(fn, dur, ctx) {
 
     let abort = false;
     const start = _now();
+    const durms = dur * 1000 // duration in milliseconds
+
+    //console.log('animate.js durms:', durms)
 
     //the tick method runs about 60 times per second
     //see https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
@@ -70,14 +75,14 @@ export function timed(fn, dur, ctx) {
         now = _now();
         //console.log("animate.js now:", now)
 
-        if (now >= (start + dur)) {
+        if (now >= (start + durms)) {
             //count += 1
             //console.log("animate.js count:", count)
             //count = 0
             fn.call(ctx, 1);
         } else {
             //count += 1
-            let k = (now - start) / dur
+            let k = (now - start) / durms
             fn.call(ctx, k);
             _frame(tick);
         }

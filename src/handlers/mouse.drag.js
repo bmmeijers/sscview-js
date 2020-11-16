@@ -130,8 +130,8 @@ export function dragHandler(map) {
         // FIXME: settings
         let duration = parseFloat(map._interaction_settings.pan_duration);
         // var duration = 1000; // parseFloat(document.getElementById('panduration').value);
-        let tx = (vx * 0.5) * (duration / 1000);
-        let ty = (vy * 0.5) * (duration / 1000);
+        let tx = (vx * 0.5) * duration;
+        let ty = (vy * 0.5) * duration;
         _trace = null;
         map.panAnimated(tx, ty);
         // console.log('mouseup')

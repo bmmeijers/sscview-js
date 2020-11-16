@@ -148,6 +148,8 @@ class Transform {
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
 
+        //console.log('transform.js zoom_factor:', zoom_factor)
+
         let St_current = this.getScaleDenominator()
         let current_step = ssctree.get_step_from_St(St_current) //current_step should be compute instantly because of aborting actions
         this.compute_matrix_parameters(zoom_factor, x, y)
