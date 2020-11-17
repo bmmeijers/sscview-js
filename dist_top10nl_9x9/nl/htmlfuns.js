@@ -9,20 +9,27 @@ function toggleLayer(cb) { //better to put this function into map.js if we can
 function enhanceMenu(document) {
     /* opening and closing the settings modal dialog */
     // FIXME: repetition of names and ids here is cumbersome
-    var modalSettingsOpen = function () {
+    var toggleSettingsButton = function () {
         //toggleMenu(); // hide the menu
-        document.getElementById('settingsModal').style.display = 'block';
+        toggleSettings()
+        //document.getElementById('settingsModal').style.visibility = 'visible';
     };
-    var modalSettingsClose = function () {
-        document.getElementById('settingsModal').style.display = 'none';
-    }
-    document.getElementById("openSettingsButton").addEventListener('click', modalSettingsOpen);
-    document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
-    document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
+    document.getElementById("toggleSettingsButton").addEventListener('click', toggleSettingsButton);
 
-    const event_modalSettings = new Event('click')
-    document.getElementById("openSettingsButton").dispatchEvent(event_modalSettings)
+    //The below code is for the cross of the setting panel, where the cross is used to close the panel
+    //var modalSettingsClose = function () {
+        
+    //    document.getElementById('settingsModal').style.visibility = 'hidden';
+    //}
+    //document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
+    //document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
 
+    //trigger the click event of openSettingsButton
+    //const event_modalSettings = new Event('click')
+    //document.getElementById("openSettingsButton").dispatchEvent(event_modalSettings)
+    document.getElementById('settingsModal').style.visibility = 'visible';
+    //document.getElementById('settingsModal').style.display = 'block';
+    //document.getElementById('settingsModal').className += " w3-show";
     // the menu on the top
     function toggleMenu() {
         var x = document.getElementById("menu");
@@ -31,6 +38,23 @@ function enhanceMenu(document) {
         } else {
             x.className = x.className.replace(" w3-show", "");
         }
+    };
+
+    function toggleSettings() {        
+        var x = document.getElementById("settingsModal");
+        if (x.style.visibility == 'visible') {
+            x.style.visibility = 'hidden'
+        }
+        else {
+            x.style.visibility = 'visible'
+        }
+
+
+        //if (x.className.indexOf("w3-show") == -1) {
+        //    x.className += " w3-show";
+        //} else {
+        //    x.className = x.className.replace(" w3-show", "");
+        //}
     };
 
     //const event_toggleMenu = new Event('click')

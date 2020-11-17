@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.varioscale = factory());
-}(this, function () { 'use strict';
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
+}(this, (function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,11 +39,6 @@
     var _frame = function (fn) {
         return frame(fn);
     };
-
-    var cancel = window.cancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -1287,7 +1282,7 @@
         //console.log('transform.js St before:', this.getScaleDenominator())
         //console.log('transform.js factor:', zoom_factor)
 
-        console.log('transform.js zoom_factor:', zoom_factor);
+        //console.log('transform.js zoom_factor:', zoom_factor)
 
         var St_current = this.getScaleDenominator();
         var current_step = ssctree.get_step_from_St(St_current); //current_step should be compute instantly because of aborting actions
@@ -2600,16 +2595,17 @@
 
     LayerControl.prototype.add_layercontrols = function add_layercontrols (div_id) {
             var this$1 = this;
-
+     //e.g. div_id: "fieldset-layers"
 
         // var container_close = document.getElementById("container-close");
         // container_close.parentNode.insertBefore(newheader, container_close)
         // var newcontainer = document.createElement("div");
         // newcontainer.class = 'w3-container w3-padding'
         var msgbus = this.map.msgbus;
-        var fieldsets_rendering = document.getElementById(div_id);
+        var fieldset_layers = document.getElementById(div_id);
 
         var canvas_nm = '';
+        //this.map.canvasnm_in_cbnm: if we want to display the canvas name as part of the check box name
         if ('canvas_nm' in this.map_setting && this.map.canvasnm_in_cbnm == true) {
             canvas_nm = this.map_setting.canvas_nm + '_';
         }
@@ -2621,13 +2617,13 @@
             var layer_nm = tree_setting.layer_nm;
             //console.log('map.js layer_nm:', layer_nm)
             // create a new div element 
-            var newfieldset = document.createElement("fieldset");
-            fieldsets_rendering.append(newfieldset);
+            //var newfieldset = document.createElement("fieldset");
+            //fieldset_layers.append(newfieldset)
 
 
             //make the legend of the layer
-            var newlegend = document.createElement("legend");
-            newfieldset.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+            var newlegend = document.createElement("div");
+            fieldset_layers.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
 
 
 
@@ -2647,27 +2643,54 @@
             });
 
 
+            var div_container = document.createElement("div");
+            fieldset_layers.append(div_container);
+            div_container.classList.add('mydivcontainer');
+
             //make the slider for the opacity
-            var opacity_div = document.createElement("div");
+            var opacity_div = document.createElement("span");
+            div_container.appendChild(opacity_div);
             opacity_div.id = canvaslyr_nm + '_opacity-value';
+            opacity_div.classList.add('myspan');
+            opacity_div.style.width = "120px";
+            opacity_div.style.cssFloat = "left";
+            //we do not need to set value here because when we assign value to the slider, the event will be triggered
+            //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
 
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input");
+            div_container.appendChild(slider);
+            //slider.classList.add('divfloat')
+            slider.style.cssFloat = "left";
             // slider.id = layer_nm + '_opacity-slider';
+
             slider.type = 'range';
             slider.min = 0;
             slider.max = 1;
-            slider.step = 0.025;
+            slider.step = 0.05;
             slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
+            //fieldset_layers.append(opacity_div)
+                
+            //console.log('')
+            //console.log('layercontrol.js opacity_div1:', opacity_div)
+            //console.log('layercontrol.js slider:', slider)
+            //opacity_div.innerHTML += slider
+            //console.log('layercontrol.js opacity_div2:', opacity_div)
 
-            newfieldset.append(opacity_div, slider);
+            //opacity_div.innerHTML = `< div 2d = "Example-7_opacity-value" > opacity value: 1 ${slider}</div >`
+
+            //console.log('layercontrol.js opacity_div3:', opacity_div)
+            //fieldset_layers.append(opacity_div)
+            //fieldset_layers.append(opacity_div, slider)
 
 
             var topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider';
 
             //subscription of the displayed opacity value
             msgbus.subscribe(topic, function (topic, message, sender) {
-                opacity_div.innerHTML = 'opacity value: ' + message;
+                //opacity_div.innerHTML = 'opacity value3: ' + message;
+                opacity_div.innerHTML = 'opacity: ' + message;
+                //console.log('layercontrol.js opacity_div.innerHTML:', opacity_div.innerHTML)
             });
 
             //publish new opacity value
@@ -3931,7 +3954,7 @@
         this.subscribe_scale();
 
         var layercontrol = new LayerControl(this, map_setting);
-        layercontrol.add_layercontrols("fieldsets-rendering");
+        layercontrol.add_layercontrols("fieldset-layers");
 
         map_setting.tree_settings.forEach(function (tree_setting) {
             //console.log('map.js tree_setting:', tree_setting)
@@ -4371,4 +4394,4 @@
 
     return exported;
 
-}));
+})));
