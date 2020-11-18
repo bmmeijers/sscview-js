@@ -230,9 +230,9 @@
                 <img src="https://pengdlzn.github.io/webmaps/decorations/vertical.svg" height="20"></button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
-            <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
-                <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
-            </div>
+            <!-- <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right"> -->
+                <!-- <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a> -->
+            <!-- </div> -->
         </div>
 
         <!--            class="do-spin" style="visibility: visible;" -->
@@ -271,7 +271,7 @@
 
     -->
     <!-- The Settings Modal -->
-    <div id="settingsModal" class="my-modal w3-show w3-orange" outline-color = "w3-orange">
+    <div id="settingsModal" class="my-modal w3-show">
         <!-- style="touch-action: none;" -->
         <div class="my-modal-content w3-light-grey" id='modal-content'>
             <!-- <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span> -->
@@ -281,7 +281,6 @@
             </header> -->
 
             <div class="w3-container w3-padding ">
-
                 <div class="setting">
                     <fieldset class= "w3-white">
                         <legend> Settings </legend>
@@ -310,14 +309,7 @@
                 <div class="setting">
                     <fieldset id="fieldset-layers" class= "w3-white">
                         <legend> Layers </legend>
-                        <!-- <legend> boundary width</legend> -->
-                        <!-- <div> -->
-                            <!-- line-width value (mm): <span id="width-value"></span> -->
-                        <!-- </div> -->
-                        <!-- <div> -->
-                            <!-- narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" -->
-                                <!-- style="margin: 0 16px 0 16px;"> wide -->
-                        <!-- </div> -->
+                        <!-- here, for adding layer settings -->
                     </fieldset>
                 </div>
             </div>
@@ -393,9 +385,9 @@
                 'layer_nm': 'sample',
                 'datatype': 'polygon',
                 'tree_root_file_nm': 'tree.json',
-                // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
                 'tree_root_href': window_location + 'data/',    // use the local folder are default value
                 'tile_root_href': window_location + 'data/',    // use the local folder are default value
+                'step_event_exc_link': null, //specify to a json file if we want to snap to certain steps
                 'low_scale': null,
                 'high_scale': null,
                 'draw_cw_faces': true, //draw clockwise (cull back faces) 
@@ -455,7 +447,7 @@
                     'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/',    // with trailing slash!
                     'tile_root_href': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/',
                     'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/eg-7-parallel-merging/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'draw_cw_faces': false, //draw counterclockwise 
+                    'draw_cw_faces': false, //draw counterclockwise (cull front faces)
                     'opacity': 1,
                 }
             }
@@ -512,7 +504,7 @@
             var map = new varioscale.Map(map_setting);
             map.loadTree();
 
-
+            enhanceMenu()
 
             // Resize the canvas to span complete screen, when the screen is resized
             // (note, this does include device rotation on mobile)
@@ -534,7 +526,7 @@
 
 
 
-            enhanceMenu(document)
+            
         });
 
 

@@ -139,6 +139,10 @@
                     }
                     break;
                 }
+
+                default: {
+                    break
+                }
             }
         });
 

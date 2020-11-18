@@ -1,12 +1,4 @@
-function toggleLayer(cb) { //better to put this function into map.js if we can
-    let msgbus = new varioscale.MessageBusConnector();
-    let topic = cb.value;
-
-    //this topic is subscribed in method add_layercontrols of class LayerControl
-    msgbus.publish(topic, cb.checked);
-}
-
-function enhanceMenu(document) {
+function enhanceMenu() {
     /* opening and closing the settings modal dialog */
     // FIXME: repetition of names and ids here is cumbersome
     var toggleSettingsButton = function () {
@@ -28,8 +20,6 @@ function enhanceMenu(document) {
     //const event_modalSettings = new Event('click')
     //document.getElementById("openSettingsButton").dispatchEvent(event_modalSettings)
     document.getElementById('settingsModal').style.visibility = 'visible';
-    //document.getElementById('settingsModal').style.display = 'block';
-    //document.getElementById('settingsModal').className += " w3-show";
     // the menu on the top
     function toggleMenu() {
         var x = document.getElementById("menu");
@@ -64,7 +54,7 @@ function enhanceMenu(document) {
     /* -- start slider -- */
     let init_slider = (name) => {
         let msgbus = new varioscale.MessageBusConnector();
-        let event_nm = "settings." + name
+        let event_nm = "settings." + name  //e.g., event_nm: "settings.zoom-factor"
         msgbus.subscribe(event_nm, (topic, message, sender) => {
             let el = document.getElementById(name + "-value");
             el.innerHTML = message;
@@ -83,7 +73,7 @@ function enhanceMenu(document) {
 
 
 
-
+    //test to put this function into layercontrol.js
     function toggleLegend() {
         var x = document.getElementById("Demo");
         if (x.className.indexOf("w3-show") == -1) {

@@ -383,7 +383,7 @@ class Map {
         const start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
-        const end = this.getTransform().world_square;
+        const end = this.getTransform().world_square;  //world_square is updated in function compute_zoom_parameters
         var interpolate = this.doEaseOutSine(start, end);
         //var interpolate = this.doEaseNone(start, end);
         return interpolate;

@@ -296,130 +296,15 @@ export class SSCTree {
         let if_floor = false
         let if_ceil = false
 
+        //to decide the direction we want to zoom to
         if (zoom_factor < 1) { //zoom out
             if_ceil = true
         }
         if (zoom_factor > 1) { //zoom in
             if_floor = true
         }
-
+        
         return this.get_snappedstep_from_St(St, if_floor, if_ceil)
-
-        //let snapped_index = 0
-        //if (zoom_factor == 1) {
-        //    //console.log('ssctree.js panning')
-        //    snapped_index = snap_to_state(newstep, states)
-        //}
-        //else if (zoom_factor < 1) { //zoom out
-        //    //console.log('ssctree.js zoom out')
-        //    snapped_index = snap_to_state(newstep, states, false, true)
-        //}
-        //else if (zoom_factor > 1) { //zoom in
-        //    //console.log('ssctree.js zoom in')
-        //    snapped_index = snap_to_state(newstep, states, true, false)
-        //}
-
-
-        //// FIXME: these 2 variables should be adjusted
-        ////         based on which tGAP is used...
-        //// FIXME: this step mapping should move to the data side (the tiles)
-        ////         and be kept there (for every tree_setting visualized on the map)
-        //// FIXME: should use this.getScaleDenominator()
-
-        //// let Sb = 48000  // (start scale denominator)
-        //// let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        ////let Sb = 24000  // (start scale denominator)
-        ////let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-        //if (this.tree === null)
-        //{
-        //     return 0
-        //}
-        ////console.log('')
-
-        //// reduction in percentage
-        ////let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        ////console.log('ssctree.js reductionf:', reductionf)
-        ////let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        //let newstep = this.get_step_from_St(St)
-        //let snapped_step = newstep
-        //let states = this.states
-        //if (states != null
-        //    && newstep > states[0] - 0.0001
-        //    && newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
-        //) {
-        //    //console.log('ssctree.js states:', states)
-        //    //console.log('ssctree.js step:', newstep)
-
-
-        //    //let current_step_index = snap_to_state(current_step, states)
-        //    //if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
-        //    //    current_step = states[current_step_index]
-        //    //}
-
-
-        //    //if we scroll too little, the map doesn't zoom because of the snapping.
-        //    //we force snapping for at least one step. 
-        //    //let snapped_St = this.get_St_from_step(states[step_index])
-        //    //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-        //    //console.log('ssctree.js current_step:', current_step)
-        //    //console.log('ssctree.js states[step_index]:', states[step_index])
-
-        //    //console.log(' ')
-        //    //console.log('ssctree.js zoom_factor:', zoom_factor)
-        //    let snapped_index = 0
-        //    if (zoom_factor == 1) {
-        //        //console.log('ssctree.js panning')
-        //        snapped_index = snap_to_state(newstep, states)
-        //    }
-        //    else if (zoom_factor < 1) { //zoom out
-        //        //console.log('ssctree.js zoom out')
-        //        snapped_index = snap_to_state(newstep, states, false, true)
-        //    }
-        //    else if (zoom_factor > 1) { //zoom in
-        //        //console.log('ssctree.js zoom in')
-        //        snapped_index = snap_to_state(newstep, states, true, false)
-        //    }
-
-
-        //    //console.log('ssctree.js snapped_index:', snapped_index)
-
-
-        //    //let snapped_index = snap_to_state(newstep, states)
-        //    //snapped_step = states[snapped_index]
-
-
-        //    //if (zoom_factor < 1 //zoom out
-        //    //    && snapped_step <= current_step) { //wrong direction because of snapping
-        //    //    snapped_index += 1
-        //    //}
-        //    //else if (zoom_factor > 1 //zoom in
-        //    //    && snapped_step >= current_step) { //wrong direction because of snapping
-        //    //    snapped_index -= 1
-        //    //}
-
-        //    //if (current_step != Number.MAX_SAFE_INTEGER) {
-        //    //    if (zoom_factor < 1 //zoom out
-        //    //        && snapped_step <= current_step) { //wrong direction because of snapping
-        //    //        snapped_index += 1
-        //    //    }
-        //    //    else if (zoom_factor > 1 //zoom in
-        //    //        && snapped_step >= current_step) { //wrong direction because of snapping
-        //    //        snapped_index -= 1
-        //    //    }
-        //    //}
-        //    //else {
-        //    //    //do nothing
-        //    //}
-
-        //    snapped_step = states[snapped_index]
-
-        //    //console.log('ssctree.js new step:', newstep)
-        //    //console.log('ssctree.js snapped_step:', snapped_step)
-        //}
-
-        //return snapped_step
     }
 
     //if (if_floor == false && if_ceil == false), then we snap to the cloest step
@@ -562,55 +447,8 @@ export class SSCTree {
                 snapped_step = this.snap_to_state(newstep, true, false)
             }
 
-            //let snapped_index = snap_to_state(newstep, states)
-
-
-            //if we scroll too little, the map doesn't zoom because of the snapping.
-            //we force snapping for at least one step. 
-
-            //let snapped_St = this.get_St_from_step(states[step_index])
-            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-            //console.log('ssctree.js snapped_index:', snapped_index)
-            //console.log('ssctree.js states[snapped_index]:', states[snapped_index])
-            //console.log('ssctree.js zoom_factor:', zoom_factor)
-            //if (current_step == states[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
-            //    if (zoom_factor > 1) { //zooming in 
-            //        snapped_index -= 1
-            //    }
-            //    else if (zoom_factor < 1) { //zooming out
-            //        snapped_index += 1
-            //    }
-            //}
-
-            //snapped_step = states[snapped_index]
-            //if (current_step != Number.MAX_SAFE_INTEGER) {
-            //    if (//current_step < step //zoom out
-            //        zoom_factor < 1
-            //        && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
-            //        snapped_index += 1
-            //    }
-            //    else if (//current_step > step //zoom in
-            //        zoom_factor > 1
-            //        && snapped_step >= current_step) { //wrong direction because of snapping
-            //        snapped_index -= 1
-            //    }
-            //}
-            //snapped_step = states[snapped_index]
-            //console.log('ssctree.js snapped_step:', snapped_step)
-
             let adjusted_step_diff = Math.abs(snapped_step - current_step)
-
             time_factor = adjusted_step_diff / normal_step_diff
-
-            //if (current_step != Number.MAX_SAFE_INTEGER) {
-            //    time_factor = adjusted_step_diff / normal_step_diff
-            //}
-
-            //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
-            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-            //console.log('ssctree.js time_factor:', time_factor)
-
-            //console.log('ssctree.js snapped_step:', step)
         }
 
         //return Math.max(0, step)

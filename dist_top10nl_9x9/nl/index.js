@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
-}(this, (function () { 'use strict';
+    (global = global || self, global.varioscale = factory());
+}(this, function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,6 +39,11 @@
     var _frame = function (fn) {
         return frame(fn);
     };
+
+    var cancel = window.cancelAnimationFrame ||
+        window.mozCancelAnimationFrame ||
+        window.webkitCancelAnimationFrame ||
+        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -2602,13 +2607,57 @@
         // var newcontainer = document.createElement("div");
         // newcontainer.class = 'w3-container w3-padding'
         var msgbus = this.map.msgbus;
-        var fieldset_layers = document.getElementById(div_id);
+
 
         var canvas_nm = '';
-        //this.map.canvasnm_in_cbnm: if we want to display the canvas name as part of the check box name
+        var canvas_nm_bar = '';
+        var div_container_width = '100%';
+        var map_description = '';
+        // this.map.canvasnm_in_cbnm: if we want to display the canvas name as part of the check box name
         if ('canvas_nm' in this.map_setting && this.map.canvasnm_in_cbnm == true) {
-            canvas_nm = this.map_setting.canvas_nm + '_';
+            canvas_nm = this.map_setting.canvas_nm;
+            canvas_nm_bar = canvas_nm + '-';
+            div_container_width = '50%';
+
+            if (canvas_nm == 'lcanvas') {
+                map_description = 'left map';
+            }
+            else if (canvas_nm == 'rcanvas') {
+                map_description = 'right map';
+            }
+            else {
+                map_description = 'the map';
+                console.log('The map name is not as expected (see layercontrol.js)!');
+            }
         }
+
+            
+
+        var modal_content = document.getElementById('modal-content');
+
+        // make a container
+        var div_container = document.createElement('div');
+        modal_content.append(div_container);
+        div_container.className = 'w3-container w3-padding';
+        div_container.style.width = div_container_width;
+        div_container.style.display = 'inline-block';
+
+        // make and append the layer container
+        var fieldset_layers = document.createElement('fieldset');  //The <fieldset> tag draws a box around the related elements.
+        div_container.append(fieldset_layers);
+        fieldset_layers.className = "w3-white";
+        fieldset_layers.id = canvas_nm_bar + 'fieldset-layers';  //e.g., lcanvas-fieldset-layers
+
+        // make and append a legend
+        var legend_layers = document.createElement('legend');
+        fieldset_layers.append(legend_layers);
+        legend_layers.innerHTML = 'Layers';
+        if (map_description != '') {
+            legend_layers.innerHTML = 'Layers of ' + map_description;
+        }
+
+
+        //var fieldset_layers = document.getElementById(canvas_nm + div_id)
 
         //console.log('layercontro.js this.tree_settings:', this.tree_settings)
 
@@ -2620,17 +2669,21 @@
             //var newfieldset = document.createElement("fieldset");
             //fieldset_layers.append(newfieldset)
 
+            var lyr_setting_container = document.createElement("div");
 
+            fieldset_layers.append(lyr_setting_container);
+            lyr_setting_container.style.display = 'inline-block';
+            lyr_setting_container.className = 'w3-margin-bottom w3-margin-right';
             //make the legend of the layer
             var newlegend = document.createElement("div");
-            fieldset_layers.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+            lyr_setting_container.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
 
 
 
-            var canvaslyr_nm = canvas_nm + layer_nm;
-            var id_cb = canvaslyr_nm + '_cb';
-            var topic_cb = 'setting.layer.' + canvaslyr_nm + '_cb';
-            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + canvaslyr_nm;
+            var canvaslyr_nm = canvas_nm_bar + layer_nm;
+            var id_cb = canvaslyr_nm + '-cb';
+            var topic_cb = 'setting.layer.' + id_cb;
+            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + layer_nm;
             var cb = document.getElementById(id_cb);
             cb.checked = tree_setting.do_draw;
             cb.value = topic_cb;
@@ -2639,20 +2692,18 @@
             msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {                
                 tree_setting.do_draw = message; //if we want to draw the layer or not                
                 this$1.map.abortAndRender();
-                //console.log('layercontrol.js tree_setting.do_draw:', tree_setting.do_draw)
             });
 
 
             var div_container = document.createElement("div");
-            fieldset_layers.append(div_container);
-            div_container.classList.add('mydivcontainer');
+            lyr_setting_container.append(div_container);
 
             //make the slider for the opacity
             var opacity_div = document.createElement("span");
             div_container.appendChild(opacity_div);
-            opacity_div.id = canvaslyr_nm + '_opacity-value';
-            opacity_div.classList.add('myspan');
-            opacity_div.style.width = "120px";
+            opacity_div.id = canvaslyr_nm + '-opacity-value';
+            opacity_div.style.display = 'inline-block';
+            opacity_div.style.width = "105px";
             opacity_div.style.cssFloat = "left";
             //we do not need to set value here because when we assign value to the slider, the event will be triggered
             //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
@@ -2660,7 +2711,7 @@
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input");
             div_container.appendChild(slider);
-            //slider.classList.add('divfloat')
+            slider.className = 'w3-margin-right';
             slider.style.cssFloat = "left";
             // slider.id = layer_nm + '_opacity-slider';
 
@@ -2711,6 +2762,16 @@
                 this$1.map.abortAndRender();
             }); 
         });
+    };
+
+    // Make function toggleLayer globally accessible so that it can be used in the innerHTML of an HTML element
+    // see https://stackoverflow.com/questions/14769158/making-js-local-function-globally-accessible
+    window.toggleLayer = function(cb) {
+        var msgbus = new varioscale.MessageBusConnector();
+        var topic = cb.value;
+
+        //this topic is subscribed in method add_layercontrols of class LayerControl
+        msgbus.publish(topic, cb.checked);
     };
 
     // FIXME: UNIFY TileContent and ImageTileContent by branching inside load()-method
@@ -3326,130 +3387,15 @@
         var if_floor = false;
         var if_ceil = false;
 
+        //to decide the direction we want to zoom to
         if (zoom_factor < 1) { //zoom out
             if_ceil = true;
         }
         if (zoom_factor > 1) { //zoom in
             if_floor = true;
         }
-
+            
         return this.get_snappedstep_from_St(St, if_floor, if_ceil)
-
-        //let snapped_index = 0
-        //if (zoom_factor == 1) {
-        ////console.log('ssctree.js panning')
-        //snapped_index = snap_to_state(newstep, states)
-        //}
-        //else if (zoom_factor < 1) { //zoom out
-        ////console.log('ssctree.js zoom out')
-        //snapped_index = snap_to_state(newstep, states, false, true)
-        //}
-        //else if (zoom_factor > 1) { //zoom in
-        ////console.log('ssctree.js zoom in')
-        //snapped_index = snap_to_state(newstep, states, true, false)
-        //}
-
-
-        //// FIXME: these 2 variables should be adjusted
-        ////     based on which tGAP is used...
-        //// FIXME: this step mapping should move to the data side (the tiles)
-        ////     and be kept there (for every tree_setting visualized on the map)
-        //// FIXME: should use this.getScaleDenominator()
-
-        //// let Sb = 48000  // (start scale denominator)
-        //// let total_steps = 65536 - 1   // how many generalization steps did the process take?
-
-        ////let Sb = 24000  // (start scale denominator)
-        ////let total_steps = 262144 - 1   // how many generalization steps did the process take?
-
-        //if (this.tree === null)
-        //{
-        // return 0
-        //}
-        ////console.log('')
-
-        //// reduction in percentage
-        ////let reductionf = 1 - Math.pow(this.tree.metadata.start_scale_Sb / St, 2)
-        ////console.log('ssctree.js reductionf:', reductionf)
-        ////let step = this.tree.metadata.no_of_objects_Nb * reductionf //step is not necessarily an integer
-        //let newstep = this.get_step_from_St(St)
-        //let snapped_step = newstep
-        //let states = this.states
-        //if (states != null
-        //&& newstep > states[0] - 0.0001
-        //&& newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
-        //) {
-        ////console.log('ssctree.js states:', states)
-        ////console.log('ssctree.js step:', newstep)
-
-
-        ////let current_step_index = snap_to_state(current_step, states)
-        ////if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
-        ////current_step = states[current_step_index]
-        ////}
-
-
-        ////if we scroll too little, the map doesn't zoom because of the snapping.
-        ////we force snapping for at least one step. 
-        ////let snapped_St = this.get_St_from_step(states[step_index])
-        ////console.log('ssctree.js normal_step_diff:', normal_step_diff)
-        ////console.log('ssctree.js current_step:', current_step)
-        ////console.log('ssctree.js states[step_index]:', states[step_index])
-
-        ////console.log(' ')
-        ////console.log('ssctree.js zoom_factor:', zoom_factor)
-        //let snapped_index = 0
-        //if (zoom_factor == 1) {
-        //    //console.log('ssctree.js panning')
-        //    snapped_index = snap_to_state(newstep, states)
-        //}
-        //else if (zoom_factor < 1) { //zoom out
-        //    //console.log('ssctree.js zoom out')
-        //    snapped_index = snap_to_state(newstep, states, false, true)
-        //}
-        //else if (zoom_factor > 1) { //zoom in
-        //    //console.log('ssctree.js zoom in')
-        //    snapped_index = snap_to_state(newstep, states, true, false)
-        //}
-
-
-        ////console.log('ssctree.js snapped_index:', snapped_index)
-
-
-        ////let snapped_index = snap_to_state(newstep, states)
-        ////snapped_step = states[snapped_index]
-
-
-        ////if (zoom_factor < 1 //zoom out
-        ////&& snapped_step <= current_step) { //wrong direction because of snapping
-        ////snapped_index += 1
-        ////}
-        ////else if (zoom_factor > 1 //zoom in
-        ////&& snapped_step >= current_step) { //wrong direction because of snapping
-        ////snapped_index -= 1
-        ////}
-
-        ////if (current_step != Number.MAX_SAFE_INTEGER) {
-        ////if (zoom_factor < 1 //zoom out
-        ////    && snapped_step <= current_step) { //wrong direction because of snapping
-        ////    snapped_index += 1
-        ////}
-        ////else if (zoom_factor > 1 //zoom in
-        ////    && snapped_step >= current_step) { //wrong direction because of snapping
-        ////    snapped_index -= 1
-        ////}
-        ////}
-        ////else {
-        //////do nothing
-        ////}
-
-        //snapped_step = states[snapped_index]
-
-        ////console.log('ssctree.js new step:', newstep)
-        ////console.log('ssctree.js snapped_step:', snapped_step)
-        //}
-
-        //return snapped_step
     };
 
     //if (if_floor == false && if_ceil == false), then we snap to the cloest step
@@ -3601,55 +3547,8 @@
                 snapped_step = this.snap_to_state(newstep, true, false);
             }
 
-            //let snapped_index = snap_to_state(newstep, states)
-
-
-            //if we scroll too little, the map doesn't zoom because of the snapping.
-            //we force snapping for at least one step. 
-
-            //let snapped_St = this.get_St_from_step(states[step_index])
-            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-            //console.log('ssctree.js snapped_index:', snapped_index)
-            //console.log('ssctree.js states[snapped_index]:', states[snapped_index])
-            //console.log('ssctree.js zoom_factor:', zoom_factor)
-            //if (current_step == states[snapped_index] && current_step != Number.MAX_SAFE_INTEGER) {
-            //if (zoom_factor > 1) { //zooming in 
-            //    snapped_index -= 1
-            //}
-            //else if (zoom_factor < 1) { //zooming out
-            //    snapped_index += 1
-            //}
-            //}
-
-            //snapped_step = states[snapped_index]
-            //if (current_step != Number.MAX_SAFE_INTEGER) {
-            //if (//current_step < step //zoom out
-            //    zoom_factor < 1
-            //    && snapped_step <= current_step) { //wrong direction or no zooming because of snapping
-            //    snapped_index += 1
-            //}
-            //else if (//current_step > step //zoom in
-            //    zoom_factor > 1
-            //    && snapped_step >= current_step) { //wrong direction because of snapping
-            //    snapped_index -= 1
-            //}
-            //}
-            //snapped_step = states[snapped_index]
-            //console.log('ssctree.js snapped_step:', snapped_step)
-
             var adjusted_step_diff = Math.abs(snapped_step - current_step);
-
             time_factor = adjusted_step_diff / normal_step_diff;
-
-            //if (current_step != Number.MAX_SAFE_INTEGER) {
-            //time_factor = adjusted_step_diff / normal_step_diff
-            //}
-
-            //console.log('ssctree.js adjusted_step_diff:', adjusted_step_diff)
-            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-            //console.log('ssctree.js time_factor:', time_factor)
-
-            //console.log('ssctree.js snapped_step:', step)
         }
 
         //return Math.max(0, step)
@@ -4214,7 +4113,7 @@
         var start = this.getTransform().world_square;
         this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
             this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
-        var end = this.getTransform().world_square;
+        var end = this.getTransform().world_square;  //world_square is updated in function compute_zoom_parameters
         var interpolate = this.doEaseOutSine(start, end);
         //var interpolate = this.doEaseNone(start, end);
         return interpolate;
@@ -4394,4 +4293,4 @@
 
     return exported;
 
-})));
+}));
