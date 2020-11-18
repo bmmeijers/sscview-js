@@ -125,7 +125,7 @@ class Map {
         this.subscribe_scale()
 
         var layercontrol = new LayerControl(this, map_setting)
-        layercontrol.add_layercontrols("fieldset-layers")
+        layercontrol.add_layercontrols()
 
         map_setting.tree_settings.forEach((tree_setting) => {
             //console.log('map.js tree_setting:', tree_setting)

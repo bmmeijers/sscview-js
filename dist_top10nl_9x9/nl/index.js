@@ -2598,9 +2598,9 @@
         this.tree_settings = map_setting.tree_settings;
     };
 
-    LayerControl.prototype.add_layercontrols = function add_layercontrols (div_id) {
+    LayerControl.prototype.add_layercontrols = function add_layercontrols () {
             var this$1 = this;
-     //e.g. div_id: "fieldset-layers"
+
 
         // var container_close = document.getElementById("container-close");
         // container_close.parentNode.insertBefore(newheader, container_close)
@@ -2611,13 +2611,13 @@
 
         var canvas_nm = '';
         var canvas_nm_bar = '';
-        var div_container_width = '100%';
+        var fs_div_width = '100%';
         var map_description = '';
         // this.map.canvasnm_in_cbnm: if we want to display the canvas name as part of the check box name
         if ('canvas_nm' in this.map_setting && this.map.canvasnm_in_cbnm == true) {
             canvas_nm = this.map_setting.canvas_nm;
             canvas_nm_bar = canvas_nm + '-';
-            div_container_width = '50%';
+            fs_div_width = '50%';
 
             if (canvas_nm == 'lcanvas') {
                 map_description = 'left map';
@@ -2633,27 +2633,37 @@
 
             
 
+        //The hierarchy of the elements of controlling layers
+        //modal_content
+        //  fs_div (one lyr_setting_div for each map)
+        //lyr_fs
+        //  fs_legend
+        //  lyr_setting_div (one lyr_setting_div for each layer)
+        //    cb_lyrnm
+        //    opacity_div
+        //      opacitytext_span
+        //      slider
         var modal_content = document.getElementById('modal-content');
 
-        // make a container
-        var div_container = document.createElement('div');
-        modal_content.append(div_container);
-        div_container.className = 'w3-container w3-padding';
-        div_container.style.width = div_container_width;
-        div_container.style.display = 'inline-block';
+        // make a division of fieldsets
+        var fs_div = document.createElement('div');
+        modal_content.append(fs_div);
+        fs_div.className = 'w3-container w3-padding';
+        fs_div.style.width = fs_div_width;
+        fs_div.style.display = 'inline-block';
 
-        // make and append the layer container
-        var fieldset_layers = document.createElement('fieldset');  //The <fieldset> tag draws a box around the related elements.
-        div_container.append(fieldset_layers);
-        fieldset_layers.className = "w3-white";
-        fieldset_layers.id = canvas_nm_bar + 'fieldset-layers';  //e.g., lcanvas-fieldset-layers
+        // make and append a fieldset of layers
+        var lyr_fs = document.createElement('fieldset');  //The <fieldset> tag draws a box around the related elements.
+        fs_div.append(lyr_fs);
+        lyr_fs.className = "w3-white";
+        lyr_fs.id = canvas_nm_bar + 'fieldset-layers';  //e.g., lcanvas-fieldset-layers
 
-        // make and append a legend
-        var legend_layers = document.createElement('legend');
-        fieldset_layers.append(legend_layers);
-        legend_layers.innerHTML = 'Layers';
+        // make and append a legend of the fieldset
+        var fs_legend = document.createElement('legend');
+        lyr_fs.append(fs_legend);
+        fs_legend.innerHTML = 'Layers';
         if (map_description != '') {
-            legend_layers.innerHTML = 'Layers of ' + map_description;
+            fs_legend.innerHTML = 'Layers of ' + map_description;
         }
 
 
@@ -2663,27 +2673,27 @@
 
         this.tree_settings.forEach(function (tree_setting) {
 
-            var layer_nm = tree_setting.layer_nm;
+            var lyrnm = tree_setting.layer_nm;
             //console.log('map.js layer_nm:', layer_nm)
             // create a new div element 
             //var newfieldset = document.createElement("fieldset");
             //fieldset_layers.append(newfieldset)
 
-            var lyr_setting_container = document.createElement("div");
+            var lyr_setting_div = document.createElement("div");
 
-            fieldset_layers.append(lyr_setting_container);
-            lyr_setting_container.style.display = 'inline-block';
-            lyr_setting_container.className = 'w3-margin-bottom w3-margin-right';
+            lyr_fs.append(lyr_setting_div);
+            lyr_setting_div.style.display = 'inline-block';
+            lyr_setting_div.className = 'w3-margin-bottom w3-margin-right';
             //make the legend of the layer
-            var newlegend = document.createElement("div");
-            lyr_setting_container.append(newlegend); //must append at the beginning so that the content of innerHTML is effective immediately
+            var cb_lyrnm = document.createElement("div"); //checkbox and layer name
+            lyr_setting_div.append(cb_lyrnm); //must append at the beginning so that the content of innerHTML is effective immediately
 
 
 
-            var canvaslyr_nm = canvas_nm_bar + layer_nm;
-            var id_cb = canvaslyr_nm + '-cb';
+            var canvaslyrnm = canvas_nm_bar + lyrnm;
+            var id_cb = canvaslyrnm + '-cb';
             var topic_cb = 'setting.layer.' + id_cb;
-            newlegend.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + layer_nm;
+            cb_lyrnm.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + lyrnm;
             var cb = document.getElementById(id_cb);
             cb.checked = tree_setting.do_draw;
             cb.value = topic_cb;
@@ -2695,22 +2705,22 @@
             });
 
 
-            var div_container = document.createElement("div");
-            lyr_setting_container.append(div_container);
+            var opacity_div = document.createElement("div");
+            lyr_setting_div.append(opacity_div);
 
             //make the slider for the opacity
-            var opacity_div = document.createElement("span");
-            div_container.appendChild(opacity_div);
-            opacity_div.id = canvaslyr_nm + '-opacity-value';
-            opacity_div.style.display = 'inline-block';
-            opacity_div.style.width = "105px";
-            opacity_div.style.cssFloat = "left";
+            var opacitytext_span = document.createElement("span");
+            opacity_div.appendChild(opacitytext_span);
+            opacitytext_span.id = canvaslyrnm + '-opacity-value';
+            opacitytext_span.style.display = 'inline-block';
+            opacitytext_span.style.width = "105px";
+            opacitytext_span.style.cssFloat = "left";
             //we do not need to set value here because when we assign value to the slider, the event will be triggered
             //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
 
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input");
-            div_container.appendChild(slider);
+            opacity_div.appendChild(slider);
             slider.className = 'w3-margin-right';
             slider.style.cssFloat = "left";
             // slider.id = layer_nm + '_opacity-slider';
@@ -2735,12 +2745,12 @@
             //fieldset_layers.append(opacity_div, slider)
 
 
-            var topic = 'setting.layer.' + canvaslyr_nm + '_opacity-slider';
+            var topic = 'setting.layer.' + canvaslyrnm + '_opacity-slider';
 
             //subscription of the displayed opacity value
             msgbus.subscribe(topic, function (topic, message, sender) {
                 //opacity_div.innerHTML = 'opacity value3: ' + message;
-                opacity_div.innerHTML = 'opacity: ' + message;
+                opacitytext_span.innerHTML = 'opacity: ' + message;
                 //console.log('layercontrol.js opacity_div.innerHTML:', opacity_div.innerHTML)
             });
 
@@ -3853,7 +3863,7 @@
         this.subscribe_scale();
 
         var layercontrol = new LayerControl(this, map_setting);
-        layercontrol.add_layercontrols("fieldset-layers");
+        layercontrol.add_layercontrols();
 
         map_setting.tree_settings.forEach(function (tree_setting) {
             //console.log('map.js tree_setting:', tree_setting)
