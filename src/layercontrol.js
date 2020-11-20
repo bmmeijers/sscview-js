@@ -53,12 +53,12 @@ class LayerControl {
         //          slider
         let modal_content = document.getElementById('modal-content')
 
+
         // make a division of fieldsets
         var fs_div = document.createElement('div')
         modal_content.append(fs_div)
-        fs_div.className = 'w3-container w3-padding'
+        fs_div.className = 'w3-container w3-padding w3-show-inline-block'
         fs_div.style.width = fs_div_width
-        fs_div.style.display = 'inline-block'
 
         // make and append a fieldset of layers
         var lyr_fs = document.createElement('fieldset')  //The <fieldset> tag draws a box around the related elements.
@@ -90,8 +90,7 @@ class LayerControl {
             var lyr_setting_div = document.createElement("div");
 
             lyr_fs.append(lyr_setting_div);
-            lyr_setting_div.style.display = 'inline-block'
-            lyr_setting_div.className = 'w3-margin-bottom w3-margin-right'
+            lyr_setting_div.className = 'w3-margin-bottom margin-right-32 w3-show-inline-block'
             //make the legend of the layer
             var cb_lyrnm = document.createElement("div"); //checkbox and layer name
             lyr_setting_div.append(cb_lyrnm); //must append at the beginning so that the content of innerHTML is effective immediately
@@ -116,21 +115,23 @@ class LayerControl {
             var opacity_div = document.createElement("div");
             lyr_setting_div.append(opacity_div)
 
+            var opacitytext_div = document.createElement("span")
+            opacity_div.appendChild(opacitytext_div)
+            opacitytext_div.className = 'w3-show-inline-block'
+            opacitytext_div.innerHTML = 'opacity: '
+
             //make the slider for the opacity
             var opacitytext_span = document.createElement("span");
             opacity_div.appendChild(opacitytext_span)
             opacitytext_span.id = canvaslyrnm + '-opacity-value'
-            opacitytext_span.style.display = 'inline-block'
-            opacitytext_span.style.width = "105px"
-            opacitytext_span.style.cssFloat = "left";
+            opacitytext_span.className = 'span-40'
             //we do not need to set value here because when we assign value to the slider, the event will be triggered
             //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
 
             // var slider_div = document.createElement("div");
             var slider = document.createElement("input")
             opacity_div.appendChild(slider)
-            slider.className = 'w3-margin-right'
-            slider.style.cssFloat = "left"
+            slider.className = 'w3-show-inline-block'
             // slider.id = layer_nm + '_opacity-slider';
 
             slider.type = 'range';
@@ -158,7 +159,7 @@ class LayerControl {
             //subscription of the displayed opacity value
             msgbus.subscribe(topic, (topic, message, sender) => {
                 //opacity_div.innerHTML = 'opacity value3: ' + message;
-                opacitytext_span.innerHTML = 'opacity: ' + message;
+                opacitytext_span.innerHTML = message;
                 //console.log('layercontrol.js opacity_div.innerHTML:', opacity_div.innerHTML)
             });
 

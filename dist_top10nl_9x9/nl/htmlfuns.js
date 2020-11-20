@@ -1,13 +1,24 @@
 function enhanceMenu() {
     /* opening and closing the settings modal dialog */
     // FIXME: repetition of names and ids here is cumbersome
-    var toggleSettingsButton = function () {
-        //toggleMenu(); // hide the menu
-        toggleSettings()
-        //document.getElementById('settingsModal').style.visibility = 'visible';
+    function toggleSettingsButton() {
+        var x = document.getElementById("settingsModal");
+        var btn = document.getElementById("settingButton");
+        //console.log('htmlfuns.js x.style.visibility before:', x.style.visibility)
+        if (x.style.visibility == 'visible') {
+            x.style.visibility = 'hidden'
+            btn.src = "https://pengdlzn.github.io/webmaps/decorations/setting-hollow.svg"
+        }
+        else {
+            x.style.visibility = 'visible'
+            btn.src = "https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg"
+        }
+        //console.log('htmlfuns.js x.style.visibility after:', x.style.visibility)
     };
+    toggleSettingsButton() //by default, the visibility is 'hidden', so we call the function to make it 'visible'
     document.getElementById("toggleSettingsButton").addEventListener('click', toggleSettingsButton);
-
+    
+    //toggleSettingsButton()
     //The below code is for the cross of the setting panel, where the cross is used to close the panel
     //var modalSettingsClose = function () {
         
@@ -19,7 +30,13 @@ function enhanceMenu() {
     //trigger the click event of openSettingsButton
     //const event_modalSettings = new Event('click')
     //document.getElementById("openSettingsButton").dispatchEvent(event_modalSettings)
-    document.getElementById('settingsModal').style.visibility = 'visible';
+    
+
+
+
+
+
+
     // the menu on the top
     function toggleMenu() {
         var x = document.getElementById("menu");
@@ -28,23 +45,6 @@ function enhanceMenu() {
         } else {
             x.className = x.className.replace(" w3-show", "");
         }
-    };
-
-    function toggleSettings() {        
-        var x = document.getElementById("settingsModal");
-        if (x.style.visibility == 'visible') {
-            x.style.visibility = 'hidden'
-        }
-        else {
-            x.style.visibility = 'visible'
-        }
-
-
-        //if (x.className.indexOf("w3-show") == -1) {
-        //    x.className += " w3-show";
-        //} else {
-        //    x.className = x.className.replace(" w3-show", "");
-        //}
     };
 
     //const event_toggleMenu = new Event('click')
@@ -71,17 +71,6 @@ function enhanceMenu() {
     init_slider("boundary-width");
     /* -- end of slider -- */
 
-
-
-    //test to put this function into layercontrol.js
-    function toggleLegend() {
-        var x = document.getElementById("Demo");
-        if (x.className.indexOf("w3-show") == -1) {
-            x.className += " w3-show";
-        } else {
-            x.className = x.className.replace(" w3-show", "");
-        }
-    }
 }
 
 

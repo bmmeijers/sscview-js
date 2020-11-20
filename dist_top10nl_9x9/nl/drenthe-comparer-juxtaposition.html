@@ -21,7 +21,6 @@
     <style type="text/css">
         .my-modal {
             z-index: 3;
-            /* display: none; */
             /* padding-top: 100px; */
             position: fixed;
             left: 0%;
@@ -54,11 +53,7 @@
 
         .myspan{
             display: inline-block; /* must use "inline-block" here not "inline" so that the slider bar is stable*/
-            width: 15px;            
-        }
-
-        .mydiv{
-            display: inline-block;
+            width: 1000px;            
         }
 
         #lcanvas {
@@ -272,7 +267,7 @@
 
         <div class="w3-dropdown-click w3-right">
             <button id="toggleSettingsButton" class="w3-button tu-blue">
-                <img src="https://pengdlzn.github.io/webmaps/decorations/vertical.svg" height="20"></button>
+                <img id="settingButton" src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg" height="20"></button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
             <!-- <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right"> -->
@@ -317,7 +312,7 @@
 
     </div>
 
-    <div id="settingsModal" class="my-modal w3-show">
+    <div id="settingsModal" class="my-modal">
         <!-- style="touch-action: none;" -->
         <div class="my-modal-content w3-light-grey" id='modal-content'>
             <!-- <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span> -->
@@ -329,22 +324,22 @@
             <div class="w3-container w3-padding">
                 <fieldset class= "w3-white">
                     <legend> Settings </legend>
-                    <div class="mydiv w3-margin-right"> <!-- we use a divions here so that the content inside will not split into anohter line-->
+                    <div class="w3-margin-right w3-show-inline-block"> <!-- we use a divions here so that the content inside will not split into anohter line-->
                         Zooming factor: <span class = "myspan" id="zoom-factor-value"></span>
                         <input type="range" value="1" step="0.1" min="0" max="5" id="zoom-factor"
                         class="w3-margin-left w3-margin-right">
                     </div> 
-                    <div class="mydiv w3-margin-right" >
+                    <div class="w3-margin-right w3-show-inline-block" >
                         Zooming duration (s): <span class = "myspan" id="zoom-duration-value"></span> 
                         <input type="range" value="1" step="0.1" min="0" max="5" id="zoom-duration"
                         class="w3-margin-left w3-margin-right">
                     </div>       
-                    <div class='mydiv w3-margin-right'>
+                    <div class='w3-margin-right w3-show-inline-block'>
                         Panning duration (s): <span class = "myspan" id="pan-duration-value"></span> 
                         <input type="range" value="1" step="0.1" min="0" max="5" id="pan-duration"
                         class="w3-margin-left w3-margin-right">
                     </div>                            
-                    <div class='mydiv w3-margin-right'>
+                    <div class='w3-margin-right w3-show-inline-block'>
                         Boundary width (mm): <span class = "myspan" id="boundary-width-value"></span> 
                         <input type="range" value="0.2" step="0.1" min="0" max="5" id="boundary-width"
                         class="w3-margin-left w3-margin-right">

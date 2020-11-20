@@ -107,7 +107,7 @@ class Map {
 //            console.log(message);
             
             this._interaction_settings.zoom_factor = parseFloat(message);
-            console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
+            //console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
             this.abortAndRender();
         });
 

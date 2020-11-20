@@ -1,0 +1,168 @@
+.my-modal {
+	z-index: 3;
+	/* padding-top: 100px; */
+	position: fixed;
+	left: 0%;
+	top: 40px;
+	/* width relative to the window */
+	width: 100%;
+	max-height: 40%;
+	overflow: auto;
+	/* background-color: rgba(0, 0, 0, 0.4); */
+	outline: 1px;
+	outline-style: solid;
+	outline-color: darkgray;
+}
+
+.my-modal-content {
+	margin: auto;
+	z-index: 3;
+	/* margin: 50px; */
+	/* background-color: 'w3-light-grey'; */
+	position: relative;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	/* outline: 5px;
+	outline-style: solid;
+	outline-color: black; */
+	/* width: 600px */
+}
+
+.span-40{
+	display: inline-block; /* must use "inline-block" here not "inline" so that the slider bar is stable*/
+	width: 40px;
+	/* float: left;             */
+}
+
+.margin-right-32{margin-right:32px!important}
+
+#canvas {
+	display: block;
+	background: white;
+}
+
+.tu-shadow {
+	-webkit-filter: drop-shadow(1px 1px 2px darkgray);
+	filter: drop-shadow(1px 1px 2px darkgray);
+	/* rgba(255, 255, 255, 0.4) );*/
+	/* -webkit-filter: opacity(.6); filter: opacity(.6); */
+}
+
+.tu-blue {
+	color: white !important;
+	background-color: rgb(110, 187, 213) !important
+}
+
+.tu-right {
+	right: 0px;
+}
+
+/*
+#navigationBar {
+border-bottom: 1px solid #ddd;
+}
+*/
+
+/* css3 spinner: define keyframes + how it should spin
+note: also w3.css provides a spin class: w3-spin
+*/
+@-moz-keyframes spin {
+	from {
+		-moz-transform: rotate(0deg);
+	}
+
+	to {
+		-moz-transform: rotate(359deg);
+	}
+}
+
+@-webkit-keyframes spin {
+	from {
+		-webkit-transform: rotate(0deg);
+	}
+
+	to {
+		-webkit-transform: rotate(359deg);
+	}
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(359deg);
+	}
+}
+
+.do-spin {
+	-webkit-animation: spin 3s infinite linear;
+	-moz-animation: spin 3s infinite linear;
+	-o-animation: spin 3s infinite linear;
+	animation: spin 2.5s infinite ease-in-out;
+}
+
+input[type="radio"] {
+	margin: 0px 6px 0 6px;
+}
+
+legend,
+label {
+	-webkit-user-select: none;
+	/* Safari */
+	-moz-user-select: none;
+	/* Firefox */
+	-ms-user-select: none;
+	/* IE10+/Edge */
+	user-select: none;
+}
+
+.prevent-pull-to-refresh {
+	touch-action: none;
+}
+
+.my-legend .legend-title {
+	text-align: left;
+	margin-bottom: 5px;
+	font-weight: bold;
+	font-size: 90%;
+}
+
+.my-legend .legend-scale ul {
+	margin: 0;
+	margin-bottom: 5px;
+	padding: 0;
+	float: left;
+	list-style: none;
+}
+
+.my-legend .legend-scale ul li {
+	font-size: 80%;
+	list-style: none;
+	margin-left: 0;
+	line-height: 18px;
+	margin-bottom: 2px;
+}
+
+.my-legend ul.legend-labels li span {
+	display: block;
+	float: left;
+	height: 16px;
+	width: 30px;
+	margin-right: 5px;
+	margin-left: 0;
+	border: 1px solid #999;
+}
+
+.my-legend .legend-source {
+	font-size: 70%;
+	color: #999;
+	clear: both;
+}
+
+.my-legend a {
+	color: #777;
+}
