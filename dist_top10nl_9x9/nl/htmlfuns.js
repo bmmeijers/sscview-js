@@ -73,4 +73,28 @@ function enhanceMenu() {
 
 }
 
+// Surprisingly, this function doesn't work if being put into function enhanceMenu
+function toggleLegend() {
+    var x = document.getElementById("Demo");
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+    } else {
+        x.className = x.className.replace(" w3-show", "");
+    }
+}
 
+function getX(e) {
+    // fixme: also handle touch events
+    // var e = e.touches ? e.touches[0] : e;
+    // fixme: handle initial position 
+    // (e.g. at center, instead of completely at left)
+    let x = e.clientX;
+    if (x < 1) x = 1; //avoid the width of a canvas to be 0; otherwise, tricky to computer scale
+
+    // console.log('comparer.html:', x)
+    let hGap = 0;
+    let newWidth = window.innerWidth - hGap;
+    if (x > newWidth - 1) x = newWidth - 1;
+
+    return x;
+}

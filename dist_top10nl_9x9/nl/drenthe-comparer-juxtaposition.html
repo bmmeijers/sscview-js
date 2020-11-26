@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <link rel="stylesheet" href="https://pengdlzn.github.io/webmaps/decorations/w3.css">
+    <link rel="stylesheet" href="mapviewer.css">
 
     <script type="text/javascript" src="index.js?id=5"></script>
     <script src="htmlfuns.js"></script>
@@ -19,229 +20,16 @@
         type="image/vnd.microsoft.icon" />
 
     <style type="text/css">
-        .my-modal {
-            z-index: 3;
-            /* padding-top: 100px; */
-            position: fixed;
-            left: 0%;
-			top: 40px;
-            /* width relative to the window */
-            width: 100%;
-            max-height: 40%;
-            overflow: auto;
-            /* background-color: rgba(0, 0, 0, 0.4); */
-            outline: 1px;
-            outline-style: solid;
-            outline-color: darkgray;
-        }
+        /* may add more styles here */
+        /* .span-40{
+            display: inline-block; 
+            width: 40px;
+        } */
 
-        .my-modal-content {
-            margin: auto;
-            z-index: 3;
-            /* margin: 50px; */
-            /* background-color: 'w3-light-grey'; */
-            position: relative;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            /* outline: 5px;
-            outline-style: solid;
-            outline-color: black; */
-            /* width: 600px */
-        }
-
-        .myspan{
-            display: inline-block; /* must use "inline-block" here not "inline" so that the slider bar is stable*/
-            width: 1000px;            
-        }
-
-        #lcanvas {
-            display: block;
-            background: white;
-        }
-
-        #rcanvas {
-            display: block;
-            background: white;
-        }
-
-        .tu-shadow {
-            -webkit-filter: drop-shadow(1px 1px 2px darkgray);
-            filter: drop-shadow(1px 1px 2px darkgray);
-            /* rgba(255, 255, 255, 0.4) );*/
-            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
-        }
-
-        .tu-blue {
-            color: white !important;
-            background-color: rgb(110, 187, 213) !important
-        }
-
-        .tu-right {
-            right: 0px;
-        }
-
-        /*
-        #navigationBar {
-        border-bottom: 1px solid #ddd;
-        }
-        */
-
-        /* css3 spinner: define keyframes + how it should spin
-        note: also w3.css provides a spin class: w3-spin
-        */
-        @-moz-keyframes spin {
-            from {
-                -moz-transform: rotate(0deg);
-            }
-
-            to {
-                -moz-transform: rotate(359deg);
-            }
-        }
-
-        @-webkit-keyframes spin {
-            from {
-                -webkit-transform: rotate(0deg);
-            }
-
-            to {
-                -webkit-transform: rotate(359deg);
-            }
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(359deg);
-            }
-        }
-
-        .do-spin {
-            -webkit-animation: spin 3s infinite linear;
-            -moz-animation: spin 3s infinite linear;
-            -o-animation: spin 3s infinite linear;
-            animation: spin 2.5s infinite ease-in-out;
-        }
-
-        input[type="radio"] {
-            margin: 0px 6px 0 6px;
-        }
-
-        legend,
-        label {
-            -webkit-user-select: none;
-            /* Safari */
-            -moz-user-select: none;
-            /* Firefox */
-            -ms-user-select: none;
-            /* IE10+/Edge */
-            user-select: none;
-        }
-
-        .prevent-pull-to-refresh {
-            touch-action: none;
-        }
-
-        .my-legend .legend-title {
-            text-align: left;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 90%;
-        }
-
-        .my-legend .legend-scale ul {
-            margin: 0;
-            margin-bottom: 5px;
-            padding: 0;
-            float: left;
-            list-style: none;
-        }
-
-        .my-legend .legend-scale ul li {
-            font-size: 80%;
-            list-style: none;
-            margin-left: 0;
-            line-height: 18px;
-            margin-bottom: 2px;
-        }
-
-        .my-legend ul.legend-labels li span {
-            display: block;
-            float: left;
-            height: 16px;
-            width: 30px;
-            margin-right: 5px;
-            margin-left: 0;
-            border: 1px solid #999;
-        }
-
-        .my-legend .legend-source {
-            font-size: 70%;
-            color: #999;
-            clear: both;
-        }
-
-        .my-legend a {
-            color: #777;
-        }
     </style>
-
-
 </head>
 
 <body class="w3-white prevent-pull-to-refresh">
-
-    <!-- <script src="index.js"></script> -->
-
-    <style>
-        #bgwhite {
-            /* bg: background */
-            background-color: #fff !important;
-            background: white;
-            color: white;
-            /*position: absolute;*/
-            z-index: 1;
-        }
-
-        #bgred {
-            background: red;
-        }
-
-        /* styles for the swiper element / gutter */
-        .compare {
-            /*gutter*/
-            background-color: #3886be;
-            position: absolute;
-            width: 3px;
-            /* height: 640px; */
-            z-index: 1;
-        }
-
-        .compare .compare-swiper {
-            /* swiper handle */
-            background-color: #3887be;
-            box-shadow: inset 0 0 0 3px #fff;
-            display: inline-block;
-            border-radius: 90%;
-            /* border-radius:50%; */
-            /* handle: circle or square */
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            top: 50%;
-            left: -30px;
-            margin: -30px 1px 0;
-            color: #fff;
-            cursor: ew-resize;
-            z-index: 1;
-            background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgICB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiAgIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiICAgd2lkdGg9IjYwIiAgIGhlaWdodD0iNjAiICAgdmVyc2lvbj0iMS4xIiAgIHZpZXdCb3g9IjAgMCA2MCA2MCIgICBpZD0ic3ZnNTQzNCIgICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkxK2RldmVsK29zeG1lbnUgcjEyOTExIiAgIHNvZGlwb2RpOmRvY25hbWU9Imwtci5zdmciPiAgPG1ldGFkYXRhICAgICBpZD0ibWV0YWRhdGE1NDQ0Ij4gICAgPHJkZjpSREY+ICAgICAgPGNjOldvcmsgICAgICAgICByZGY6YWJvdXQ9IiI+ICAgICAgICA8ZGM6Zm9ybWF0PmltYWdlL3N2Zyt4bWw8L2RjOmZvcm1hdD4gICAgICAgIDxkYzp0eXBlICAgICAgICAgICByZGY6cmVzb3VyY2U9Imh0dHA6Ly9wdXJsLm9yZy9kYy9kY21pdHlwZS9TdGlsbEltYWdlIiAvPiAgICAgICAgPGRjOnRpdGxlPjwvZGM6dGl0bGU+ICAgICAgPC9jYzpXb3JrPiAgICA8L3JkZjpSREY+ICA8L21ldGFkYXRhPiAgPGRlZnMgICAgIGlkPSJkZWZzNTQ0MiIgLz4gIDxzb2RpcG9kaTpuYW1lZHZpZXcgICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIgICAgIGJvcmRlcmNvbG9yPSIjNjY2NjY2IiAgICAgYm9yZGVyb3BhY2l0eT0iMSIgICAgIG9iamVjdHRvbGVyYW5jZT0iMTAiICAgICBncmlkdG9sZXJhbmNlPSIxMCIgICAgIGd1aWRldG9sZXJhbmNlPSIxMCIgICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIgICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMTI4NiIgICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9Ijc1MSIgICAgIGlkPSJuYW1lZHZpZXc1NDQwIiAgICAgc2hvd2dyaWQ9InRydWUiICAgICBpbmtzY2FwZTp6b29tPSI0IiAgICAgaW5rc2NhcGU6Y3g9IjI1Ljg4OTgzMSIgICAgIGlua3NjYXBlOmN5PSIzNC4zODE4MzMiICAgICBpbmtzY2FwZTp3aW5kb3cteD0iMCIgICAgIGlua3NjYXBlOndpbmRvdy15PSIyMyIgICAgIGlua3NjYXBlOndpbmRvdy1tYXhpbWl6ZWQ9IjAiICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmc1NDM0IiAgICAgaW5rc2NhcGU6b2JqZWN0LW5vZGVzPSJ0cnVlIiAgICAgaW5rc2NhcGU6c25hcC1zbW9vdGgtbm9kZXM9InRydWUiPiAgICA8aW5rc2NhcGU6Z3JpZCAgICAgICB0eXBlPSJ4eWdyaWQiICAgICAgIGlkPSJncmlkNTk4OSIgLz4gIDwvc29kaXBvZGk6bmFtZWR2aWV3PiAgPHBhdGggICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOjFweDtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2Utb3BhY2l0eToxIiAgICAgZD0iTSAyNSAyNCBMIDE2IDMwIEwgMjUgMzYgTCAyNSAyNCB6IE0gMzUgMjQgTCAzNSAzNiBMIDQ0IDMwIEwgMzUgMjQgeiAiICAgICBpZD0icGF0aDU5OTUiIC8+PC9zdmc+);
-        }
-    </style>
 
     <div class="w3-bar w3-light-grey" id="navigationBar">
         <!--<a href="#" class="w3-bar-item w3-button">Home</a>-->
@@ -267,7 +55,9 @@
 
         <div class="w3-dropdown-click w3-right">
             <button id="toggleSettingsButton" class="w3-button tu-blue">
-                <img id="settingButton" src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg" height="20"></button>
+                <img id="settingButton" height="20" 
+                    src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg">
+            </button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
             <!-- <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right"> -->
@@ -324,25 +114,25 @@
             <div class="w3-container w3-padding">
                 <fieldset class= "w3-white">
                     <legend> Settings </legend>
-                    <div class="w3-margin-right w3-show-inline-block"> <!-- we use a divions here so that the content inside will not split into anohter line-->
-                        Zooming factor: <span class = "myspan" id="zoom-factor-value"></span>
-                        <input type="range" value="1" step="0.1" min="0" max="5" id="zoom-factor"
-                        class="w3-margin-left w3-margin-right">
+                    <div class="margin-right-32 w3-show-inline-block"> <!-- we use a divions here so that the content inside will not split into anohter line-->
+                        Zooming factor: 
+                        <span class = "span-40" id="zoom-factor-value">                            
+                        </span><input type="range" value="1" step="0.1" min="0" max="5" id="zoom-factor">
                     </div> 
-                    <div class="w3-margin-right w3-show-inline-block" >
-                        Zooming duration (s): <span class = "myspan" id="zoom-duration-value"></span> 
-                        <input type="range" value="1" step="0.1" min="0" max="5" id="zoom-duration"
-                        class="w3-margin-left w3-margin-right">
+                    <div class="margin-right-32 w3-show-inline-block" >
+                        Zooming duration (s): 
+                        <span class = "span-40" id="zoom-duration-value">
+                        </span><input type="range" value="1" step="0.1" min="0" max="5" id="zoom-duration">
                     </div>       
-                    <div class='w3-margin-right w3-show-inline-block'>
-                        Panning duration (s): <span class = "myspan" id="pan-duration-value"></span> 
-                        <input type="range" value="1" step="0.1" min="0" max="5" id="pan-duration"
-                        class="w3-margin-left w3-margin-right">
+                    <div class='margin-right-32 w3-show-inline-block'>
+                        Panning duration (s): 
+                        <span class = "span-40" id="pan-duration-value">                            
+                        </span><input type="range" value="1" step="0.1" min="0" max="5" id="pan-duration">
                     </div>                            
-                    <div class='w3-margin-right w3-show-inline-block'>
-                        Boundary width (mm): <span class = "myspan" id="boundary-width-value"></span> 
-                        <input type="range" value="0.2" step="0.1" min="0" max="5" id="boundary-width"
-                        class="w3-margin-left w3-margin-right">
+                    <div class='margin-right-32 w3-show-inline-block'>
+                        Boundary width (mm): 
+                        <span class = "span-40" id="boundary-width-value">                            
+                        </span><input type="range" value="0.2" step="0.1" min="0" max="5" id="boundary-width">
                     </div>
                 </fieldset>
             </div>
@@ -724,22 +514,6 @@
             }
 
         });
-
-        function getX(e) {
-            // fixme: also handle touch events
-            // var e = e.touches ? e.touches[0] : e;
-            // fixme: handle initial position 
-            // (e.g. at center, instead of completely at left)
-            let x = e.clientX;
-            if (x < 1) x = 1; //avoid the width of a canvas to be 0; otherwise, tricky to computer scale
-
-            // console.log('comparer.html:', x)
-            let hGap = 0;
-            let newWidth = window.innerWidth - hGap;
-            if (x > newWidth - 1) x = newWidth - 1;
-
-            return x;
-        }
     </script>
 </body>
 

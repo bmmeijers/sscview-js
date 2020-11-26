@@ -23,7 +23,7 @@
     rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
 
     <style type="text/css">
-        /* may add more style here */
+        /* may add more styles here */
         /* .span-40{
             display: inline-block; 
             width: 40px;
@@ -62,8 +62,8 @@
 
         <div class="w3-dropdown-click w3-right">
             <button id="toggleSettingsButton" class="w3-button tu-blue">
-                <label for="toggleSettingsButton"></label>
-                <img id="settingButton" src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg" height="20"></button>
+                <img id="settingButton" height="20" 
+                    src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg"></button>
 
             <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
             <!-- <div id="menu" class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right"> -->
@@ -148,31 +148,6 @@
         </div>
     </div>
 
-    <footer class="w3-container w3-display-left">
-        <div class="w3-left">
-            <!--class="w3-bar-item w3-padding-small" -->
-
-            <div class="w3-dropdown-click">
-                <button onclick="toggleLegend()" class="w3-button w3-black">Legend</button>
-                <div id="Demo" class="w3-dropdown-content w3-bar-block w3-border">
-                    <!-- see https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
-                    <div class='my-legend'>
-                        <!-- <div class='legend-title'>The Title or Explanation of your Map</div> -->
-                        <div class='legend-scale'>
-                            <ul class='legend-labels'>
-                                <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
-                                <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
-                                <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
-                                <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
-                                <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
     <!-- <div class="w3-display-topleft w3-transparent" style="width: 200px; height: 50px; display: none;">
         <ul id="output" style="font-size: 14px; list-style-type: none;"><li>mouse position</li></ul>
     </div> -->
@@ -204,6 +179,31 @@
     </footer>
 
 
+
+    <footer class="w3-container w3-display-left">
+        <div class="w3-left">
+            <!--class="w3-bar-item w3-padding-small" -->
+
+            <div class="w3-dropdown-click">
+                <button onclick="toggleLegend()" class="w3-button w3-black">Legend</button>
+                <div id="Demo" class="w3-dropdown-content w3-bar-block w3-border">
+                    <!-- see https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
+                    <div class='my-legend'>
+                        <!-- <div class='legend-title'>The Title or Explanation of your Map</div> -->
+                        <div class='legend-scale'>
+                            <ul class='legend-labels'>
+                                <li><span style='background:rgb(255, 255, 178);'></span>Normal</li>
+                                <li><span style='background:rgb(254, 204, 92);'></span>Dry</li>
+                                <li><span style='background:rgb(253, 141, 60);'></span>Very dry</li>
+                                <li><span style='background:rgb(227, 26, 28);'></span>Extremely dry</li>
+                                <li><span style='background:rgb(128, 128, 128);'></span>Unknown</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
 
 
 
@@ -438,15 +438,6 @@
             window.addEventListener('resize', resize, false);
             window.addEventListener('orientationchange', resize);
         });
-
-        function toggleLegend() {
-            var x = document.getElementById("Demo");
-            if (x.className.indexOf("w3-show") == -1) {
-                x.className += " w3-show";
-            } else {
-                x.className = x.className.replace(" w3-show", "");
-            }
-        }
     </script>
 
 </body>
