@@ -15,7 +15,7 @@ import LayerControl from "./layercontrol";
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
-import { SSCTree, Evictor } from './ssctree';
+import { SSCTree, Evictor, snap_value } from './ssctree';
 
 import { MessageBusConnector } from './pubsub'
 
@@ -242,8 +242,8 @@ class Map {
             steps.push(ssctrees[0].get_step_from_St(St_for_step))
 
             //Notice that the two snapped states can be the same
-            local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true))
-            local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false))
+            local_statehighs.push(ssctrees[0].snap_state(steps[0], false))
+            local_statelows.push(ssctrees[0].snap_state(steps[0], true))
 
 
             //console.log('map.js steps[0]:', steps[0])
@@ -252,11 +252,13 @@ class Map {
         }
 
         //If we want to have multi-scale map intead of vario-scale map
-        if (this.map_setting.tree_settings[0].discrete_scales != null) {
+        let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
+        if (discrete_scales != null) {
 
             //console.log('map.js St_for_step:', St_for_step)
+            
+            let scale_snapped_St = snap_value(St_for_step, discrete_scales, true)
 
-            let scale_snapped_St = snap_to_existing_Sts(St_for_step, this.map_setting.tree_settings[0].discrete_scales)
             //console.log('map.js scale_snapped_St:', scale_snapped_St)
 
             if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
@@ -269,8 +271,8 @@ class Map {
             else {
                 steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
 
-                local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true))
-                local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false))
+                local_statehighs.push(ssctrees[0].snap_state(steps[0], false))
+                local_statelows.push(ssctrees[0].snap_state(steps[0], true))
             }
 
         }
@@ -282,8 +284,8 @@ class Map {
         //add steps of other layers
         for (var i = 1; i < ssctrees.length; i++) {
             steps.push(ssctrees[i].get_step_from_St(St_for_step))
-            local_statehighs.push(ssctrees[i].snap_to_state(steps[i], false, true))
-            local_statelows.push(ssctrees[i].snap_to_state(steps[i], true, false))
+            local_statehighs.push(ssctrees[i].snap_state(steps[i], false))
+            local_statelows.push(ssctrees[i].snap_state(steps[i], true))
         }
 
 
@@ -525,51 +527,6 @@ class Map {
 
     //}
     
-}
-
-function snap_to_existing_Sts(St, Sts) {
-
-    if (St <= Sts[0]) {
-        return Sts[0]
-    }
-    else if (St >= Sts[Sts.length -1]) {
-        return Sts[Sts.length - 1]
-    }
-
-
-
-    let start = 0, end = Sts.length - 1;
-    // Iterate while start not meets end 
-    while (start <= end) {
-
-        // Find the mid index 
-        let mid = Math.floor((start + end) / 2);
-
-        // If element is present at mid, return True 
-        if (Sts[mid] == St) {
-            //return mid;
-            return St
-        }
-
-        // Else look in left or right half accordingly 
-        else if (Sts[mid] < St)
-            start = mid + 1;
-        else
-            end = mid - 1;
-    }
-
-    //at this point, start - end == 1
-    return Sts[end]
-
-    ////console.log('ssctree.js start and end:', start, end)
-    ////console.log('Sts[start], St, Sts[end]:', Sts[start], St, Sts[end])
-    ////console.log('Sts[start] - St, St - Sts[end]:', Sts[start] - St, St - Sts[end])
-    //if (Sts[start] - St <= St - Sts[end]) { //start is already larger than end by 1
-    //    return Math.min(start, Sts.length - 1) //start will be larger than the last value of Sts[0] if St is larger than all the values of Sts    
-    //}
-    //else {
-    //    return Math.max(end, 0) //end will be negtive if St is smaller than Sts[0]
-    //}
 }
 
 export default Map

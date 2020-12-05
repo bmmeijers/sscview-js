@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.varioscale = factory());
-}(this, function () { 'use strict';
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
+}(this, (function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,11 +39,6 @@
     var _frame = function (fn) {
         return frame(fn);
     };
-
-    var cancel = window.cancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -3395,24 +3390,22 @@
             if ( zoom_factor === void 0 ) zoom_factor = 1;
 
 
-        var if_floor = false;
-        var if_ceil = false;
+        var floor_snap = null; //do not snap by default
 
         //to decide the direction we want to zoom to
         if (zoom_factor < 1) { //zoom out
-            if_ceil = true;
+            floor_snap = false;
         }
         if (zoom_factor > 1) { //zoom in
-            if_floor = true;
+            floor_snap = true;
         }
             
-        return this.get_snappedstep_from_St(St, if_floor, if_ceil)
+        return this.get_snappedstep_from_St(St, floor_snap)
     };
 
     //if (if_floor == false && if_ceil == false), then we snap to the cloest step
-    SSCTree.prototype.get_snappedstep_from_St = function get_snappedstep_from_St (St, if_floor, if_ceil) {
-            if ( if_floor === void 0 ) if_floor = false;
-            if ( if_ceil === void 0 ) if_ceil = false;
+    SSCTree.prototype.get_snappedstep_from_St = function get_snappedstep_from_St (St, floor_snap) {
+            if ( floor_snap === void 0 ) floor_snap = null;
 
 
         if (this.tree === null) {
@@ -3426,88 +3419,18 @@
             && step > states[0] - 0.0001
             && step < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //let snapped_St = this.get_St_from_step(states[step_index])
-            //console.log('ssctree.js normal_step_diff:', normal_step_diff)
-            //console.log('ssctree.js current_step:', current_step)
-            //console.log('ssctree.js states[step_index]:', states[step_index])
-            snapped_step = this.snap_to_state(step, if_floor, if_ceil);
-            //snapped_step = states[snapped_index]
+            snapped_step = this.snap_state(step, floor_snap);
         }
 
         return snapped_step
     };
 
-    SSCTree.prototype.snap_to_state = function snap_to_state (state, if_floor, if_ceil) {
-            if ( if_floor === void 0 ) if_floor = false;
-            if ( if_ceil === void 0 ) if_ceil = false;
+    SSCTree.prototype.snap_state = function snap_state (state, floor_snap) {
+            if ( floor_snap === void 0 ) floor_snap = null;
 
-        return this.states[this.snap_to_stateindex(state, if_floor, if_ceil)]
+        return snap_value(state, this.states, floor_snap)
+        //return this.states[this.snap_stateindex(state, if_floor, if_ceil)]
     };
-
-    SSCTree.prototype.snap_to_stateindex = function snap_to_stateindex (state, if_floor, if_ceil) {
-            if ( if_floor === void 0 ) if_floor = false;
-            if ( if_ceil === void 0 ) if_ceil = false;
-
-        var states = this.states;
-        var start = 0, end = states.length - 1;
-
-        if (state < states[0]) {
-            return 0
-        }
-        if (state > states[end]) {
-            return end
-        }
-
-
-
-        // Iterate while start not meets end 
-        while (start <= end) {
-
-            // Find the mid index 
-            var mid = Math.floor((start + end) / 2);
-
-            // If element is present at mid, return True 
-            if (states[mid] == state) { return mid; }
-
-            // Else look in left or right half accordingly 
-            else if (states[mid] < state)
-                { start = mid + 1; }
-            else
-                { end = mid - 1; }
-        }
-
-
-        //console.log('ssctree.js snap_to_state step:', step)
-        //console.log('ssctree.js snap_to_state if_floor:', if_floor)
-        //console.log('ssctree.js snap_to_state start and end:', start, end)
-        //console.log('ssctree.js start and end:', start, end)
-        //console.log('states[start], step, states[end]:', states[start], step, states[end])
-        //console.log('states[start] - step, step - states[end]:', states[start] - step, step - states[end])
-        //if (states[start] - step <= step - states[end]) { //start is already larger than end by 1
-        //return Math.min(start, states.length - 1) //start will be larger than the last value of states[0] if step is larger than all the values of states    
-        //}
-        //else {
-        //return Math.max(end, 0) //end will be negtive if step is smaller than states[0]
-        //}
-
-        //at this point, start - end == 1
-        if (if_floor) {
-            return end
-        }
-        else if (if_ceil) {
-            return start
-        }
-        else if (state - states[end] <= states[start] - state) {
-            return end
-            //return Math.min(start, states.length - 1) //start will be larger than the last value of states[0] if step is larger than all the values of states    
-        }
-        else {
-            return start
-
-            //return Math.max(end, 0) //end will be negtive if step is smaller than states[0]
-        }
-    };
-
 
     SSCTree.prototype.get_time_factor = function get_time_factor (St_new, zoom_factor, current_step) {
 
@@ -3527,35 +3450,21 @@
             && newstep > states[0] - 0.0001
             && newstep < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
-            //console.log('ssctree.js --------------------------------------')
-            //console.log('ssctree.js states:', states)
-            //console.log('ssctree.js current_step:', current_step)
-            //let current_step_index = snap_to_state(current_step, states)
-            //if (Math.abs(current_step - states[current_step_index]) < 0.0001) {
-            //current_step = states[current_step_index]
-            //}
 
-
-
-            //console.log('ssctree.js current_step_index:', current_step_index)
-
-            //console.log('ssctree.js step:', step)
-            //console.log('ssctree.js states[current_step_index]:', states[current_step_index])
             var normal_step_diff = Math.abs(newstep - current_step);
-
 
             //let snapped_index = 0
             if (zoom_factor == 1) {
                 //console.log('ssctree.js panning')
-                snapped_step = this.snap_to_state(newstep);
+                snapped_step = this.snap_state(newstep, null);
             }
             else if (zoom_factor < 1) { //zoom out
                 //console.log('ssctree.js zoom out')
-                snapped_step = this.snap_to_state(newstep, false, true);
+                snapped_step = this.snap_state(newstep, false);
             }
             else if (zoom_factor > 1) { //zoom in
                 //console.log('ssctree.js zoom in')
-                snapped_step = this.snap_to_state(newstep, true, false);
+                snapped_step = this.snap_state(newstep, true);
             }
 
             var adjusted_step_diff = Math.abs(snapped_step - current_step);
@@ -3573,6 +3482,59 @@
         //console.log('transform.js step, Nb, Sb, St:', step, Nb, this.tree.metadata.start_scale_Sb, St)
         return St
     };
+
+    function snap_value(value, targets, floor_snap) {
+        if ( floor_snap === void 0 ) floor_snap = null;
+
+        return targets[snap_value_index(value, targets, floor_snap)]
+    }
+
+
+    // if floor_snap == null, we do not snap
+    // if floor_snap == true, we snap to the floor
+    // if floor_snap == false, we snap to the ceiling
+    function snap_value_index(value, targets, floor_snap) {
+        if ( floor_snap === void 0 ) floor_snap = null;
+
+        var start = 0, end = targets.length - 1;
+
+        if (value < targets[0]) {
+            return 0
+        }
+        if (value > targets[end]) {
+            return end
+        }
+
+        // Iterate while start not meets end 
+        while (start <= end) {
+
+            // Find the mid index 
+            var mid = Math.floor((start + end) / 2);
+
+            // If element is present at mid, return True 
+            if (targets[mid] == value) { return mid; }
+
+            // Else look in left or right half accordingly 
+            else if (targets[mid] < value)
+                { start = mid + 1; }
+            else
+                { end = mid - 1; }
+        }
+
+        //at this point, start - end == 1
+        if (floor_snap == true) { //snap to floor
+            return end
+        }
+        else if (floor_snap == false) { //snap to ceiling
+            return start
+        }
+        else if (value - targets[end] <= targets[start] - value) {
+            return end  
+        }
+        else {
+            return start
+        }
+    }
 
 
     function obtain_dataelements(root) {
@@ -3983,8 +3945,8 @@
             steps.push(ssctrees[0].get_step_from_St(St_for_step));
 
             //Notice that the two snapped states can be the same
-            local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true));
-            local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false));
+            local_statehighs.push(ssctrees[0].snap_state(steps[0], false));
+            local_statelows.push(ssctrees[0].snap_state(steps[0], true));
 
 
             //console.log('map.js steps[0]:', steps[0])
@@ -3993,11 +3955,13 @@
         }
 
         //If we want to have multi-scale map intead of vario-scale map
-        if (this.map_setting.tree_settings[0].discrete_scales != null) {
+        var discrete_scales = this.map_setting.tree_settings[0].discrete_scales;
+        if (discrete_scales != null) {
 
             //console.log('map.js St_for_step:', St_for_step)
+                
+            var scale_snapped_St = snap_value(St_for_step, discrete_scales, true);
 
-            var scale_snapped_St = snap_to_existing_Sts(St_for_step, this.map_setting.tree_settings[0].discrete_scales);
             //console.log('map.js scale_snapped_St:', scale_snapped_St)
 
             if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
@@ -4010,8 +3974,8 @@
             else {
                 steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St);
 
-                local_statehighs.push(ssctrees[0].snap_to_state(steps[0], false, true));
-                local_statelows.push(ssctrees[0].snap_to_state(steps[0], true, false));
+                local_statehighs.push(ssctrees[0].snap_state(steps[0], false));
+                local_statelows.push(ssctrees[0].snap_state(steps[0], true));
             }
 
         }
@@ -4019,8 +3983,8 @@
         //add steps of other layers
         for (var i = 1; i < ssctrees.length; i++) {
             steps.push(ssctrees[i].get_step_from_St(St_for_step));
-            local_statehighs.push(ssctrees[i].snap_to_state(steps[i], false, true));
-            local_statelows.push(ssctrees[i].snap_to_state(steps[i], true, false));
+            local_statehighs.push(ssctrees[i].snap_state(steps[i], false));
+            local_statelows.push(ssctrees[i].snap_state(steps[i], true));
         }
 
 
@@ -4248,51 +4212,6 @@
         });
     };
 
-    function snap_to_existing_Sts(St, Sts) {
-
-        if (St <= Sts[0]) {
-            return Sts[0]
-        }
-        else if (St >= Sts[Sts.length -1]) {
-            return Sts[Sts.length - 1]
-        }
-
-
-
-        var start = 0, end = Sts.length - 1;
-        // Iterate while start not meets end 
-        while (start <= end) {
-
-            // Find the mid index 
-            var mid = Math.floor((start + end) / 2);
-
-            // If element is present at mid, return True 
-            if (Sts[mid] == St) {
-                //return mid;
-                return St
-            }
-
-            // Else look in left or right half accordingly 
-            else if (Sts[mid] < St)
-                { start = mid + 1; }
-            else
-                { end = mid - 1; }
-        }
-
-        //at this point, start - end == 1
-        return Sts[end]
-
-        ////console.log('ssctree.js start and end:', start, end)
-        ////console.log('Sts[start], St, Sts[end]:', Sts[start], St, Sts[end])
-        ////console.log('Sts[start] - St, St - Sts[end]:', Sts[start] - St, St - Sts[end])
-        //if (Sts[start] - St <= St - Sts[end]) { //start is already larger than end by 1
-        //    return Math.min(start, Sts.length - 1) //start will be larger than the last value of Sts[0] if St is larger than all the values of Sts    
-        //}
-        //else {
-        //    return Math.max(end, 0) //end will be negtive if St is smaller than Sts[0]
-        //}
-    }
-
     // import  Rectangle from "./rect"
     //let r = new Rectangle(1, 2, 3, 4);
     //console.log(r);
@@ -4304,4 +4223,4 @@
 
     return exported;
 
-}));
+})));
