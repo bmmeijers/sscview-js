@@ -293,21 +293,21 @@ export class SSCTree {
     //when current_step != Number.MAX_SAFE_INTEGER, St is the new one after computing zoom parameters
     get_zoom_snappedstep_from_St(St, zoom_factor = 1) {
 
-        let floor_snap = null //do not snap by default
+        let snap_style = null //do not snap by default
 
         //to decide the direction we want to zoom to
         if (zoom_factor < 1) { //zoom out
-            floor_snap = false
+            snap_style = 'ceil'
         }
         if (zoom_factor > 1) { //zoom in
-            floor_snap = true
+            snap_style = 'floor'
         }
         
-        return this.get_snappedstep_from_St(St, floor_snap)
+        return this.get_snappedstep_from_St(St, snap_style)
     }
 
     //if (if_floor == false && if_ceil == false), then we snap to the cloest step
-    get_snappedstep_from_St(St, floor_snap = null) {
+    get_snappedstep_from_St(St, snap_style = null) {
 
         if (this.tree === null) {
             return 0
@@ -320,14 +320,14 @@ export class SSCTree {
             && step > states[0] - 0.0001
             && step < states[states.length - 1] + 0.0001 //without this line, the map will stop zooming out when at the last step
         ) {
-            snapped_step = this.snap_state(step, floor_snap)
+            snapped_step = this.snap_state(step, snap_style)
         }
 
         return snapped_step
     }
 
-    snap_state(state, floor_snap = null) {
-        return snap_value(state, this.states, floor_snap)
+    snap_state(state, snap_style = null) {
+        return snap_value(state, this.states, snap_style)
         //return this.states[this.snap_stateindex(state, if_floor, if_ceil)]
     }
 
@@ -359,11 +359,11 @@ export class SSCTree {
             }
             else if (zoom_factor < 1) { //zoom out
                 //console.log('ssctree.js zoom out')
-                snapped_step = this.snap_state(newstep, false)
+                snapped_step = this.snap_state(newstep, 'ceil')
             }
             else if (zoom_factor > 1) { //zoom in
                 //console.log('ssctree.js zoom in')
-                snapped_step = this.snap_state(newstep, true)
+                snapped_step = this.snap_state(newstep, 'floor')
             }
 
             let adjusted_step_diff = Math.abs(snapped_step - current_step)
@@ -385,15 +385,16 @@ export class SSCTree {
 
 }
 
-export function snap_value(value, targets, floor_snap = null) {
-    return targets[snap_value_index(value, targets, floor_snap)]
+export function snap_value(value, targets, snap_style = null) {
+    return targets[snap_value_index(value, targets, snap_style)]
 }
 
 
-// if floor_snap == null, we do not snap
-// if floor_snap == true, we snap to the floor
-// if floor_snap == false, we snap to the ceiling
-export function snap_value_index(value, targets, floor_snap = null) {
+// if snap_style == null, we snap to the closest value
+// if snap_style == 'floor', we snap to the floor
+// if snap_style == 'ceil', we snap to the ceiling
+// if snap_style == 'zoom_mid', we snap to the closest value with respect to zooming
+export function snap_value_index(value, targets, snap_style = null) {
     let start = 0, end = targets.length - 1;
 
     if (value < targets[0]) {
@@ -420,18 +421,39 @@ export function snap_value_index(value, targets, floor_snap = null) {
     }
 
     //at this point, start - end == 1
-    if (floor_snap == true) { //snap to floor
+    if (snap_style == 'floor') { //snap to floor
         return end
     }
-    else if (floor_snap == false) { //snap to ceiling
+    else if (snap_style == 'ceil') { //snap to ceiling
         return start
     }
-    else if (value - targets[end] <= targets[start] - value) {
-        return end  
+    else { //snap to a kind of middle value
+        let mid = (targets[start] + targets[end]) / 2
+        if (snap_style == 'zoom_mid') {
+            //the reasoning is that targets[start] / mid == mid / targets[end]
+            mid = Math.sqrt(targets[start] * targets[end])
+        }
+
+        if (value <= mid) {
+            return end 
+        }
+        else {
+            return start
+        }
     }
-    else {
-        return start
-    }
+
+    //else if (snap_style == 'zoom_mid') { //snap to ceiling
+
+
+
+    //    return start
+    //}
+    //else if (value - targets[end] <= targets[start] - value) {
+    //    return end  
+    //}
+    //else {
+    //    return start
+    //}
 }
 
 

@@ -16,7 +16,7 @@ class Trace
     {
         // remove old positions older than `cutoff` value (in milli seconds)
         const now = _now();
-        while ((this._trace.length > 0) && ((now - this._trace[0][0]) > cutoff))
+        while ((this._trace.length > 0) && (now - this._trace[0][0] > cutoff))
         {
             // remove at beginning of array
             this._trace.shift();

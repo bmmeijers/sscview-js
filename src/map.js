@@ -242,8 +242,8 @@ class Map {
             steps.push(ssctrees[0].get_step_from_St(St_for_step))
 
             //Notice that the two snapped states can be the same
-            local_statehighs.push(ssctrees[0].snap_state(steps[0], false))
-            local_statelows.push(ssctrees[0].snap_state(steps[0], true))
+            local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+            local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
 
 
             //console.log('map.js steps[0]:', steps[0])
@@ -257,7 +257,8 @@ class Map {
 
             //console.log('map.js St_for_step:', St_for_step)
             
-            let scale_snapped_St = snap_value(St_for_step, discrete_scales, true)
+            let scale_snapped_St = snap_value(St_for_step, discrete_scales,
+                this.map_setting.tree_settings[0].snap_style)
 
             //console.log('map.js scale_snapped_St:', scale_snapped_St)
 
@@ -271,8 +272,8 @@ class Map {
             else {
                 steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
 
-                local_statehighs.push(ssctrees[0].snap_state(steps[0], false))
-                local_statelows.push(ssctrees[0].snap_state(steps[0], true))
+                local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+                local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
             }
 
         }
@@ -284,8 +285,8 @@ class Map {
         //add steps of other layers
         for (var i = 1; i < ssctrees.length; i++) {
             steps.push(ssctrees[i].get_step_from_St(St_for_step))
-            local_statehighs.push(ssctrees[i].snap_state(steps[i], false))
-            local_statelows.push(ssctrees[i].snap_state(steps[i], true))
+            local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'))
+            local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'))
         }
 
 
