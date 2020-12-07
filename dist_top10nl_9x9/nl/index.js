@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
-}(this, (function () { 'use strict';
+    (global = global || self, global.varioscale = factory());
+}(this, function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,6 +39,11 @@
     var _frame = function (fn) {
         return frame(fn);
     };
+
+    var cancel = window.cancelAnimationFrame ||
+        window.mozCancelAnimationFrame ||
+        window.webkitCancelAnimationFrame ||
+        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -3490,9 +3495,10 @@
     }
 
 
-    // if snap_style == null, we do not snap
-    // if snap_style == true, we snap to the floor
-    // if snap_style == false, we snap to the ceiling
+    // if snap_style == null, we snap to the closest value
+    // if snap_style == 'floor', we snap to the floor
+    // if snap_style == 'ceil', we snap to the ceiling
+    // if snap_style == 'zoom_mid', we snap to the closest value with respect to zooming
     function snap_value_index(value, targets, snap_style) {
         if ( snap_style === void 0 ) snap_style = null;
 
@@ -3766,7 +3772,7 @@
 
 
         // FIXME: to not circle map updates (can this be done more elegantly?)
-    //    this._should_broadcast_move = true;
+        //    this._should_broadcast_move = true;
 
         this._action = 'zoomAnimated'; //if we are zooming, we may want to snap to a valid state
         this._abort = null;
@@ -3826,20 +3832,20 @@
         //});
 
         this.msgbus.subscribe("settings.zoom-factor", function (topic, message, sender) {
-    //        console.log(message);
-                
+            //        console.log(message);
+
             this$1._interaction_settings.zoom_factor = parseFloat(message);
             //console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
             this$1.abortAndRender();
         });
 
         this.msgbus.subscribe("settings.zoom-duration", function (topic, message, sender) {
-    //        console.log(message);
+            //        console.log(message);
             this$1._interaction_settings.zoom_duration = parseFloat(message);
             this$1.abortAndRender();
         });
         this.msgbus.subscribe("settings.pan-duration", function (topic, message, sender) {
-    //        console.log('setting pan_duration: ' + message);
+            //        console.log('setting pan_duration: ' + message);
             this$1._interaction_settings.pan_duration = parseFloat(message);
             this$1.abortAndRender();
         });
@@ -3856,7 +3862,7 @@
 
 
 
-            
+
         // data load
         //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
@@ -3871,15 +3877,15 @@
         dragHandler(this);  // attach mouse handlers
         scrollHandler(this);
         zoomButtonHandler(this);
-    //    moveHandler(this)
+        //    moveHandler(this)
         touchPinchHandler(this); // attach touch handlers
         touchDragHandler(this);
 
 
-        { 
+        {
             var St = this.getTransform().getScaleDenominator();
             //this.ssctree.get_step_from_St(St, this.if_snap)
-            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]); 
+            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
         }
 
         //this.evictor = new Evictor(this.ssctrees, this.gl)
@@ -3927,8 +3933,8 @@
     };
 
     Map.prototype.getWebGLContext = function getWebGLContext () {
-        return this.getCanvasContainer().getContext('webgl', 
-            { antialias: true, alpha: false, premultipliedAlpha: false})
+        return this.getCanvasContainer().getContext('webgl',
+            { antialias: true, alpha: false, premultipliedAlpha: false })
     };
 
     Map.prototype.getTransform = function getTransform () {
@@ -3944,82 +3950,211 @@
         var St = this.getTransform().getScaleDenominator();
         var St_for_step = St;
         var steps = [];  //record a step for each layer
-        var local_statehighs = []; //a state of current step for each layer
-        var local_statelows = []; //a step_low of current step for each layer
+
+        //when we merge two area, we want to continuously change the color of the loser to that of the winer
+        //Therefore, we want to tune the transparecies of the two levels.
+        //local_statelow is for the low level, and local_statelow for the high level
+        var local_statelows = []; //a steplow of current step for each layer
+        var local_statehighs = []; //a statehigh of current step for each layer
+
 
         //snapped_step and snapped_St have been computed by this.getTransform().updateViewportTransform()
         var snapped_step = this.getTransform().snapped_step;
         var snapped_St = this.getTransform().snapped_St; //the St obtained from a snapped step
 
+
+
+
+        //We treat the first layer differently, because we snap according to only the first layer
         //if k==1, we are at the end of a zooming operation, 
         //we directly use the snapped_step and snapped_St to avoid rounding problems
-        if (k == 1 && ssctrees[0].if_snap == true &&
-            this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
-            snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
-            St_for_step = snapped_St;
-            steps.push(snapped_step);  //we only snap according to the first dataset
-            //console.log('map.js snapped_step:', snapped_step)
-            local_statehighs.push(snapped_step);
-            local_statelows.push(snapped_step);
+        if (ssctrees[0].if_snap == false) {
+            var returned = this.deal_without_snapstate(St, this.ssctrees);
+
+            steps = returned.steps;
+            local_statelows = returned.local_statelows;
+            local_statehighs = returned.local_statehighs;
         }
         else {
-            steps.push(ssctrees[0].get_step_from_St(St_for_step));
-
-            //Notice that the two snapped states can be the same
-            local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'));
-            local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'));
-
-
-            //console.log('map.js steps[0]:', steps[0])
-            //console.log('map.js local_statehighs[0]:', local_statehighs[0])
-            //console.log('map.js local_statelows[0]:', local_statelows[0])
-        }
-
-        //If we want to have multi-scale map intead of vario-scale map
-        var discrete_scales = this.map_setting.tree_settings[0].discrete_scales;
-        if (discrete_scales != null) {
-
-            //console.log('map.js St_for_step:', St_for_step)
-                
-            var scale_snapped_St = snap_value(St_for_step, discrete_scales,
-                this.map_setting.tree_settings[0].snap_style);
-
-            //console.log('map.js scale_snapped_St:', scale_snapped_St)
-
-            if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
-                //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-                steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St);
-
-                local_statehighs.push(steps[0]);
-                local_statelows.push(steps[0]);
+            if (k == 1 &&
+                this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
+                snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
+                St_for_step = snapped_St;
+                steps.push(snapped_step);  //we only snap according to the first dataset
+                //console.log('map.js snapped_step:', snapped_step)
+                local_statelows.push(snapped_step);
+                local_statehighs.push(snapped_step);
             }
             else {
-                steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St);
+                steps.push(ssctrees[0].get_step_from_St(St_for_step));
 
-                local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'));
+                //Notice that the two snapped states can be the same
                 local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'));
+                local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'));
+
+
+                //console.log('map.js steps[0]:', steps[0])
+                //console.log('map.js local_statehighs[0]:', local_statehighs[0])
+                //console.log('map.js local_statelows[0]:', local_statelows[0])
             }
 
+            //add steps of other layers
+            for (var i = 1; i < ssctrees.length; i++) {
+                steps.push(ssctrees[i].get_step_from_St(St_for_step));
+                local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'));
+                local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'));
+            }
+
+
+            ////If we want to have multi-scale map intead of vario-scale map,
+            ////we snap the scale and then snap the step
+            //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
+            //if (discrete_scales != null) {
+
+            ////console.log('map.js St_for_step:', St_for_step)
+
+            //let scale_snapped_St = snap_value(St_for_step, discrete_scales,
+            //    this.map_setting.tree_settings[0].snap_style)
+
+            ////console.log('map.js scale_snapped_St:', scale_snapped_St)
+
+
+            //if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
+            //    steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+
+            //    local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+            //    local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
+            //}
+            //else {
+            //    console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.")
+
+            //    // snap to a step to avoid half way generalization (e.g. merging)
+            //    //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+            //    steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
+
+            //    local_statehighs.push(steps[0])
+            //    local_statelows.push(steps[0])
+            //}
+
+            //}
+            //else {
+            ////console.log('map.js steps[0]:', steps[0])
+            ////console.log('map.js St_for_step:', St_for_step)
+            //}
         }
 
-        //add steps of other layers
-        for (var i = 1; i < ssctrees.length; i++) {
-            steps.push(ssctrees[i].get_step_from_St(St_for_step));
-            local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'));
-            local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'));
-        }
+
 
 
         this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step]);
 
         //this.renderer._clearColor()
         this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs);
-        //this.renderer.render_ssctrees(local_statehighs, this.getTransform(), St_for_step, opacities2)
-        //if (true) {
-                
-        //}
-            
+
+
     };
+
+
+    Map.prototype.deal_without_snapstate = function deal_without_snapstate (St, ssctrees) {
+
+        var steps = [];
+        var local_statelows = []; //a steplow of current step for each layer
+        var local_statehighs = []; //a statehigh of current step for each layer
+
+
+        //add steps of other layers
+        for (var i = 0; i < ssctrees.length; i++) {
+            var scale_snapped_St = St;
+            var discrete_scales = this.map_setting.tree_settings[i].discrete_scales;
+            if (discrete_scales != null) { //this is the normal case
+                scale_snapped_St = snap_value(St, discrete_scales,
+                    this.map_setting.tree_settings[i].snap_style);
+            }
+
+            steps.push(ssctrees[i].get_step_from_St(scale_snapped_St));
+            local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'));
+            local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'));
+        }
+        return { steps: steps, local_statelows: local_statelows, local_statehighs: local_statehighs }
+        //return [steps, local_statelows, local_statehighs]
+
+        ////If we want to have multi-scale map intead of vario-scale map,
+        ////we snap the scale and then snap the step
+        //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
+        //if (discrete_scales != null) {
+
+        ////console.log('map.js St_for_step:', St_for_step)
+
+        //let scale_snapped_St = snap_value(St_for_step, discrete_scales,
+        //    this.map_setting.tree_settings[0].snap_style)
+
+        ////console.log('map.js scale_snapped_St:', scale_snapped_St)
+
+        //if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
+        //    //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+        //    steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
+
+        //    local_statehighs.push(steps[0])
+        //    local_statelows.push(steps[0])
+        //}
+        //else {
+        //    steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+
+        //    local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+        //    local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
+        //}
+
+        //}
+        //else {
+        ////console.log('map.js steps[0]:', steps[0])
+        ////console.log('map.js St_for_step:', St_for_step)
+        //}
+
+        ////add steps of other layers
+        //for (var i = 1; i < ssctrees.length; i++) {
+        //steps.push(ssctrees[i].get_step_from_St(St_for_step))
+        //local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'))
+        //local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'))
+        //}
+
+        ////add steps of other layers
+        //for (var i = 0; i < ssctrees.length; i++) {
+        ////If we want to have multi-scale map intead of vario-scale map,
+        ////we snap the scale and then snap the step
+        //let discrete_scales = this.map_setting.tree_settings[i].discrete_scales
+        //if (discrete_scales != null) {
+
+        //    //console.log('map.js St_for_step:', St_for_step)
+
+        //    let scale_snapped_St = snap_value(St_for_step, discrete_scales,
+        //        this.map_setting.tree_settings[i].snap_style)
+
+        //    //console.log('map.js scale_snapped_St:', scale_snapped_St)
+
+        //    if (ssctrees[i].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
+        //        //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+        //        steps[i] = ssctrees[i].get_snappedstep_from_St(scale_snapped_St)
+
+        //        local_statehighs.push(steps[0])
+        //        local_statelows.push(steps[0])
+        //    }
+        //    else {
+        //        steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+
+        //        local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+        //        local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
+        //    }
+
+        //}
+        //else {
+        //    //console.log('map.js steps[0]:', steps[0])
+        //    //console.log('map.js St_for_step:', St_for_step)
+        //}
+        //}
+
+    };
+
+
 
 
 
@@ -4162,12 +4297,12 @@
 
     Map.prototype.zoomInAnimated = function zoomInAnimated (x, y, op_factor) {
         //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
-        this.zoomAnimated(x, y, 1.0 + op_factor * this._interaction_settings.zoom_factor); 
+        this.zoomAnimated(x, y, 1.0 + op_factor * this._interaction_settings.zoom_factor);
     };
 
     Map.prototype.zoomOutAnimated = function zoomOutAnimated (x, y, op_factor) {
         //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
-        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor)); 
+        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor));
     };
 
     Map.prototype.zoomAnimated = function zoomAnimated (x, y, zoom_factor) {
@@ -4214,7 +4349,7 @@
 
         var fbo = gl.fbo;
         gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
-        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);        
+        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, newWidth, newHeight);
 
@@ -4245,4 +4380,4 @@
 
     return exported;
 
-})));
+}));
