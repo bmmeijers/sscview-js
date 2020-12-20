@@ -27,7 +27,7 @@ export class TileContent {
     }
 
     load(url, gl) {
-        if (url.endsWith('obj') == true) {
+        if (url.endsWith('obj') || url.endsWith('obj?raw=true') == true) {
             this.load_ssc_tile(url, gl)
         }
         else if (url.endsWith('json') == true) {

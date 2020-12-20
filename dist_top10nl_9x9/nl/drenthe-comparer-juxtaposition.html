@@ -54,8 +54,12 @@
         <span class="w3-bar-item" id="scale-denominator">1: scale</span>
 
         <div class="w3-dropdown-click w3-right">
+            <button id="gobackButton" class="w3-button tu-blue">
+                <img height="20" 
+                    src="https://pengdlzn.github.io/webmaps/decorations/go-back-arrow.svg">
+            </button>
             <button id="toggleSettingsButton" class="w3-button tu-blue">
-                <img id="settingButton" height="20" 
+                <img id="toggleSettingsImg" height="20" 
                     src="https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg">
             </button>
 
@@ -235,18 +239,19 @@
                 'discrete_scales': null, // if we want to have multi-scale representation, then using a list of scale denominators e.g., [10000, 20000, 40000, 80000, 160000, 248117]
             }
 
+
             let tree_setting_multiple = {
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
                     'layer_nm': 'Multi-scale',
-                    // 'tree_root_file_nm': 'tree_smooth.json',
-                    // 'tree_root_href': window_location + 'data/top10nl-single-merging/',    // with trailing slash!
-                    // 'tile_root_href': window_location + 'data/top10nl-single-merging/',
+                    'tree_root_file_nm': 'top10nl_drenthe_step270680_dryness.json',
+                    'tree_root_href': window_location + 'data/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data/',
                     // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
-                    'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/12/data/',    // with trailing slash!
+                    'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2020/12/data/',
                     'discrete_scales': [10000, 12000, 24000, 48000, 96000, 192000, 384000, 768000, 1536000, 3072000, 6144000, 12288000,], //10000 is the base scale of the vario-scale map
-                    'snap_style': 'zoom_mid',
+                    'snap_style': 'zoom_mid',  //snap_style is for multi-scale map to zoom to the scale (i.e., floor, zoom_mid, null, ceil)
                     // 'draw_cw_faces': false, //draw counterclockwise 
                 }
             }
@@ -256,17 +261,50 @@
                 ...tree_setting_sample,
                 ...{ //the values of the same keys will be updated by this dictionary 
                     'layer_nm': 'Vario-scale',
-                    // 'tree_root_file_nm': 'tree_smooth.json',
-                    // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
-                    // 'tile_root_href': window_location + 'data/top10nl-0.001/',
+                    'tree_root_file_nm': 'top10nl_drenthe_step270680_dryness.json',
+                    'tree_root_href': window_location + 'data/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data/',
                     // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
-                    'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+                    'tree_root_href': 'https://pengdlzn.github.io/webmaps/2020/12/data/',    // with trailing slash!
+                    'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2020/12/data/',
                     // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
                     // 'discrete_scales': [10000, 20000],
                     // 'draw_cw_faces': false, //draw counterclockwise (cull front faces)
                 }
             }
+
+            // let tree_setting_multiple = {
+            //     ...tree_setting_sample,
+            //     ...{ //the values of the same keys will be updated by this dictionary 
+            //         'layer_nm': 'Multi-scale',
+            //         // 'tree_root_file_nm': 'tree_smooth.json',
+            //         // 'tree_root_href': window_location + 'data/top10nl-single-merging/',    // with trailing slash!
+            //         // 'tile_root_href': window_location + 'data/top10nl-single-merging/',
+            //         // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+            //         'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+            //         'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+            //         'discrete_scales': [10000, 12000, 24000, 48000, 96000, 192000, 384000, 768000, 1536000, 3072000, 6144000, 12288000,], //10000 is the base scale of the vario-scale map
+            //         'snap_style': 'zoom_mid',  //snap_style is for multi-scale map to zoom to the scale (i.e., floor, zoom_mid, null, ceil)
+            //         // 'draw_cw_faces': false, //draw counterclockwise 
+            //     }
+            // }
+
+
+            // let tree_setting_variable = {
+            //     ...tree_setting_sample,
+            //     ...{ //the values of the same keys will be updated by this dictionary 
+            //         'layer_nm': 'Vario-scale',
+            //         // 'tree_root_file_nm': 'tree_smooth.json',
+            //         // 'tree_root_href': window_location + 'data/top10nl-0.001/',    // with trailing slash!
+            //         // 'tile_root_href': window_location + 'data/top10nl-0.001/',
+            //         // 'step_event_exc_link': window_location + 'data/step_event_exc.json', //activate this entry if we want to snap to certain steps
+            //         'tree_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',    // with trailing slash!
+            //         'tile_root_href': 'https://varioscale.bk.tudelft.nl/gpudemo/2019/12/drenthe/data/drenthe-quad-larger/',
+            //         // 'step_event_exc_link': 'https://pengdlzn.github.io/webmaps/2020/08/data/top10nl-0.1/step_event_exc.json', //activate this entry if we want to snap to certain steps
+            //         // 'discrete_scales': [10000, 20000],
+            //         // 'draw_cw_faces': false, //draw counterclockwise (cull front faces)
+            //     }
+            // }
 
             let tree_setting_nl_raster = { //"metadata": {"start_scale_Sb": 12000, "no_of_objects_Nb": 1048576, "no_of_steps_Ns": 1048575}
                 ...tree_setting_sample,
@@ -279,7 +317,7 @@
                     'opacity': 1,
                     // 'do_draw': false,
                     'discrete_scales': [12000, 24000, 48000, 96000, 192000, 384000, 768000, 1536000, 3072000, 6144000, 12288000,],
-                    'snap_style': 'zoom_mid',
+                    'snap_style': 'zoom_mid',  //snap_style is for multi-scale map to zoom to the scale (i.e., floor, zoom_mid, null, ceil)
                 }
             }
 
@@ -302,7 +340,7 @@
             var lmap_setting = {
                 'initialization': {
                     // 'scale_den': 5000000, //top10nl, start_scale
-                    'scale_den': 192000, //top10nl, start_scale
+                    'scale_den': 96000, //top10nl, start_scale
                     // 'scale_den': 10000, // example of 7 objects
                     'center2d': center2d,
                     // 'navigationBar_title': 'Top10NL raster tiles (10 levels)',
@@ -326,12 +364,9 @@
             let rcommon_tree_settings = []
             common_tree_settings.forEach(tree_setting => {
                 rcommon_tree_settings.push({...tree_setting})
-                // rcommon_tree_settings.push(Object.assign({}, tree_setting))
             })
 
-
-            var rmap_setting = Object.assign({}, lmap_setting)  //just a shallow copy 
-
+            var rmap_setting = {...lmap_setting}  //just a shallow copy 
             rmap_setting.canvas_nm = rcanvas_nm
             rmap_setting.tree_settings = [
                 ...rcommon_tree_settings,                

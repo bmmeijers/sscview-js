@@ -37,7 +37,7 @@
 function getUuid() {
 //    let x = mathRNG();
 //    return bytesToUuid(x);
-    return Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
+    return Math.round(Math.random() * 1e18).toString(36).substring(0, 10)
 }
 // end: from https://github.com/kelektiv/node-uuid
 
@@ -92,7 +92,7 @@ class MessageBus {
 const instance = new MessageBus();
 Object.freeze(instance);
 
-
+//all the different MessageBusConnectors share the same MessageBus (same topics)
 export class MessageBusConnector {
 
     constructor() {

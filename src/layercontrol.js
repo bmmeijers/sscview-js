@@ -74,12 +74,9 @@ class LayerControl {
             fs_legend.innerHTML = 'Layers of ' + map_description
         }
 
-
-        //var fieldset_layers = document.getElementById(canvas_nm + div_id)
-
-        //console.log('layercontro.js this.tree_settings:', this.tree_settings)
-
         this.tree_settings.forEach(tree_setting => {
+            //we save the initial values so that we can go to the start status
+            let initial_tree_setting = Object.assign({}, tree_setting); 
 
             let lyrnm = tree_setting.layer_nm
             //console.log('map.js layer_nm:', layer_nm)
@@ -106,7 +103,7 @@ class LayerControl {
             cb.value = topic_cb
 
 
-            msgbus.subscribe(topic_cb, (topic_cb, message, sender) => {                
+            msgbus.subscribe(topic_cb, (topic, message, sender) => {                
                 tree_setting.do_draw = message //if we want to draw the layer or not                
                 this.map.abortAndRender();
             });
@@ -125,10 +122,8 @@ class LayerControl {
             opacity_div.appendChild(opacitytext_span)
             opacitytext_span.id = canvaslyrnm + '-opacity-value'
             opacitytext_span.className = 'span-40'
-            //we do not need to set value here because when we assign value to the slider, the event will be triggered
-            //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
+            opacitytext_span.innerHTML = tree_setting.opacity;
 
-            // var slider_div = document.createElement("div");
             var slider = document.createElement("input")
             opacity_div.appendChild(slider)
             slider.className = 'w3-show-inline-block'
@@ -138,48 +133,31 @@ class LayerControl {
             slider.min = 0;
             slider.max = 1;
             slider.step = 0.05;
-            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
-            //fieldset_layers.append(opacity_div)
-            
-            //console.log('')
-            //console.log('layercontrol.js opacity_div1:', opacity_div)
-            //console.log('layercontrol.js slider:', slider)
-            //opacity_div.innerHTML += slider
-            //console.log('layercontrol.js opacity_div2:', opacity_div)
+            //we must set the value after setting slider.step; otherwise, uneffective
+            slider.value = tree_setting.opacity;
 
-            //opacity_div.innerHTML = `< div 2d = "Example-7_opacity-value" > opacity value: 1 ${slider}</div >`
+            let topic_opacity = 'setting.layer.' + canvaslyrnm + '_opacity-slider'
 
-            //console.log('layercontrol.js opacity_div3:', opacity_div)
-            //fieldset_layers.append(opacity_div)
-            //fieldset_layers.append(opacity_div, slider)
-
-
-            let topic = 'setting.layer.' + canvaslyrnm + '_opacity-slider'
-
-            //subscription of the displayed opacity value
-            msgbus.subscribe(topic, (topic, message, sender) => {
-                //opacity_div.innerHTML = 'opacity value3: ' + message;
+            //subscription of the tree_setting opacity value
+            msgbus.subscribe(topic_opacity, (topic, message, sender) => {
                 opacitytext_span.innerHTML = message;
-                //console.log('layercontrol.js opacity_div.innerHTML:', opacity_div.innerHTML)
+                tree_setting.opacity = parseFloat(message);
+                this.map.abortAndRender();
             });
 
             //publish new opacity value
             slider.addEventListener('input', () => {
-                msgbus.publish(topic, parseFloat(slider.value));
-                this.map.abortAndRender();
+                msgbus.publish(topic_opacity, parseFloat(slider.value));
             });
-
-            //publish the initial opacity value
-            //this publication must be after 
-            //subscription of the displayed opacity value
-            //so that we see the effects imediately
-            msgbus.publish(topic, parseFloat(slider.value));
-
-            //subscription of the tree_setting opacity value
-            msgbus.subscribe(topic, (topic, message, sender) => {
-                tree_setting.opacity = parseFloat(message);
-                this.map.abortAndRender();
-            }); 
+            
+            msgbus.subscribe('go-to-start', (topic, message, sender) => {
+                //opacity value of a layer
+                slider.value = initial_tree_setting.opacity;
+                msgbus.publish(topic_opacity, parseFloat(slider.value));
+                //if a layer should be displayed or not
+                cb.checked = initial_tree_setting.do_draw
+                msgbus.publish(topic_cb, initial_tree_setting.do_draw);
+            });
         });
     }
 

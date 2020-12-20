@@ -1,24 +1,34 @@
 function enhanceMenu() {
     /* opening and closing the settings modal dialog */
     // FIXME: repetition of names and ids here is cumbersome
-    function toggleSettingsButton() {
-        var x = document.getElementById("settingsModal");
-        var btn = document.getElementById("settingButton");
+    let msgbus = new varioscale.MessageBusConnector();
+
+    var modal = document.getElementById("settingsModal");
+    function toggleSettings() {
+        
+        var img = document.getElementById("toggleSettingsImg");
         //console.log('htmlfuns.js x.style.visibility before:', x.style.visibility)
-        if (x.style.visibility == 'visible') {
-            x.style.visibility = 'hidden'
-            btn.src = "https://pengdlzn.github.io/webmaps/decorations/setting-hollow.svg"
+        if (modal.style.visibility == 'visible') {
+            modal.style.visibility = 'hidden'
+            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-hollow.svg"
         }
         else {
-            x.style.visibility = 'visible'
-            btn.src = "https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg"
+            modal.style.visibility = 'visible'
+            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg"
         }
         //console.log('htmlfuns.js x.style.visibility after:', x.style.visibility)
     };
-    toggleSettingsButton() //by default, the visibility is 'hidden', so we call the function to make it 'visible'
-    document.getElementById("toggleSettingsButton").addEventListener('click', toggleSettingsButton);
-    
-    //toggleSettingsButton()
+    toggleSettings() //by default, the visibility is 'hidden', so we call the function to make it 'visible'
+    document.getElementById("toggleSettingsButton").addEventListener('click', toggleSettings);
+
+    var start_visibility = modal.style.visibility
+    msgbus.subscribe('go-to-start', (topic, message, sender) => {
+        if (modal.style.visibility != start_visibility) {
+            toggleSettings()
+        }
+    });
+
+    //toggleSettings()
     //The below code is for the cross of the setting panel, where the cross is used to close the panel
     //var modalSettingsClose = function () {
         
@@ -51,26 +61,42 @@ function enhanceMenu() {
     //document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
     //document.getElementById("toggleMenu").dispatchEvent(event_toggleMenu)
 
-    /* -- start slider -- */
+    
+    /* -- start slider -- */    
     let init_slider = (name) => {
-        let msgbus = new varioscale.MessageBusConnector();
+        
+        let slider = document.getElementById(name);
+        let el = document.getElementById(name + "-value");
+        let initial_value = parseFloat(slider.value); //save the initial values so that we can go to the start status
+
         let event_nm = "settings." + name  //e.g., event_nm: "settings.zoom-factor"
-        msgbus.subscribe(event_nm, (topic, message, sender) => {
-            let el = document.getElementById(name + "-value");
+        msgbus.subscribe(event_nm, (topic, message, sender) => {            
             el.innerHTML = message;
         });
-        let slider = document.getElementById(name);
+
+        
         slider.addEventListener('input', () => {
+            //console.log("htmlfuns.js slider's event listener")
             msgbus.publish(event_nm, parseFloat(slider.value));
         });
         msgbus.publish(event_nm, parseFloat(slider.value));
+
+        //event for foing to the start status
+        msgbus.subscribe('go-to-start', (topic, message, sender) => {
+            slider.value = initial_value;
+            msgbus.publish(event_nm, initial_value); //publish the normal event to make effect
+        });
     };
+
     init_slider("zoom-factor");
     init_slider("zoom-duration");
     init_slider("pan-duration");
     init_slider("boundary-width");
     /* -- end of slider -- */
 
+    document.getElementById("gobackButton").addEventListener('click', () => {
+        msgbus.publish("go-to-start");
+    });
 }
 
 // Surprisingly, this function doesn't work if being put into function enhanceMenu

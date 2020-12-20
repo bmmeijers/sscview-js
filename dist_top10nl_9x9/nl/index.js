@@ -1427,7 +1427,8 @@
         return new Rectangle(ll[0], ll[1], tr[0], tr[1])
     };
 
-    Transform.prototype.getCenter = function getCenter () {
+
+    Transform.prototype.getCenterWorld = function getCenterWorld () { //return the center of the real world
         //console.log("getCenter in transform.js")
         var center = this.backward([
             this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
@@ -2248,7 +2249,7 @@
     function getUuid() {
     //    let x = mathRNG();
     //    return bytesToUuid(x);
-        return Math.round((Math.random() * 1e18)).toString(36).substring(0, 10)
+        return Math.round(Math.random() * 1e18).toString(36).substring(0, 10)
     }
     // end: from https://github.com/kelektiv/node-uuid
 
@@ -2302,7 +2303,7 @@
     var instance = new MessageBus();
     Object.freeze(instance);
 
-
+    //all the different MessageBusConnectors share the same MessageBus (same topics)
     var MessageBusConnector = function MessageBusConnector() {
         this.id = getUuid();
     };
@@ -2666,12 +2667,9 @@
             fs_legend.innerHTML = 'Layers of ' + map_description;
         }
 
-
-        //var fieldset_layers = document.getElementById(canvas_nm + div_id)
-
-        //console.log('layercontro.js this.tree_settings:', this.tree_settings)
-
         this.tree_settings.forEach(function (tree_setting) {
+            //we save the initial values so that we can go to the start status
+            var initial_tree_setting = Object.assign({}, tree_setting); 
 
             var lyrnm = tree_setting.layer_nm;
             //console.log('map.js layer_nm:', layer_nm)
@@ -2698,7 +2696,7 @@
             cb.value = topic_cb;
 
 
-            msgbus.subscribe(topic_cb, function (topic_cb, message, sender) {                
+            msgbus.subscribe(topic_cb, function (topic, message, sender) {                
                 tree_setting.do_draw = message; //if we want to draw the layer or not                
                 this$1.map.abortAndRender();
             });
@@ -2717,10 +2715,8 @@
             opacity_div.appendChild(opacitytext_span);
             opacitytext_span.id = canvaslyrnm + '-opacity-value';
             opacitytext_span.className = 'span-40';
-            //we do not need to set value here because when we assign value to the slider, the event will be triggered
-            //opacity_div.innerHTML = 'opacity value: ' + tree_setting.opacity
+            opacitytext_span.innerHTML = tree_setting.opacity;
 
-            // var slider_div = document.createElement("div");
             var slider = document.createElement("input");
             opacity_div.appendChild(slider);
             slider.className = 'w3-show-inline-block';
@@ -2730,48 +2726,31 @@
             slider.min = 0;
             slider.max = 1;
             slider.step = 0.05;
-            slider.value = tree_setting.opacity; //we must set the value after setting slider.step; otherwise, uneffective
-            //fieldset_layers.append(opacity_div)
-                
-            //console.log('')
-            //console.log('layercontrol.js opacity_div1:', opacity_div)
-            //console.log('layercontrol.js slider:', slider)
-            //opacity_div.innerHTML += slider
-            //console.log('layercontrol.js opacity_div2:', opacity_div)
+            //we must set the value after setting slider.step; otherwise, uneffective
+            slider.value = tree_setting.opacity;
 
-            //opacity_div.innerHTML = `< div 2d = "Example-7_opacity-value" > opacity value: 1 ${slider}</div >`
+            var topic_opacity = 'setting.layer.' + canvaslyrnm + '_opacity-slider';
 
-            //console.log('layercontrol.js opacity_div3:', opacity_div)
-            //fieldset_layers.append(opacity_div)
-            //fieldset_layers.append(opacity_div, slider)
-
-
-            var topic = 'setting.layer.' + canvaslyrnm + '_opacity-slider';
-
-            //subscription of the displayed opacity value
-            msgbus.subscribe(topic, function (topic, message, sender) {
-                //opacity_div.innerHTML = 'opacity value3: ' + message;
+            //subscription of the tree_setting opacity value
+            msgbus.subscribe(topic_opacity, function (topic, message, sender) {
                 opacitytext_span.innerHTML = message;
-                //console.log('layercontrol.js opacity_div.innerHTML:', opacity_div.innerHTML)
+                tree_setting.opacity = parseFloat(message);
+                this$1.map.abortAndRender();
             });
 
             //publish new opacity value
             slider.addEventListener('input', function () {
-                msgbus.publish(topic, parseFloat(slider.value));
-                this$1.map.abortAndRender();
+                msgbus.publish(topic_opacity, parseFloat(slider.value));
             });
-
-            //publish the initial opacity value
-            //this publication must be after 
-            //subscription of the displayed opacity value
-            //so that we see the effects imediately
-            msgbus.publish(topic, parseFloat(slider.value));
-
-            //subscription of the tree_setting opacity value
-            msgbus.subscribe(topic, function (topic, message, sender) {
-                tree_setting.opacity = parseFloat(message);
-                this$1.map.abortAndRender();
-            }); 
+                
+            msgbus.subscribe('go-to-start', function (topic, message, sender) {
+                //opacity value of a layer
+                slider.value = initial_tree_setting.opacity;
+                msgbus.publish(topic_opacity, parseFloat(slider.value));
+                //if a layer should be displayed or not
+                cb.checked = initial_tree_setting.do_draw;
+                msgbus.publish(topic_cb, initial_tree_setting.do_draw);
+            });
         });
     };
 
@@ -2813,7 +2792,7 @@
     };
 
     TileContent.prototype.load = function load (url, gl) {
-        if (url.endsWith('obj') == true) {
+        if (url.endsWith('obj') || url.endsWith('obj?raw=true') == true) {
             this.load_ssc_tile(url, gl);
         }
         else if (url.endsWith('json') == true) {
@@ -3755,6 +3734,9 @@
         //console.log('map.js map_setting:', map_setting)
         this.ssctrees = [];
         this.map_setting = map_setting;
+        var tree_settings = map_setting.tree_settings;
+
+
         var container = map_setting['canvas_nm'];
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container);
@@ -3793,7 +3775,6 @@
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
 
-
         this.msgbus = new MessageBusConnector();
 
         this.msgbus.subscribe('data.tile.loaded', function (topic, message, sender) {
@@ -3805,14 +3786,6 @@
         });
 
         this.msgbus.subscribe('data.tree.loaded', function (topic, message, sender) {
-            //let St = this._transform.getScaleDenominator()
-            //let ssctree = message[1]
-            //console.log('map.js ssctree:', ssctree)
-            //console.log('map.js ssctree.tree:', ssctree.tree)
-            //var step = ssctree.get_step_from_St(St, this.if_snap)
-            //this._prepare_active_tiles(step, ssctree)
-            //var step = this.ssctree.get_step_from_St(St, this.if_snap)
-            //this._prepare_active_tiles(step)
             this$1.panAnimated(0, 0); // animate for a small time, so that when new tiles are loaded, we are already rendering
         });
 
@@ -3821,33 +3794,23 @@
             this$1.abortAndRender();
         });
 
-        //this.msgbus.subscribe("settings.backdrop-opacity", (topic, message, sender) => {
-        //this.renderer.settings.backdrop_opacity = parseFloat(message);
-        //this.abortAndRender();
-        //});
-
-        //this.msgbus.subscribe("settings.foreground-opacity", (topic, message, sender) => {
-        //this.renderer.settings.foreground_opacity = parseFloat(message);
-        //this.abortAndRender();
-        //});
-
         this.msgbus.subscribe("settings.zoom-factor", function (topic, message, sender) {
             //        console.log(message);
 
             this$1._interaction_settings.zoom_factor = parseFloat(message);
             //console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
-            this$1.abortAndRender();
+            //this.abortAndRender();
         });
 
         this.msgbus.subscribe("settings.zoom-duration", function (topic, message, sender) {
             //        console.log(message);
             this$1._interaction_settings.zoom_duration = parseFloat(message);
-            this$1.abortAndRender();
+            //this.abortAndRender();
         });
         this.msgbus.subscribe("settings.pan-duration", function (topic, message, sender) {
             //        console.log('setting pan_duration: ' + message);
             this$1._interaction_settings.pan_duration = parseFloat(message);
-            this$1.abortAndRender();
+            //this.abortAndRender();
         });
 
         this.subscribe_scale();
@@ -3855,16 +3818,25 @@
         var layercontrol = new LayerControl(this, map_setting);
         layercontrol.add_layercontrols();
 
-        map_setting.tree_settings.forEach(function (tree_setting) {
+        tree_settings.forEach(function (tree_setting) {
             //console.log('map.js tree_setting:', tree_setting)
             this$1.ssctrees.push(new SSCTree(this$1.msgbus, tree_setting));
         });
+        //console.log('map.js this.ssctrees:', this.ssctrees)
 
 
+        this.msgbus.subscribe("go-to-start", function (topic, message, sender) {
 
+            var tr = this$1.getTransform();
+            var center = map_setting.initialization.center2d;
+            var denominator = map_setting.initialization.scale_den;
+            var newWidth = tr.viewport.xmax;
+            var newHeight = tr.viewport.ymax;
+            tr.initTransform(center, [newWidth, newHeight], denominator);
+            //this.renderer.setViewport(newWidth, newHeight)
+            this$1.abortAndRender();
+        });
 
-        // data load
-        //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
         //this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext();
@@ -3885,7 +3857,7 @@
         {
             var St = this.getTransform().getScaleDenominator();
             //this.ssctree.get_step_from_St(St, this.if_snap)
-            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St]);
+            this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St]);
         }
 
         //this.evictor = new Evictor(this.ssctrees, this.gl)
@@ -4046,7 +4018,7 @@
 
 
 
-        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step]);
+        this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St_for_step]);
 
         //this.renderer._clearColor()
         this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs);
@@ -4336,7 +4308,7 @@
     Map.prototype.resize = function resize (newWidth, newHeight) {
         //console.log("resize");
         var tr = this.getTransform();
-        var center = tr.getCenter();
+        var center = tr.getCenterWorld();
         //console.log('map.js center:', center)
         var denominator = tr.getScaleDenominator();
         // re-initialize the transform

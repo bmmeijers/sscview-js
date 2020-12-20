@@ -27,6 +27,9 @@ class Map {
         //console.log('map.js map_setting:', map_setting)
         this.ssctrees = []
         this.map_setting = map_setting
+        let tree_settings = map_setting.tree_settings
+
+
         let container = map_setting['canvas_nm']
         if (typeof container === 'string') {
             this._container = window.document.getElementById(container)
@@ -65,7 +68,6 @@ class Map {
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
 
-
         this.msgbus = new MessageBusConnector()
 
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
@@ -77,14 +79,6 @@ class Map {
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
-            //let St = this._transform.getScaleDenominator()
-            //let ssctree = message[1]
-            //console.log('map.js ssctree:', ssctree)
-            //console.log('map.js ssctree.tree:', ssctree.tree)
-            //var step = ssctree.get_step_from_St(St, this.if_snap)
-            //this._prepare_active_tiles(step, ssctree)
-            //var step = this.ssctree.get_step_from_St(St, this.if_snap)
-            //this._prepare_active_tiles(step)
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
@@ -93,33 +87,23 @@ class Map {
             this.abortAndRender();
         });
 
-        //this.msgbus.subscribe("settings.backdrop-opacity", (topic, message, sender) => {
-        //    this.renderer.settings.backdrop_opacity = parseFloat(message);
-        //    this.abortAndRender();
-        //});
-
-        //this.msgbus.subscribe("settings.foreground-opacity", (topic, message, sender) => {
-        //    this.renderer.settings.foreground_opacity = parseFloat(message);
-        //    this.abortAndRender();
-        //});
-
         this.msgbus.subscribe("settings.zoom-factor", (topic, message, sender) => {
             //            console.log(message);
 
             this._interaction_settings.zoom_factor = parseFloat(message);
             //console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
-            this.abortAndRender();
+            //this.abortAndRender();
         });
 
         this.msgbus.subscribe("settings.zoom-duration", (topic, message, sender) => {
             //            console.log(message);
             this._interaction_settings.zoom_duration = parseFloat(message);
-            this.abortAndRender();
+            //this.abortAndRender();
         });
         this.msgbus.subscribe("settings.pan-duration", (topic, message, sender) => {
             //            console.log('setting pan_duration: ' + message);
             this._interaction_settings.pan_duration = parseFloat(message);
-            this.abortAndRender();
+            //this.abortAndRender();
         });
 
         this.subscribe_scale()
@@ -127,16 +111,25 @@ class Map {
         var layercontrol = new LayerControl(this, map_setting)
         layercontrol.add_layercontrols()
 
-        map_setting.tree_settings.forEach((tree_setting) => {
+        tree_settings.forEach(tree_setting => {
             //console.log('map.js tree_setting:', tree_setting)
             this.ssctrees.push(new SSCTree(this.msgbus, tree_setting))
         })
+        //console.log('map.js this.ssctrees:', this.ssctrees)
 
 
+        this.msgbus.subscribe("go-to-start", (topic, message, sender) => {
 
+            let tr = this.getTransform();
+            let center = map_setting.initialization.center2d
+            let denominator = map_setting.initialization.scale_den
+            let newWidth = tr.viewport.xmax
+            let newHeight = tr.viewport.ymax
+            tr.initTransform(center, [newWidth, newHeight], denominator);
+            //this.renderer.setViewport(newWidth, newHeight)
+            this.abortAndRender()
+        });
 
-        // data load
-        //this.ssctree = new SSCTree(this.msgbus, map_setting.tree_settings[0])
 
         //this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext()
@@ -157,7 +150,7 @@ class Map {
         {
             let St = this.getTransform().getScaleDenominator()
             //this.ssctree.get_step_from_St(St, this.if_snap)
-            this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St])
+            this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St])
         }
 
         //this.evictor = new Evictor(this.ssctrees, this.gl)
@@ -316,7 +309,7 @@ class Map {
 
 
 
-        this.msgbus.publish('map.scale', [this.getTransform().getCenter(), St_for_step])
+        this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St_for_step])
 
         //this.renderer._clearColor()
         this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs)
@@ -602,7 +595,7 @@ class Map {
     resize(newWidth, newHeight) {
         //console.log("resize");
         let tr = this.getTransform();
-        let center = tr.getCenter();
+        let center = tr.getCenterWorld();
         //console.log('map.js center:', center)
         let denominator = tr.getScaleDenominator();
         // re-initialize the transform
@@ -634,24 +627,6 @@ class Map {
             el.textContent = " 1:" + scale;
         })
     }
-
-    //subscribe_cb() {
-    //    let msgbus = this.msgbus;
-    //    msgbus.subscribe('map.scale', (topic, message, sender) => {
-    //        if (sender !== msgbus.id) return;
-    //        const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-    //        let el = document.getElementById("scale-denominator");
-    //        el.textContent = " 1:" + scale;
-    //    })
-
-    //this.tree_settings.forEach(tree_setting => {
-    //    console.log()
-    //    console.log('layercontrol.js tree_setting.layer_nm:', tree_setting.layer_nm)
-    //    console.log('layercontrol.js tree_setting.do_draw :', tree_setting.do_draw)
-    //    //tree_setting.do_draw 
-    //})
-
-    //}
 
 }
 

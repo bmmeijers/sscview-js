@@ -288,7 +288,8 @@ class Transform {
         return new Rectangle(ll[0], ll[1], tr[0], tr[1])
     }
 
-    getCenter() {
+
+    getCenterWorld() { //return the center of the real world
         //console.log("getCenter in transform.js")
         var center = this.backward([
             this.viewport.xmin + (this.viewport.xmax - this.viewport.xmin) * 0.5,
