@@ -591,16 +591,16 @@
 
 
             // according to dryness        
-            'wet': [35, 139, 69],  //wet, normal
-            'dry': [116, 196, 118],  //dry
-            'verydry': [186, 228, 179],  //very dry
-            'extremelydry': [237, 248, 233],  //extremely dry
+            'wet': [254, 229, 217],  //wet, normal
+            'dry': [252, 174, 145],  //dry
+            'verydry': [251, 106, 74],  //very dry
+            'extremelydry': [203, 24, 29],  //extremely dry
             'drynessunknown': [128, 128, 128],  //dryness unknown
             
-            '0': [254, 237, 222],  //wet, normal
-            '1': [253, 190, 133],  //dry
-            '2': [253, 141, 60],  //very dry
-            '3': [217, 71, 1],  //extremely dry
+            '0': [254, 229, 217],  //wet, normal
+            '1': [252, 174, 145],  //dry
+            '2': [251, 106, 74],  //very dry
+            '3': [203, 24, 29],  //extremely dry
             '-1': [128, 128, 128],  //dryness unknown
         };
 

@@ -10,11 +10,11 @@ function enhanceMenu() {
         //console.log('htmlfuns.js x.style.visibility before:', x.style.visibility)
         if (modal.style.visibility == 'visible') {
             modal.style.visibility = 'hidden'
-            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-hollow.svg"
+            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-hollow-white.svg"
         }
         else {
             modal.style.visibility = 'visible'
-            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-solid.svg"
+            img.src = "https://pengdlzn.github.io/webmaps/decorations/setting-solid-white.svg"
         }
         //console.log('htmlfuns.js x.style.visibility after:', x.style.visibility)
     };

@@ -172,29 +172,19 @@ export class ImageFboDrawProgram extends DrawProgram {
             '  v_TexCoord = a_TexCoord;\n' +
             '}\n';
 
-        let fragmentShaderText = 
-            //'#ifdef GL_ES\n' +
-            //'precision mediump float;\n' +
-            //'#endif\n' +
-            //'uniform sampler2D u_Sampler;\n' +
-            //'varying vec2 v_TexCoord;\n' +
-            //'void main() {\n' +
-            //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
-            //'}\n';
-            `
-            precision highp float;\n          
-            uniform sampler2D uSampler;\n
-            uniform float opacity;\n
-            varying vec2 v_TexCoord;\n
-            void main() {\n
+        let fragmentShaderText = `
+            precision highp float;       
+            uniform sampler2D uSampler;
+            uniform float opacity;
+            varying vec2 v_TexCoord;
+            void main() {
               vec4 color = texture2D(uSampler, v_TexCoord);
-              if (color.a != 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js
-                { color.a = opacity; } 
-              else 
+              if (color.a == 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js
                 { discard; } 
-              gl_FragColor = color;\n 
-            }\n
-            `;
+              else 
+                { color.a = opacity; } 
+              gl_FragColor = color;
+            }`;
 
         super(gl, vertexShaderText, fragmentShaderText)
     }
@@ -220,8 +210,6 @@ export class ImageFboDrawProgram extends DrawProgram {
         {
             let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
             gl.uniform1f(opacity_location, opacity);
-
-
         }
 
 
