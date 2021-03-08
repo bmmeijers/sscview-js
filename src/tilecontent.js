@@ -97,11 +97,8 @@ export class TileContent {
         )
     }
 
-
-
     load_image_tile(href, gl) {
         let f = () => {
-
             // setup texture as placeholder for texture to be retrieved later
             this.texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -121,7 +118,6 @@ export class TileContent {
             gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 width, height, border, srcFormat, srcType,
                 pixel);
-
             this.textureCoordBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -197,6 +193,11 @@ export class TileContent {
     }
 
     _process_image_tile(response, gl) {
+
+        // the json retrieved in response will contain: 
+        // {"box": [216931.52, 573100.48, 223812.8, 579981.76],
+        //  "texture_href": "7/73/80.png",
+        //  "points": [[216931.52, 579981.76, 0], [216931.52, 573100.48, 0], [223812.8, 573100.48, 0], [216931.52, 579981.76, 0], [223812.8, 573100.48, 0], [223812.8, 579981.76, 0]]}   
         let result = []
 
         response.points.forEach(
@@ -204,7 +205,6 @@ export class TileContent {
         )
         // could also be: response.points.flat(1); ???
         this._upload_image_tile_mesh(gl, new Float32Array(result))
-
         /*
         // using image object to retrieve the texture
         let image = new Image()
@@ -230,14 +230,35 @@ export class TileContent {
             }
         )
         */
+        /*
+        					type: "wmts",
+					options: {
+						url: 'https://geodata.nationaalgeoregister.nl/tiles/service/wmts?',
+						layer: 'brtachtergrondkaart',
+						style: 'default',
+						tileMatrixSet: "EPSG:28992",
+						service: "WMTS",
+						request: "GetTile",
+						version: "1.0.0",
+						format: "image/png"
+					}
+        */
         
         // using createImageBitmap and fetch to retrieve the texture
-        fetch(this.texture_root_href + response.texture_href, { mode: 'cors' })
+
+        let parts = response.texture_href.split('.'); //  7/73/80.png
+        let address = parts[0].split('/');
+        let z = +address[0];
+        let along_dim = Math.pow(2, z);
+        let row = +address[1];
+        let col = +address[2];
+        let url = "https://geodata.nationaalgeoregister.nl/tiles/service/wmts?&layer=brtachtergrondkaart&style=default&tileMatrixSet=EPSG:28992&service=WMTS&request=GetTile&version=1.0.0&format=image/png"
+        url += "&TileCol="+row+"&TileRow="+(along_dim-col)+"&tileMatrix="+z;
+        fetch(url, { mode: 'cors' })
             .then((response) => {
                 if (!response.ok) {
                     throw response;
                 }
-
                 return response.blob();
             })
             .then((blob) => {
