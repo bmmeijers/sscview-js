@@ -4,8 +4,6 @@ import { MessageBusConnector } from './pubsub'
 // FIXME: rename draw to renderFunc ?
 
 
-
-
 export class Renderer {
     constructor(gl, canvas, ssctrees) {
         this.gl = gl

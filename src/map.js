@@ -11,7 +11,11 @@ import { touchDragHandler } from "./handlers/touch.drag";
 import Transform from './transform';
 import { timed } from './animate';
 import { Renderer } from "./render";
-import LayerControl from "./layercontrol";
+
+import { doFlyTo } from './fly'
+
+import { WMTSRenderer } from './wmts';
+// import LayerControl from "./layercontrol";
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
@@ -28,7 +32,6 @@ class Map {
         this.ssctrees = []
         this.map_setting = map_setting
         let tree_settings = map_setting.tree_settings
-
 
         let container = map_setting['canvas_nm']
         if (typeof container === 'string') {
@@ -67,15 +70,14 @@ class Map {
         };
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
 
-
         this.msgbus = new MessageBusConnector()
-
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
             //console.log('1 subscribe data.tile.loaded')
-            if (this._abort === null) {
-                //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
-                this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
-            }
+//            if (this._abort === null) {
+//                //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
+//                this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
+//            }
+            this.renderWmts()
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
@@ -108,8 +110,10 @@ class Map {
 
         this.subscribe_scale()
 
+        /*
         var layercontrol = new LayerControl(this, map_setting)
         layercontrol.add_layercontrols()
+        */
 
         tree_settings.forEach(tree_setting => {
             //console.log('map.js tree_setting:', tree_setting)
@@ -146,6 +150,7 @@ class Map {
         touchPinchHandler(this) // attach touch handlers
         touchDragHandler(this)
 
+        this.mapTilesRenderer = new WMTSRenderer(this.getWebGLContext(), this.msgbus)
 
         {
             let St = this.getTransform().getScaleDenominator()
@@ -306,24 +311,47 @@ class Map {
             //}
         }
 
-
-
-
         this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St_for_step])
 
         //this.renderer._clearColor()
         this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs)
 
+        this.renderWmts()
 
+//                render()
+//    {
+//        const result = this.getTransform().stepMap()
+//        const near = result[0]
+//        // let box2d = this.getTransform().visibleWorld()
+//        // console.log(box2d + ' @' + near);
+//        // let denominator = result[1]
+//        let matrix = this.getTransform().world_square
+//        const far = -1
+//        matrix[10] = -2.0 / (near - far)
+//        matrix[14] = (near + far) / (near - far)
+//        const box2d = this.getTransform().visibleWorld()
+//        const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
+//        let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
+//        this.tileset.getTiles(box3d, gl)
+//        this.renderer.render(matrix, box3d);
+//        // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
+//    }
     }
 
+    renderWmts() {
+        let transform = this.getTransform()
+        let visibleWorld = transform.getVisibleWorld()
+        let scaleDenominator = transform.getScaleDenominator()
+        let aabb = [visibleWorld.xmin, visibleWorld.ymin, visibleWorld.xmax, visibleWorld.ymax]
+        let matrix = this.getTransform().world_square
+        this.mapTilesRenderer.update(aabb, scaleDenominator, matrix)
+    }
 
     deal_without_snapstate(St, ssctrees) {
 
         let steps = []
         let local_statelows = [] //a steplow of current step for each layer
         let local_statehighs = [] //a statehigh of current step for each layer
-
 
         //add steps of other layers
         for (var i = 0; i < ssctrees.length; i++) {
@@ -416,10 +444,6 @@ class Map {
         //}
 
     }
-
-
-
-
 
     doEaseNone(start, end) {
         let interpolate = ((k) => {
@@ -522,10 +546,45 @@ class Map {
     jumpTo(x, y, scale) {
         let center_world = [x, y];
         let r = this.getCanvasContainer();
-        let viewport_size = [r.width, r.height];
+        let viewportSize = [r.width, r.height];
         let denominator = scale;
-        this._transform.initTransform(center_world, viewport_size, denominator);
+        this.getTransform().initTransform(center_world, viewportSize, denominator);
         this.abortAndRender();
+    }
+
+    /** initiate a flyTo action */
+    flyTo(x, y, scale) {
+
+        let targetCenter = [x, y]
+        let targetDenominator = scale
+        let durationSecs = 10
+
+        let transform = this.getTransform()
+
+        let visibleWorldCenter = transform.getVisibleWorld().center()
+        let scaleDenominator = transform.getScaleDenominator()
+
+        let container = this.getCanvasContainer();
+        let viewportSize = [container.width, container.height];
+        
+        let interpolate = doFlyTo(visibleWorldCenter, scaleDenominator, viewportSize, targetCenter, targetDenominator, durationSecs)
+
+        let goFly = (x) => {
+            let result = interpolate(x) // get the center and scale denominator from the flyToInterpolator
+            this.getTransform().initTransform(result[0], viewportSize, result[1]);
+            this.renderWmts()
+            // we could add argument to render: 
+            // isInFlightRender:bool, then we can reduce tile level, while in flight (x<1)
+            // while we can get the full detail / final map when x = 1
+            this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), this.getTransform().getScaleDenominator()])
+        }
+        this._abort = timed(goFly, durationSecs, this);
+
+//        for (let time = 145000; time <= 145000+(durationSecs*1000); time += 500)
+//        {
+//            interpolate(time)
+//        }
+
     }
 
     panBy(dx, dy) {

@@ -1,0 +1,425 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Vario-scale Maps Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="w3.css">
+    <script type="text/javascript" src="index.js"></script>
+    <link rel="prefetch" href="worker.js">
+
+    <link rel="shortcut icon" href="#">
+
+    <style type="text/css">
+        #canvas {
+            display: block;
+            background: white;
+        }
+
+        .tu-shadow {
+            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
+            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
+            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
+        }
+
+        .tu-blue {
+            color: white !important;
+            background-color: rgb(110, 187,213) !important
+        }
+
+        .tu-right {
+            right: 0px;
+        }
+
+        input[type="radio"] {
+            margin: 0px 6px 0 6px;
+        }
+
+        legend, label {
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none;
+        }
+        
+/* PDOK geocoding */
+.suggestion {
+    color: black;
+    background-color: white;
+    padding: 0.1em;
+    user-select: none; 
+    cursor: pointer;
+}
+.suggestion:hover {
+    color: black;
+    background-color: lightgrey;
+}
+.is-active {
+    color: white;
+    background-color: darkblue;
+}
+
+
+#geocode-placeholder #search {
+    /*
+    box-shadow: 0 2px 4px 0 rgba(0,0,0,.25); 
+    margin: 5px;
+    */
+    margin: 0.5em;
+}
+
+#name-output {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid black;
+    padding: 1em;
+    margin: 1em;
+    border-radius: 0.5em;
+    width: 100%;
+}
+    </style>
+</head>
+
+<body style="touch-action: none;" class="w3-white">
+    <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
+
+    <div class="w3-bar w3-light-grey" id="navigationBar">
+        <span class="w3-bar-item">
+            <a href="http://www.gdmc.nl/">
+                <img class="tu-shadow" src="gdmc-cube.min.svg" height="22">
+            </a>
+        </span>
+
+        <span class="w3-bar-item" id="demo_info">Vario-scale demo: Dataset_nm, Algorithm, Parameter</span>
+        <span class="w3-bar-item" id="scale-denominator">1: scale</span>
+
+        <div class="w3-dropdown-click w3-right">
+            <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
+
+            <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
+            <div id="menu"
+                 class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
+                <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
+                <!--
+                <a href="#" class="w3-bar-item w3-button">Link 2</a>
+                <a href="#" class="w3-bar-item w3-button">Link 3</a>
+                <a href="#" class="w3-bar-item w3-button">Link 4</a>
+                <a href="#" class="w3-bar-item w3-button">Link 5</a>
+                <a href="#" class="w3-bar-item w3-button">Link 6</a>
+                <a href="#" class="w3-bar-item w3-button">Link 7</a>
+                <a href="#" class="w3-bar-item w3-button">Link 8</a>
+                <a href="#" class="w3-bar-item w3-button">Link 9</a>
+                <a href="#" class="w3-bar-item w3-button">Link 10</a>
+                <a href="#" class="w3-bar-item w3-button">Link 11</a>
+                -->
+            </div>
+        </div>
+    </div>
+
+    <div class="w3-display-container">
+        <div class="w3-display-topleft w3-transparent">
+            <div id='geocode-placeholder'></div>
+        </div>
+
+
+        <!-- -->
+
+
+        <canvas id="canvas" style="w3-white"></canvas>
+    </div>
+
+    <!-- The Settings Modal -->
+    <div id="settingsModal" class="w3-modal">
+        <!-- style="touch-action: none;" -->
+        <div class="w3-modal-content">
+            <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
+
+            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+
+            <div class="w3-container w3-padding">
+
+                <div class="setting">
+                    <fieldset>
+                        <legend> zoom factor </legend>
+                        <div class="w3-margin">
+                            <label for="speed-025">small</label>
+                            <input type="radio" id="speed-025" name="speed" value="0.25" class="radio-btn">
+                            <label for="speed-05"></label>
+                            <input type="radio" id="speed-05" name="speed" value="0.5" class="radio-btn">
+                            <label for="speed-1"></label>
+                            <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
+                            <label for="speed-2"></label>
+                            <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
+                            <label for="speed-3"></label>
+                            <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
+                            <label for="speed-4">large</label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> zoom animation (short-long)</legend>
+                        <div class="w3-padding">
+                            short (0s)<input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> pan animation (short-long)</legend>
+                        <div class="w3-padding">
+                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <header class="w3-container w3-light-grey w3-padding"><h2>Displaying settings</h2></header>
+            <div class="w3-container w3-padding">
+                <div class="setting">
+                    <fieldset>
+                        <legend> boundary width</legend>
+                        <div>
+                            line-width value (mm): <span id="width-value"></span>
+                        </div>
+                        <div>
+                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <footer class="w3-container w3-light-grey w3-padding">
+                <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
+                    Close
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <footer class="w3-container w3-bottom" style="pointer-events: none;">
+
+        <div class="w3-left">
+            <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
+                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="tudelft.svg" height="30">
+            </a>
+        </div>
+
+        <div class="w3-right">
+            <button style="pointer-events: auto;" id="zoomInButton" class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
+            <button style="pointer-events: auto;" id="zoomOutButton" class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
+        </div>
+    </footer>
+
+    <script type="text/javascript">
+        window.addEventListener('DOMContentLoaded', function () {
+
+            // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
+            let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
+            let canvas_nm = 'canvas'
+            let canvas = document.getElementById(canvas_nm);
+            var gl = canvas.getContext("webgl", { antialias: true }) ||
+                canvas.getContext("experimental-webgl", { antialias: true });
+            let hGap = 0;
+            let vGap = document.getElementById("navigationBar").offsetHeight;
+            canvas.width = window.innerWidth - hGap;
+            canvas.height = window.innerHeight - vGap;
+
+
+            //            var map_settings = {
+            //                'initialization': {
+            //                    'scale_den': 500000,
+            //                    'center2d': [3555384.53, 5907745.81],
+            //                    'navigationBar_title': 'Test, Manual',
+            //                },
+            //                'canvas_nm': canvas_nm,
+            //                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
+            //                'interaction_defaults': []
+            //            }
+
+
+            //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
+            //window_location = /gpudemo/2020/03/merge/0.1/
+            //more information: https://stackoverflow.com/q/1368264
+            var window_location = window.location.pathname
+            //console.log('window_location:', window_location)
+
+            var map_settings = {
+                'initialization': {
+                    // 1960 84423.99 447517.43
+                    'scale_den': 3_000, //10_000, //top10nl, start_scale
+                    //'scale_den': 100000,  //top10nl; small test, three parcels
+                    //'scale_den': 12500,
+                    // BOX(204914.35 514637.283,270231.624 580203.629)
+
+                    //'center2d': [233520.3, 556776.9],
+                    // 'center2d': [186500.0, 312450.0],     //top10nl
+                    // center2d: [84425, 447525],
+                    center2d: [85213.02, 446850.34],
+                    //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
+                    //[204914 + (270231 - 204914) * 0.5,
+                    // 514637 + (580203 - 514637) * 0.5],
+                    'navigationBar_title': '',
+                },
+                'canvas_nm': canvas_nm,
+                'datasets': [{
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/tiles-nl/',
+
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/9x9-quad/',
+
+                    //                              'tree_root_file_nm': 'tree.json',
+                    //                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
+                    //                              'tile_root_href': '/data/9x9-quad-lines-lean/',
+
+                    //'tree_root_file_nm': 'tree.json',
+                    //'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
+                    //'tile_root_href': '/data/drenthe-quad-larger/',
+
+
+                    'tree_root_file_nm': 'tree_smooth.json',
+                    //'tree_root_file_nm': 'tree.json',
+                    //'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
+                    'tree_root_href': window_location + 'data/',    // with trailing slash!
+                    'tile_root_href': window_location + 'data/',
+                    /*
+                    // See:
+                    // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
+                    // for available tile maps
+                    */
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                    'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
+                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
+                }],
+                tree_settings: [
+                    {
+                        'layer_nm': 'sample',
+                        'datatype': 'polygon',
+                        'tree_root_file_nm': 'tree.json',                
+                        'tree_root_href': '',    // use the local folder as default value
+                        'tile_root_href': '',    // use the local folder as default value
+                        'step_event_exc_link': null, //specify to a json file if we want to snap to certain steps
+                        'low_scale': null,
+                        'high_scale': null,
+                        'draw_cw_faces': true, //draw clockwise (cull back faces) 
+                        'do_depth_test': true,
+                        'do_blend': true,
+                        'opacity': 0.5,
+                        'do_draw': true,
+                        'do_color_adapt': false, //the eaten area changes its color to target color
+                        'state_compensation': 0.001, //to compensate with the rounding problems
+                        'discrete_scales': null, // if we want to have multi-scale representation, then using a list of scale denominators e.g., [10000, 20000, 40000, 80000, 160000, 248117]
+                    }
+                ],
+                'interaction_defaults': []
+            }
+
+            document.getElementById("demo_info").textContent = ""
+
+            // Make a new map instance
+            var map = new varioscale.Map(map_settings);
+
+            map.loadTree();
+
+            map.renderWmts();
+
+            window.map = map;
+            
+            // let scaleWidget = new varioscale.DisplayMapScaleWidget();
+            // scaleWidget.connect(map);
+
+            let subscribe_scale = (map) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe('map.scale', (topic, message, sender) => {
+                    if (sender !== map.msgbus.id) return;
+                    const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'")
+                    const xy = message[0]
+                    let el = document.getElementById("scale-denominator");
+                    el.textContent = " 1:" + scale + " [" + xy[0].toFixed(2)  + ", " + xy[1].toFixed(2) + "]";
+                });
+            }
+            subscribe_scale(map);
+
+            // Resize the canvas to span complete screen, when the screen is resized
+            // (note, this does include device rotation on mobile)
+            var resize = function () {
+                let canvas = document.getElementById(canvas_nm);
+                var gl = canvas.getContext("webgl", { antialias: true }) ||
+                    canvas.getContext("experimental-webgl", { antialias: true });
+                let newWidth = window.innerWidth - hGap;
+                let newHeight = window.innerHeight - vGap;
+
+                map.resize(newWidth, newHeight);
+                // update the canvas its size with the new size given by the browser
+                canvas.width = newWidth
+                canvas.height = newHeight
+                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
+                map.abortAndRender()
+            };
+            window.addEventListener('resize', resize, false);
+            window.addEventListener('orientationchange', resize);
+
+            /* -- start slider -- */
+            let init_boundary_width_slider = () => {
+                let msgbus = new varioscale.MessageBusConnector();
+                msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
+                    let el = document.getElementById("width-value");
+                    el.innerHTML = message;
+                });
+                let slider = document.getElementById("boundary-width");
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+                    }
+                );
+                msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+            };
+            init_boundary_width_slider();
+            /* -- end of slider -- */
+
+            /* -- start slider -- */
+            let init_slider = (name) => {
+                let msgbus = new varioscale.MessageBusConnector();
+                let slider = document.getElementById(name);
+                slider.addEventListener('input',
+                    () => {
+                        msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+                        // map.abortAndRender();
+                    }
+                );
+                msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
+            }
+            //init_slider("zoom-factor");
+            init_slider("pan-animation");
+            init_slider("zoom-animation");
+            /* -- end of slider -- */
+
+            /* opening and closing the settings modal dialog */
+            // FIXME: repetition of names and ids here is cumbersome
+            var modalSettingsOpen = function () {
+                toggleMenu(); // hide the menu
+                document.getElementById('settingsModal').style.display = 'block';
+            };
+            var modalSettingsClose = function () {
+                document.getElementById('settingsModal').style.display = 'none';
+            }
+            document.getElementById("openSettingsButton").addEventListener('click', modalSettingsOpen);
+            document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
+            document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
+
+            // the menu on the top
+            function toggleMenu() {
+                var x = document.getElementById("menu");
+                if (x.className.indexOf("w3-show") == -1) {
+                    x.className += " w3-show";
+                } else {
+                    x.className = x.className.replace(" w3-show", "");
+                }
+            };
+            document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
+
+            let pdokSuggest = new varioscale.PdokSuggestWidget(map)
+
+        });
+    </script>
+
+</body>
+</html>

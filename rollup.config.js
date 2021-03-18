@@ -1,9 +1,9 @@
-const buble = require('rollup-plugin-buble');               // https://buble.surge.sh/guide/
+const buble = require('@rollup/plugin-buble');               // https://buble.surge.sh/guide/
 const commonjs = require('rollup-plugin-commonjs');         // https://github.com/rollup/rollup-plugin-commonjs
 const {eslint} = require('rollup-plugin-eslint');             // https://github.com/TrySound/rollup-plugin-eslint
 const nodeResolve = require('rollup-plugin-node-resolve');  // https://github.com/rollup/rollup-plugin-node-resolve
-const uglify = require('rollup-plugin-uglify');             // https://github.com/TrySound/rollup-plugin-uglify
 
+import { terser } from "rollup-plugin-terser";
 //import { inherits } from 'util';
 //import builtins from 'rollup-plugin-node-builtins';
 //const builtins = require('rollup-plugin-node-builtins');
@@ -16,13 +16,18 @@ const plugins = [
     nodeResolve({ jsnext: true, main: true }),
     commonjs({ include: 'node_modules/**' }),
     eslint(),
-    buble(),
+    buble({
+        transforms: {
+            dangerousForOf: true,
+            asyncAwait: false
+        }
+    }),
     //builtins(),
     //globals(),
 ];
 
 if (isProduction) {
-    plugins.push(uglify());
+    plugins.push(terser());
 }
 
 
@@ -43,7 +48,8 @@ if (isProduction) {
 //var dist_folder = 'dist_buchholz_greedy_parallel_81';
 
 
-var dist_folder = 'dist_top10nl_9x9/';
+//var dist_folder = 'dist_top10nl_9x9/';
+var dist_folder = 'dist';
 
 // dist_folder += '0.1';
 // dist_folder += '0.01';
@@ -53,7 +59,7 @@ var dist_folder = 'dist_top10nl_9x9/';
 // dist_folder += 'one-triangle';
 // dist_folder += 'one-polygon';
 // dist_folder += 'drenthe';
-dist_folder += 'nl';
+//dist_folder += 'nl';
 
 // var dist_folder = 'dist_top10nl_9x9_0.1';
 // var dist_folder = 'dist_top10nl_9x9_0.01';
@@ -73,7 +79,7 @@ export default [
         output: {
             file: dist_folder + '/index.js',
             name: 'varioscale',
-            format: 'umd'
+            format: 'umd',
         },
         treeshake: true,
         sourcemap: dist_folder + '/index.js.map',
