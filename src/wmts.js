@@ -608,10 +608,10 @@ void main()
         let tilesInViewAbove4 = this.layer.tilesInView(aabb, 4 * scaleDenominator)
         tilesInViewAbove4 = this.sortRadially(tilesInViewAbove4, aabb)
 
-        let tilesInView = tilesInViewAbove4
+//        let tilesInView = tilesInViewAbove4
 //        let tilesInView = tilesInViewAbove4.concat(tilesInViewAbove2).concat(tilesInViewCurrent)
 
-//        let tilesInView = tilesInViewAbove2.concat(tilesInViewCurrent)
+        let tilesInView = tilesInViewAbove2.concat(tilesInViewCurrent)
 
         let gpuTiles = []
         tilesInView.forEach((tile) => {
