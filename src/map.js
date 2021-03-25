@@ -15,6 +15,8 @@ import { Renderer } from "./render";
 import { doFlyTo } from './fly'
 
 import { WMTSRenderer } from './wmts';
+
+import { TextRenderer } from './text';
 // import LayerControl from "./layercontrol";
 
 // import MyLoader from './loader';
@@ -78,6 +80,7 @@ class Map {
 //                this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
 //            }
             this.renderWmts()
+            this.renderText()
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
@@ -152,6 +155,8 @@ class Map {
 
         this.mapTilesRenderer = new WMTSRenderer(this.getWebGLContext(), this.msgbus)
 
+        this.textRenderer = new TextRenderer(this.getWebGLContext(), this.msgbus)
+
         {
             let St = this.getTransform().getScaleDenominator()
             //this.ssctree.get_step_from_St(St, this.if_snap)
@@ -212,6 +217,8 @@ class Map {
     }
 
     render(k = 0) {
+    
+        
         //console.log('')
 
         let ssctrees = this.ssctrees
@@ -317,6 +324,7 @@ class Map {
         this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs)
 
         this.renderWmts()
+        this.renderText()
 
 //                render()
 //    {
@@ -336,6 +344,15 @@ class Map {
 //        this.renderer.render(matrix, box3d);
 //        // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
 //    }
+    }
+
+    renderText() {
+        let transform = this.getTransform()
+        let visibleWorld = transform.getVisibleWorld()
+        let scaleDenominator = transform.getScaleDenominator()
+        let aabb = [visibleWorld.xmin, visibleWorld.ymin, visibleWorld.xmax, visibleWorld.ymax]
+        let matrix = this.getTransform().world_square
+        this.textRenderer.update(aabb, scaleDenominator, matrix)
     }
 
     renderWmts() {
@@ -573,6 +590,7 @@ class Map {
             let result = interpolate(x) // get the center and scale denominator from the flyToInterpolator
             this.getTransform().initTransform(result[0], viewportSize, result[1]);
             this.renderWmts()
+            this.renderText()
             // we could add argument to render: 
             // isInFlightRender:bool, then we can reduce tile level, while in flight (x<1)
             // while we can get the full detail / final map when x = 1
@@ -651,6 +669,8 @@ class Map {
         this._abort = timed(interpolator, this._interaction_settings.pan_duration, this);
     }
 
+    // @!FIXME: check and use info of:
+    // https://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
     resize(newWidth, newHeight) {
         //console.log("resize");
         let tr = this.getTransform();

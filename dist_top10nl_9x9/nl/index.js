@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.varioscale = factory());
-}(this, function () { 'use strict';
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
+}(this, (function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,11 +39,6 @@
     var _frame = function (fn) {
         return frame(fn);
     };
-
-    var cancel = window.cancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -1600,16 +1595,7 @@
                 '  v_TexCoord = a_TexCoord;\n' +
                 '}\n';
 
-            var fragmentShaderText = 
-                //'#ifdef GL_ES\n' +
-                //'precision mediump float;\n' +
-                //'#endif\n' +
-                //'uniform sampler2D u_Sampler;\n' +
-                //'varying vec2 v_TexCoord;\n' +
-                //'void main() {\n' +
-                //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
-                //'}\n';
-                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a != 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { color.a = opacity; } \n              else \n                { discard; } \n              gl_FragColor = color;\n \n            }\n\n            ";
+            var fragmentShaderText = "\n            precision highp float;       \n            uniform sampler2D uSampler;\n            uniform float opacity;\n            varying vec2 v_TexCoord;\n            void main() {\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a == 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { discard; } \n              else \n                { color.a = opacity; } \n              gl_FragColor = color;\n            }";
 
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
         }
@@ -1639,8 +1625,6 @@
             {
                 var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
                 gl.uniform1f(opacity_location, opacity);
-
-
             }
 
 
@@ -2864,13 +2848,10 @@
         );
     };
 
-
-
     TileContent.prototype.load_image_tile = function load_image_tile (href, gl) {
             var this$1 = this;
 
         var f = function () {
-
             // setup texture as placeholder for texture to be retrieved later
             this$1.texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
@@ -2890,7 +2871,6 @@
             gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 width, height, border, srcFormat, srcType,
                 pixel);
-
             this$1.textureCoordBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this$1.textureCoordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -2968,6 +2948,11 @@
     TileContent.prototype._process_image_tile = function _process_image_tile (response, gl) {
             var this$1 = this;
 
+
+        // the json retrieved in response will contain: 
+        // {"box": [216931.52, 573100.48, 223812.8, 579981.76],
+        //  "texture_href": "7/73/80.png",
+        //  "points": [[216931.52, 579981.76, 0], [216931.52, 573100.48, 0], [223812.8, 573100.48, 0], [216931.52, 579981.76, 0], [223812.8, 573100.48, 0], [223812.8, 579981.76, 0]]}   
         var result = [];
 
         response.points.forEach(
@@ -2975,7 +2960,6 @@
         );
         // could also be: response.points.flat(1); ???
         this._upload_image_tile_mesh(gl, new Float32Array(result));
-
         /*
         // using image object to retrieve the texture
         let image = new Image()
@@ -3001,14 +2985,35 @@
             }
         )
         */
+        /*
+            					type: "wmts",
+    					options: {
+    						url: 'https://geodata.nationaalgeoregister.nl/tiles/service/wmts?',
+    						layer: 'brtachtergrondkaart',
+    						style: 'default',
+    						tileMatrixSet: "EPSG:28992",
+    						service: "WMTS",
+    						request: "GetTile",
+    						version: "1.0.0",
+    						format: "image/png"
+    					}
+        */
             
         // using createImageBitmap and fetch to retrieve the texture
-        fetch(this.texture_root_href + response.texture_href, { mode: 'cors' })
+
+        var parts = response.texture_href.split('.'); //  7/73/80.png
+        var address = parts[0].split('/');
+        var z = +address[0];
+        var along_dim = Math.pow(2, z);
+        var row = +address[1];
+        var col = +address[2];
+        var url = "https://geodata.nationaalgeoregister.nl/tiles/service/wmts?&layer=brtachtergrondkaart&style=default&tileMatrixSet=EPSG:28992&service=WMTS&request=GetTile&version=1.0.0&format=image/png";
+        url += "&TileCol="+row+"&TileRow="+(along_dim-col)+"&tileMatrix="+z;
+        fetch(url, { mode: 'cors' })
             .then(function (response) {
                 if (!response.ok) {
                     throw response;
                 }
-
                 return response.blob();
             })
             .then(function (blob) {
@@ -4352,4 +4357,4 @@
 
     return exported;
 
-}));
+})));

@@ -138,9 +138,9 @@ export class SSCTree {
                 // (this re-renders the map if not already rendering)
                 this.msgbus.publish('data.tree.loaded', ['tree.ready', this])
             })
-            .catch(err => {
-                console.error(err)
-            })
+//            .catch(err => {
+//                console.error(err)
+//            })
 
         this.states = states
     }
@@ -266,9 +266,10 @@ export class SSCTree {
 
                 this.msgbus.publish('data.tree.loaded', 'tree.ready')
             })
-            .catch(err => {
-                console.error(err)
-            })
+//            .catch(err => {
+//            
+//                console.error(err)
+//            })
     }
 
 
@@ -677,7 +678,7 @@ export class Evictor {
                         to_evict.push(tile)
                     }
                 } catch (e) {
-                    console.error(e);
+                    console.error(`${e}`);
                     console.log('ssctree.js evict box3ds[i]:', box3ds[i])
                     console.log('ssctree.js evict tile.box:', tile.box)
                 }

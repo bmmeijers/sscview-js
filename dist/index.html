@@ -59,6 +59,14 @@
     background-color: darkblue;
 }
 
+/* webkit disable search button ? */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance:none;
+  display:none;
+}
 
 #geocode-placeholder #search {
     /*
@@ -242,7 +250,7 @@
             var map_settings = {
                 'initialization': {
                     // 1960 84423.99 447517.43
-                    'scale_den': 3_000, //10_000, //top10nl, start_scale
+                    'scale_den': 1_000_000, //10_000, //top10nl, start_scale
                     //'scale_den': 100000,  //top10nl; small test, three parcels
                     //'scale_den': 12500,
                     // BOX(204914.35 514637.283,270231.624 580203.629)

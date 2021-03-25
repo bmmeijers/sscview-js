@@ -139,10 +139,6 @@
                     }
                     break;
                 }
-
-                default: {
-                    break
-                }
             }
         });
 

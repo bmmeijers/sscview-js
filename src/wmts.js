@@ -56,9 +56,9 @@ class TileMatrix
     {
         this.scaleDenominator = scaleDenominator
 
-        this.layer = "opentopo"
+//        this.layer = "opentopo"
 //        this.layer = "2016_ortho25"
-//        this.layer = "brtachtergrondkaart"
+        this.layer = "brtachtergrondkaart"
 //        this.layer = "top25raster"
 //        this.layer = "ahn2_05m_ruw"
         
@@ -241,7 +241,7 @@ class GPUTile
         let gl = this.gl
         const [xmin, ymin, xmax, ymax] = points
 //        console.log(`uploading ${xmin} ${ymin}, ${xmax} ${ymax}`)
-        const [r, g, b, _] = getRandomColor()
+//        const [r, g, b, _] = getRandomColor()
 //        console.log(` ${r} ${g} ${b}`)
         // buffer is an object with a reference to the memory location on the GPU
 
@@ -249,15 +249,23 @@ class GPUTile
         // FIXME:
         // Not needed to upload colors here, remove them
         // Also, remove this from the buffer layout
+        // Also, no need for z coordinate
+        // Also, check layout for triangle strip here and in texture coordinate buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexCoordBuffer);
+
         const coords = new Float32Array([
+            xmin, ymax,
+            xmin, ymin,
+            xmax, ymax,
+            xmax, ymin
+
             // x, y,    z, r, g, b
-            xmin, ymax, 0, r, g, b,
-            xmin, ymin, 0, r, g, b,
-            xmax, ymin, 0, r, g, b,
-            xmin, ymax, 0, r, g, b,
-            xmax, ymin, 0, r, g, b,
-            xmax, ymax, 0, r, g, b
+//            xmin, ymax, 0, r, g, b,
+//            xmin, ymin, 0, r, g, b,
+//            xmax, ymin, 0, r, g, b,
+//            xmin, ymax, 0, r, g, b,
+//            xmax, ymin, 0, r, g, b,
+//            xmax, ymax, 0, r, g, b
         ])
         gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
 //        console.log(coords)
@@ -270,12 +278,16 @@ class GPUTile
         this.textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            0.0, 0.0,
-            0.0, 1.0,
-            1.0, 1.0,
-            0.0, 0.0,
-            1.0, 1.0,
-            1.0, 0.0
+            0, 0,
+            0, 1,
+            1, 0,
+            1, 1
+//            0.0, 0.0,
+//            0.0, 1.0,
+//            1.0, 1.0,
+//            0.0, 0.0,
+//            1.0, 1.0,
+//            1.0, 0.0
         ]), gl.STATIC_DRAW);
         return // TMP
         
@@ -293,7 +305,7 @@ class GPUTile
 //        const border = 0;
 //        const srcFormat = gl.RGBA;
 //        const srcType = gl.UNSIGNED_BYTE;
-//        const pixel = new Uint8Array([255, 255, 255, 1]) //getRandomColor());  // white
+//        const pixel = new Uint8Array([255, 0, 0, 1]) //getRandomColor());  // white
 //        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
 //            width, height, border, srcFormat, srcType,
 //            pixel);
@@ -445,7 +457,8 @@ class DrawProgram {
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
         //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
         //itemSize = 3: x, y, z;   
-        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
+//        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
+        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 2, 2*4, 0);
         //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
 //        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexColor', 3, 24, 12);
 
@@ -480,7 +493,9 @@ class DrawProgram {
         // count -- A GLsizei specifying the number of indices to be rendered. 
 
         // 2 triangles per tile -> 6 vertices
-        gl.drawArrays(gl.TRIANGLES, 0, 6)
+//        TRIANGLE_STRIP
+//        gl.drawArrays(gl.TRIANGLES, 0, 6)
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
 
 }
@@ -502,6 +517,23 @@ function distance2d(target, against) {
     let dx2 = Math.pow(ctr_a[0] - ctr_t[0], 2)
     let dy2 = Math.pow(ctr_a[1] - ctr_t[1], 2)
     return dx2+dy2
+}
+
+
+// Poly fill for browsers that do not support createImageBitmap natively
+// https://dev.to/nektro/createimagebitmap-polyfill-for-safari-and-edge-228
+if (!('createImageBitmap' in window)) {
+    window.createImageBitmap = async function(blob) {
+        return new Promise((resolve, reject) => {
+            let img = document.createElement('img')
+            img.addEventListener('load', function() {
+                resolve(this)
+            })
+            img.src = URL.createObjectURL(blob)
+            // now that we have the image, revoke the blob
+            URL.revokeObjectURL(blob)
+        })
+    }
 }
 
 
@@ -542,7 +574,7 @@ export class WMTSRenderer
 `
 precision highp float;
 
-attribute vec3 vertexPosition_modelspace;
+attribute vec2 vertexPosition_modelspace;
 attribute vec2 aTextureCoord;
 
 uniform mat4 M;
@@ -551,7 +583,7 @@ varying highp vec2 vTextureCoord;
 
 void main()
 {
-    gl_Position = M * vec4(vertexPosition_modelspace, 1.0);
+    gl_Position = M * vec4(vertexPosition_modelspace, 0.0, 1.0);
     vTextureCoord = aTextureCoord;
 }
 `
@@ -602,16 +634,18 @@ void main()
         let tilesInViewCurrent = this.layer.tilesInView(aabb, scaleDenominator)
         tilesInViewCurrent = this.sortRadially(tilesInViewCurrent, aabb)
 
-        let tilesInViewAbove2 = this.layer.tilesInView(aabb, 2 * scaleDenominator)
-        tilesInViewAbove2 = this.sortRadially(tilesInViewAbove2, aabb)
+//        let tilesInViewAbove2 = this.layer.tilesInView(aabb, 2 * scaleDenominator)
+//        tilesInViewAbove2 = this.sortRadially(tilesInViewAbove2, aabb)
 
-        let tilesInViewAbove4 = this.layer.tilesInView(aabb, 4 * scaleDenominator)
-        tilesInViewAbove4 = this.sortRadially(tilesInViewAbove4, aabb)
+//        let tilesInViewAbove4 = this.layer.tilesInView(aabb, 4 * scaleDenominator)
+//        tilesInViewAbove4 = this.sortRadially(tilesInViewAbove4, aabb)
 
 //        let tilesInView = tilesInViewAbove4
 //        let tilesInView = tilesInViewAbove4.concat(tilesInViewAbove2).concat(tilesInViewCurrent)
 
-        let tilesInView = tilesInViewAbove2.concat(tilesInViewCurrent)
+//        let tilesInView = tilesInViewAbove2.concat(tilesInViewCurrent)
+
+        let tilesInView = tilesInViewCurrent
 
         let gpuTiles = []
         tilesInView.forEach((tile) => {
@@ -624,6 +658,10 @@ void main()
                 // FIXME: should we upload grid / integer coordinates to GPU
                 //        and transform on GPU towards final position based on transform?
                 //        maybe that does give less ugly seams between tiles (tiny white sliver)
+                //
+                // we possibly need to share some information for all tiles for 1 level
+                // and for the whole matrix ->
+                // 
                 gpuTile.uploadPoints(tile.bounds()) 
                 gpuTile.initTexture()
 
@@ -653,19 +691,25 @@ void main()
                             tileToDestroy.destroy()
                             this.activeTiles.delete(tileId)
                         }
-                        return response.blob()
-                    })
+                        return response.blob()}
+                    )
                     .then((blob) => {
-                        return createImageBitmap(blob);
+                        let bitmap = createImageBitmap(blob)
+                        return bitmap
                     }).then((bitmap) => {
                         gpuTile.uploadTexture(bitmap)
                         this.activeDownloads.delete(tileId)
                         this.msgBus.publish('data.tile.loaded',
                                             'tile.loaded.texture')
-                    }).catch((e) => {
-                        this.activeDownloads.delete(tileId)
+                    })
+                    .catch((e) => {
+                        // should we check if this is an aborterror?
+                        if (this.activeDownloads.has(tileId)) {
+                            this.activeDownloads.delete(tileId)
+                        }
                         // console.error(e);
-                    });
+                    })
+                    ;
             }
         })
 
@@ -681,7 +725,7 @@ void main()
             // note, we express this against how many tiles are needed on screen
 //            if (this.activeDownloads.size > (2 * tileIdsOnScreen.size))
 //            {
-                console.log(`cancelling as activeDownloads size has grown to ${this.activeDownloads.size} > ${(2 * tileIdsOnScreen.size)}`)
+//                console.log(`cancelling as activeDownloads size has grown to ${this.activeDownloads.size} > ${(2 * tileIdsOnScreen.size)}`)
                 let list = this.activeDownloads.entries()
                 for (let i = 0; i < this.activeDownloads.size; i++) // for .. of  does not work with rollup
                 {
@@ -692,7 +736,13 @@ void main()
                             abortController.abort();
                             // also remove the tile from the GPU and from the activeTiles list
                             let gpuTileToCancel = this.activeTiles.get(tileId)
-                            gpuTileToCancel.destroy()
+                            if (gpuTileToCancel === undefined)
+                            {
+                                // console.log('no-op')
+                            }
+                            else {
+                                gpuTileToCancel.destroy()
+                            }
                             this.activeTiles.delete(tileId)
                             // activeDownloads.delete(tileId) is called in catch() of fetch
                         })
@@ -777,10 +827,14 @@ void main()
 //     go up 1 level and get overlapping tiles there, draw and fetch this higher level first, then on top draw current level
 //      -- we can also increase the viewport size --> zooming / panning would pull in extra info, already ...
 //         however, this pattern of pulling in extra tiles could also be wasteful (e.g. moving in opposite direction)
+//    -> with a dynamic priority queue we could re-adjust requests not yet handled and possibly also remove
+//       requests that have very low priority... prioritise near the center, higher prio for layer-up, lower prio for near the edge
 
 // [ ] render transparent PNGs as transparent? - ahn2?
 
 // [ ] make it possible to add multiple layers on top of each other (lufo + naming) and have layer control widget
+
+// [ ] make it possible 
 
 // [x] recover from failing tile downloads?
 // [ ] handle 404 / 503 when tiles fail differently
