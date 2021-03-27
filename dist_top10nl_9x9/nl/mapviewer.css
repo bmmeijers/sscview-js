@@ -3,9 +3,8 @@
 	/* padding-top: 100px; */
 	position: fixed;
 	left: 0%;
-	top: 40px;
-	/* width relative to the window */
-	width: 100%;
+	top: 40px;	
+	width: 100%;  /* width relative to the window */
 	max-height: 40%;
 	overflow: auto;
 	/* background-color: rgba(0, 0, 0, 0.4); */
