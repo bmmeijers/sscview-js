@@ -277,11 +277,20 @@ class GPUTile
         let gl = this.gl
         this.textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
+        let shift = 0.5/256.
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            0, 0,
-            0, 1,
-            1, 0,
-            1, 1
+            // we shift 1/2 pixel so that borders 
+            // with texture mapping are invisible
+            shift, shift,
+            shift, 1-shift,
+            1-shift, shift,
+            1-shift, 1-shift
+            
+//            0., 0.,
+//            0., 1.,
+//            1., 0.,
+//            1., 1.
+            
 //            0.0, 0.0,
 //            0.0, 1.0,
 //            1.0, 1.0,
