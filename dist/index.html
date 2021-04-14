@@ -1,301 +1,552 @@
-﻿<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-    <title>Vario-scale Maps Demo</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <link rel="stylesheet" href="w3.css">
-    <script type="text/javascript" src="index.js"></script>
-    <link rel="prefetch" href="worker.js">
-
+  <head>
+    <meta charset="utf-8">
+    <title>Test</title>
     <link rel="shortcut icon" href="#">
 
-    <style type="text/css">
-        #canvas {
-            display: block;
-            background: white;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <script src="../index.js"></script>
+    <style>
+    ﻿/* W3.CSS 4.15 December 2020 by Jan Egil and Borge Refsnes */
+/* Removed w3- prefixes by Martijn, April 9, 2021 */
+html{box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}
+/* Extract from normalize.css by Nicolas Gallagher and Jonathan Neal git.io/normalize */
+html{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}
+article,aside,details,figcaption,figure,footer,header,main,menu,nav,section{display:block}summary{display:list-item}
+audio,canvas,progress,video{display:inline-block}progress{vertical-align:baseline}
+audio:not([controls]){display:none;height:0}[hidden],template{display:none}
+a{background-color:transparent}a:active,a:hover{outline-width:0}
+abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}
+b,strong{font-weight:bolder}dfn{font-style:italic}mark{background:#ff0;color:#000}
+small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sub{bottom:-0.25em}sup{top:-0.5em}figure{margin:1em 40px}img{border-style:none}
+code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}hr{box-sizing:content-box;height:0;overflow:visible}
+button,input,select,textarea,optgroup{font:inherit;margin:0}optgroup{font-weight:bold}
+button,input{overflow:visible}button,select{text-transform:none}
+button,[type=button],[type=reset],[type=submit]{-webkit-appearance:button}
+button::-moz-focus-inner,[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner{border-style:none;padding:0}
+button:-moz-focusring,[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring{outline:1px dotted ButtonText}
+fieldset{border:1px solid #c0c0c0;margin:0 2px;padding:.35em .625em .75em}
+legend{color:inherit;display:table;max-width:100%;padding:0;white-space:normal}textarea{overflow:auto}
+[type=checkbox],[type=radio]{padding:0}
+[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}
+[type=search]{-webkit-appearance:textfield;outline-offset:-2px}
+[type=search]::-webkit-search-decoration{-webkit-appearance:none}
+::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}
+/* End extract */
+html,body{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5}html{overflow-x:hidden}
+h1{font-size:36px}h2{font-size:30px}h3{font-size:24px}h4{font-size:20px}h5{font-size:18px}h6{font-size:16px}
+.serif{font-family:serif}.sans-serif{font-family:sans-serif}.cursive{font-family:cursive}.monospace{font-family:monospace}
+h1,h2,h3,h4,h5,h6{font-family:"Segoe UI",Arial,sans-serif;font-weight:400;margin:10px 0}.wide{letter-spacing:4px}
+hr{border:0;border-top:1px solid #eee;margin:20px 0}
+.image{max-width:100%;height:auto}img{vertical-align:middle}a{color:inherit}
+.table,.table-all{border-collapse:collapse;border-spacing:0;width:100%;display:table}.table-all{border:1px solid #ccc}
+.bordered tr,.table-all tr{border-bottom:1px solid #ddd}.striped tbody tr:nth-child(even){background-color:#f1f1f1}
+.table-all tr:nth-child(odd){background-color:#fff}.table-all tr:nth-child(even){background-color:#f1f1f1}
+.hoverable tbody tr:hover,.ul.hoverable li:hover{background-color:#ccc}.centered tr th,.centered tr td{text-align:center}
+.table td,.table th,.table-all td,.table-all th{padding:8px 8px;display:table-cell;text-align:left;vertical-align:top}
+.table th:first-child,.table td:first-child,.table-all th:first-child,.table-all td:first-child{padding-left:16px}
+.btn,.button{border:none;display:inline-block;padding:8px 16px;vertical-align:middle;overflow:hidden;text-decoration:none;color:inherit;background-color:inherit;text-align:center;cursor:pointer;white-space:nowrap}
+.btn:hover{box-shadow:0 8px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19)}
+.btn,.button{-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}   
+.disabled,.btn:disabled,.button:disabled{cursor:not-allowed;opacity:0.3}.disabled *,:disabled *{pointer-events:none}
+.btn.disabled:hover,.btn:disabled:hover{box-shadow:none}
+.badge,.tag{background-color:#000;color:#fff;display:inline-block;padding-left:8px;padding-right:8px;text-align:center}.badge{border-radius:50%}
+.ul{list-style-type:none;padding:0;margin:0}.ul li{padding:8px 16px;border-bottom:1px solid #ddd}.ul li:last-child{border-bottom:none}
+.tooltip,.display-container{position:relative}.tooltip .text{display:none}.tooltip:hover .text{display:inline-block}
+.ripple:active{opacity:0.5}.ripple{transition:opacity 0s}
+.input{padding:8px;display:block;border:none;border-bottom:1px solid #ccc;width:100%}
+.select{padding:9px 0;width:100%;border:none;border-bottom:1px solid #ccc}
+.dropdown-click,.dropdown-hover{position:relative;display:inline-block;cursor:pointer}
+.dropdown-hover:hover .dropdown-content{display:block}
+.dropdown-hover:first-child,.dropdown-click:hover{background-color:#ccc;color:#000}
+.dropdown-hover:hover > .button:first-child,.dropdown-click:hover > .button:first-child{background-color:#ccc;color:#000}
+.dropdown-content{cursor:auto;color:#000;background-color:#fff;display:none;position:absolute;min-width:160px;margin:0;padding:0;z-index:1}
+.check,.radio{width:24px;height:24px;position:relative;top:6px}
+.sidebar{height:100%;width:200px;background-color:#fff;position:fixed!important;z-index:1;overflow:auto}
+.bar-block .dropdown-hover,.bar-block .dropdown-click{width:100%}
+.bar-block .dropdown-hover .dropdown-content,.bar-block .dropdown-click .dropdown-content{min-width:100%}
+.bar-block .dropdown-hover .button,.bar-block .dropdown-click .button{width:100%;text-align:left;padding:8px 16px}
+.main,#main{transition:margin-left .4s}
+.modal{z-index:30000;display:none;padding-top:100px;position:fixed;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgb(0,0,0);background-color:rgba(0,0,0,0.4)}
+.modal-content{margin:auto;background-color:#fff;position:relative;padding:0;outline:0;width:600px}
+.bar{width:100%;overflow:hidden}.center .bar{display:inline-block;width:auto}
+.bar .bar-item{padding:8px 16px;float:left;width:auto;border:none;display:block;outline:0}
+.bar .dropdown-hover,.bar .dropdown-click{position:static;float:left}
+.bar .button{white-space:normal}
+.bar-block .bar-item{width:100%;display:block;padding:8px 16px;text-align:left;border:none;white-space:normal;float:none;outline:0}
+.bar-block.center .bar-item{text-align:center}.block{display:block;width:100%}
+.responsive{display:block;overflow-x:auto}
+.container:after,.container:before,.panel:after,.panel:before,.row:after,.row:before,.row-padding:after,.row-padding:before,
+.cell-row:before,.cell-row:after,.clear:after,.clear:before,.bar:before,.bar:after{content:"";display:table;clear:both}
+.col,.half,.third,.twothird,.threequarter,.quarter{float:left;width:100%}
+.col.s1{width:8.33333%}.col.s2{width:16.66666%}.col.s3{width:24.99999%}.col.s4{width:33.33333%}
+.col.s5{width:41.66666%}.col.s6{width:49.99999%}.col.s7{width:58.33333%}.col.s8{width:66.66666%}
+.col.s9{width:74.99999%}.col.s10{width:83.33333%}.col.s11{width:91.66666%}.col.s12{width:99.99999%}
+@media (min-width:601px){.col.m1{width:8.33333%}.col.m2{width:16.66666%}.col.m3,.quarter{width:24.99999%}.col.m4,.third{width:33.33333%}
+.col.m5{width:41.66666%}.col.m6,.half{width:49.99999%}.col.m7{width:58.33333%}.col.m8,.twothird{width:66.66666%}
+.col.m9,.threequarter{width:74.99999%}.col.m10{width:83.33333%}.col.m11{width:91.66666%}.col.m12{width:99.99999%}}
+@media (min-width:993px){.col.l1{width:8.33333%}.col.l2{width:16.66666%}.col.l3{width:24.99999%}.col.l4{width:33.33333%}
+.col.l5{width:41.66666%}.col.l6{width:49.99999%}.col.l7{width:58.33333%}.col.l8{width:66.66666%}
+.col.l9{width:74.99999%}.col.l10{width:83.33333%}.col.l11{width:91.66666%}.col.l12{width:99.99999%}}
+.rest{overflow:hidden}.stretch{margin-left:-16px;margin-right:-16px}
+.content,.auto{margin-left:auto;margin-right:auto}.content{max-width:980px}.auto{max-width:1140px}
+.cell-row{display:table;width:100%}.cell{display:table-cell}
+.cell-top{vertical-align:top}.cell-middle{vertical-align:middle}.cell-bottom{vertical-align:bottom}
+.hide{display:none!important}.show-block,.show{display:block!important}.show-inline-block{display:inline-block!important}
+@media (max-width:1205px){.auto{max-width:95%}}
+@media (max-width:600px){.modal-content{margin:0 10px;width:auto!important}.modal{padding-top:30px}
+.dropdown-hover.mobile .dropdown-content,.dropdown-click.mobile .dropdown-content{position:relative}	
+.hide-small{display:none!important}.mobile{display:block;width:100%!important}.bar-item.mobile,.dropdown-hover.mobile,.dropdown-click.mobile{text-align:center}
+.dropdown-hover.mobile,.dropdown-hover.mobile .btn,.dropdown-hover.mobile .button,.dropdown-click.mobile,.dropdown-click.mobile .btn,.dropdown-click.mobile .button{width:100%}}
+@media (max-width:768px){.modal-content{width:500px}.modal{padding-top:50px}}
+@media (min-width:993px){.modal-content{width:900px}.hide-large{display:none!important}.sidebar.collapse{display:block!important}}
+@media (max-width:992px) and (min-width:601px){.hide-medium{display:none!important}}
+@media (max-width:992px){.sidebar.collapse{display:none}.main{margin-left:0!important;margin-right:0!important}.auto{max-width:100%}}
+
+.top,.bottom{position:fixed;width:100%;z-index:1}.top{top:0}.bottom{bottom:0}
+
+.overlay{position:fixed;display:none;width:100%;height:100%;top:0;left:0;right:0;bottom:0;background-color:rgba(0,0,0,0.5);z-index:2}
+
+.display-topleft{position:absolute;left:0;top:0}.display-topright{position:absolute;right:0;top:0}
+.display-bottomleft{position:absolute;left:0;bottom:0}.display-bottomright{position:absolute;right:0;bottom:0}
+.display-middle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%)}
+.display-left{position:absolute;top:50%;left:0%;transform:translate(0%,-50%);-ms-transform:translate(-0%,-50%)}
+.display-right{position:absolute;top:50%;right:0%;transform:translate(0%,-50%);-ms-transform:translate(0%,-50%)}
+.display-topmiddle{position:absolute;left:50%;top:0;transform:translate(-50%,0%);-ms-transform:translate(-50%,0%)}
+.display-bottommiddle{position:absolute;left:50%;bottom:0;transform:translate(-50%,0%);-ms-transform:translate(-50%,0%)}
+.display-container:hover .display-hover{display:block}.display-container:hover span.display-hover{display:inline-block}.display-hover{display:none}
+.display-position{position:absolute}
+
+.circle{border-radius:50%}
+.round-small{border-radius:2px}.round,.round-medium{border-radius:4px}.round-large{border-radius:8px}.round-xlarge{border-radius:16px}.round-xxlarge{border-radius:32px}
+
+.row-padding,.row-padding>.half,.row-padding>.third,.row-padding>.twothird,.row-padding>.threequarter,.row-padding>.quarter,.row-padding>.col{padding:0 8px}
+
+.container,.panel{padding:0.01em 16px}.panel{margin-top:16px;margin-bottom:16px}
+
+.code,.codespan{font-family:Consolas,"courier new";font-size:16px}
+.code{width:auto;background-color:#fff;padding:8px 12px;border-left:4px solid #4CAF50;word-wrap:break-word}
+.codespan{color:crimson;background-color:#f1f1f1;padding-left:4px;padding-right:4px;font-size:110%}
+
+.card,.card-2{box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)}
+.card-4,.hover-shadow:hover{box-shadow:0 4px 10px 0 rgba(0,0,0,0.2),0 4px 20px 0 rgba(0,0,0,0.19)}
+
+.spin{animation:spin 2s infinite linear}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(359deg)}}
+.animate-fading{animation:fading 10s infinite}@keyframes fading{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+.animate-opacity{animation:opac 0.8s}@keyframes opac{from{opacity:0} to{opacity:1}}
+.animate-top{position:relative;animation:animatetop 0.4s}@keyframes animatetop{from{top:-300px;opacity:0} to{top:0;opacity:1}}
+.animate-left{position:relative;animation:animateleft 0.4s}@keyframes animateleft{from{left:-300px;opacity:0} to{left:0;opacity:1}}
+.animate-right{position:relative;animation:animateright 0.4s}@keyframes animateright{from{right:-300px;opacity:0} to{right:0;opacity:1}}
+.animate-bottom{position:relative;animation:animatebottom 0.4s}@keyframes animatebottom{from{bottom:-300px;opacity:0} to{bottom:0;opacity:1}}
+.animate-zoom {animation:animatezoom 0.6s}@keyframes animatezoom{from{transform:scale(0)} to{transform:scale(1)}}
+.animate-input{transition:width 0.4s ease-in-out}.animate-input:focus{width:100%!important}
+
+.opacity,.hover-opacity:hover{opacity:0.60}.opacity-off,.hover-opacity-off:hover{opacity:1}
+.opacity-max{opacity:0.25}.opacity-min{opacity:0.75}
+
+.greyscale-max,.grayscale-max,.hover-greyscale:hover,.hover-grayscale:hover{filter:grayscale(100%)}
+.greyscale,.grayscale{filter:grayscale(75%)}.greyscale-min,.grayscale-min{filter:grayscale(50%)}
+.sepia{filter:sepia(75%)}.sepia-max,.hover-sepia:hover{filter:sepia(100%)}.sepia-min{filter:sepia(50%)}
+
+.tiny{font-size:10px!important}.small{font-size:12px!important}.medium{font-size:15px!important}.large{font-size:18px!important}
+.xlarge{font-size:24px!important}.xxlarge{font-size:36px!important}.xxxlarge{font-size:48px!important}.jumbo{font-size:64px!important}
+
+.left-align{text-align:left!important}.right-align{text-align:right!important}.justify{text-align:justify!important}.center{text-align:center!important}
+
+.border-0{border:0!important}.border{border:1px solid #ccc!important}
+.border-top{border-top:1px solid #ccc!important}.border-bottom{border-bottom:1px solid #ccc!important}
+.border-left{border-left:1px solid #ccc!important}.border-right{border-right:1px solid #ccc!important}
+
+.topbar{border-top:6px solid #ccc!important}.bottombar{border-bottom:6px solid #ccc!important}
+.leftbar{border-left:6px solid #ccc!important}.rightbar{border-right:6px solid #ccc!important}
+
+.section,.code{margin-top:16px!important;margin-bottom:16px!important}
+
+.margin{margin:16px!important}.margin-top{margin-top:16px!important}.margin-bottom{margin-bottom:16px!important}
+.margin-left{margin-left:16px!important}.margin-right{margin-right:16px!important}
+
+.padding-small{padding:4px 8px!important}.padding{padding:8px 16px!important}.padding-large{padding:12px 24px!important}
+.padding-16{padding-top:16px!important;padding-bottom:16px!important}.padding-24{padding-top:24px!important;padding-bottom:24px!important}
+.padding-32{padding-top:32px!important;padding-bottom:32px!important}.padding-48{padding-top:48px!important;padding-bottom:48px!important}
+.padding-64{padding-top:64px!important;padding-bottom:64px!important}
+.padding-top-64{padding-top:64px!important}.padding-top-48{padding-top:48px!important}
+.padding-top-32{padding-top:32px!important}.padding-top-24{padding-top:24px!important}
+
+.left{float:left!important}.right{float:right!important}
+
+.button:hover{color:#000!important;background-color:#ccc!important}
+
+.transparent,.hover-none:hover{background-color:transparent!important}
+.hover-none:hover{box-shadow:none!important}
+
+/* Colors */
+.amber,.hover-amber:hover{color:#000!important;background-color:#ffc107!important}
+.aqua,.hover-aqua:hover{color:#000!important;background-color:#00ffff!important}
+.blue,.hover-blue:hover{color:#fff!important;background-color:#2196F3!important}
+.light-blue,.hover-light-blue:hover{color:#000!important;background-color:#87CEEB!important}
+.brown,.hover-brown:hover{color:#fff!important;background-color:#795548!important}
+.cyan,.hover-cyan:hover{color:#000!important;background-color:#00bcd4!important}
+.blue-grey,.hover-blue-grey:hover,.blue-gray,.hover-blue-gray:hover{color:#fff!important;background-color:#607d8b!important}
+.green,.hover-green:hover{color:#fff!important;background-color:#4CAF50!important}
+.light-green,.hover-light-green:hover{color:#000!important;background-color:#8bc34a!important}
+.indigo,.hover-indigo:hover{color:#fff!important;background-color:#3f51b5!important}
+.khaki,.hover-khaki:hover{color:#000!important;background-color:#f0e68c!important}
+.lime,.hover-lime:hover{color:#000!important;background-color:#cddc39!important}
+.orange,.hover-orange:hover{color:#000!important;background-color:#ff9800!important}
+.deep-orange,.hover-deep-orange:hover{color:#fff!important;background-color:#ff5722!important}
+.pink,.hover-pink:hover{color:#fff!important;background-color:#e91e63!important}
+.purple,.hover-purple:hover{color:#fff!important;background-color:#9c27b0!important}
+.deep-purple,.hover-deep-purple:hover{color:#fff!important;background-color:#673ab7!important}
+.red,.hover-red:hover{color:#fff!important;background-color:#f44336!important}
+.sand,.hover-sand:hover{color:#000!important;background-color:#fdf5e6!important}
+.teal,.hover-teal:hover{color:#fff!important;background-color:#009688!important}
+.yellow,.hover-yellow:hover{color:#000!important;background-color:#ffeb3b!important}
+.white,.hover-white:hover{color:#000!important;background-color:#fff!important}
+.black,.hover-black:hover{color:#fff!important;background-color:#000!important}
+.grey,.hover-grey:hover,.gray,.hover-gray:hover{color:#000!important;background-color:#9e9e9e!important}
+.light-grey,.hover-light-grey:hover,.light-gray,.hover-light-gray:hover{color:#000!important;background-color:#f1f1f1!important}
+.dark-grey,.hover-dark-grey:hover,.dark-gray,.hover-dark-gray:hover{color:#fff!important;background-color:#616161!important}
+.pale-red,.hover-pale-red:hover{color:#000!important;background-color:#ffdddd!important}
+.pale-green,.hover-pale-green:hover{color:#000!important;background-color:#ddffdd!important}
+.pale-yellow,.hover-pale-yellow:hover{color:#000!important;background-color:#ffffcc!important}
+.pale-blue,.hover-pale-blue:hover{color:#000!important;background-color:#ddffff!important}
+.text-amber,.hover-text-amber:hover{color:#ffc107!important}
+.text-aqua,.hover-text-aqua:hover{color:#00ffff!important}
+.text-blue,.hover-text-blue:hover{color:#2196F3!important}
+.text-light-blue,.hover-text-light-blue:hover{color:#87CEEB!important}
+.text-brown,.hover-text-brown:hover{color:#795548!important}
+.text-cyan,.hover-text-cyan:hover{color:#00bcd4!important}
+.text-blue-grey,.hover-text-blue-grey:hover,.text-blue-gray,.hover-text-blue-gray:hover{color:#607d8b!important}
+.text-green,.hover-text-green:hover{color:#4CAF50!important}
+.text-light-green,.hover-text-light-green:hover{color:#8bc34a!important}
+.text-indigo,.hover-text-indigo:hover{color:#3f51b5!important}
+.text-khaki,.hover-text-khaki:hover{color:#b4aa50!important}
+.text-lime,.hover-text-lime:hover{color:#cddc39!important}
+.text-orange,.hover-text-orange:hover{color:#ff9800!important}
+.text-deep-orange,.hover-text-deep-orange:hover{color:#ff5722!important}
+.text-pink,.hover-text-pink:hover{color:#e91e63!important}
+.text-purple,.hover-text-purple:hover{color:#9c27b0!important}
+.text-deep-purple,.hover-text-deep-purple:hover{color:#673ab7!important}
+.text-red,.hover-text-red:hover{color:#f44336!important}
+.text-sand,.hover-text-sand:hover{color:#fdf5e6!important}
+.text-teal,.hover-text-teal:hover{color:#009688!important}
+.text-yellow,.hover-text-yellow:hover{color:#d2be0e!important}
+.text-white,.hover-text-white:hover{color:#fff!important}
+.text-black,.hover-text-black:hover{color:#000!important}
+.text-grey,.hover-text-grey:hover,.text-gray,.hover-text-gray:hover{color:#757575!important}
+.text-light-grey,.hover-text-light-grey:hover,.text-light-gray,.hover-text-light-gray:hover{color:#f1f1f1!important}
+.text-dark-grey,.hover-text-dark-grey:hover,.text-dark-gray,.hover-text-dark-gray:hover{color:#3a3a3a!important}
+.border-amber,.hover-border-amber:hover{border-color:#ffc107!important}
+.border-aqua,.hover-border-aqua:hover{border-color:#00ffff!important}
+.border-blue,.hover-border-blue:hover{border-color:#2196F3!important}
+.border-light-blue,.hover-border-light-blue:hover{border-color:#87CEEB!important}
+.border-brown,.hover-border-brown:hover{border-color:#795548!important}
+.border-cyan,.hover-border-cyan:hover{border-color:#00bcd4!important}
+.border-blue-grey,.hover-border-blue-grey:hover,.border-blue-gray,.hover-border-blue-gray:hover{border-color:#607d8b!important}
+.border-green,.hover-border-green:hover{border-color:#4CAF50!important}
+.border-light-green,.hover-border-light-green:hover{border-color:#8bc34a!important}
+.border-indigo,.hover-border-indigo:hover{border-color:#3f51b5!important}
+.border-khaki,.hover-border-khaki:hover{border-color:#f0e68c!important}
+.border-lime,.hover-border-lime:hover{border-color:#cddc39!important}
+.border-orange,.hover-border-orange:hover{border-color:#ff9800!important}
+.border-deep-orange,.hover-border-deep-orange:hover{border-color:#ff5722!important}
+.border-pink,.hover-border-pink:hover{border-color:#e91e63!important}
+.border-purple,.hover-border-purple:hover{border-color:#9c27b0!important}
+.border-deep-purple,.hover-border-deep-purple:hover{border-color:#673ab7!important}
+.border-red,.hover-border-red:hover{border-color:#f44336!important}
+.border-sand,.hover-border-sand:hover{border-color:#fdf5e6!important}
+.border-teal,.hover-border-teal:hover{border-color:#009688!important}
+.border-yellow,.hover-border-yellow:hover{border-color:#ffeb3b!important}
+.border-white,.hover-border-white:hover{border-color:#fff!important}
+.border-black,.hover-border-black:hover{border-color:#000!important}
+.border-grey,.hover-border-grey:hover,.border-gray,.hover-border-gray:hover{border-color:#9e9e9e!important}
+.border-light-grey,.hover-border-light-grey:hover,.border-light-gray,.hover-border-light-gray:hover{border-color:#f1f1f1!important}
+.border-dark-grey,.hover-border-dark-grey:hover,.border-dark-gray,.hover-border-dark-gray:hover{border-color:#616161!important}
+.border-pale-red,.hover-border-pale-red:hover{border-color:#ffe7e7!important}.border-pale-green,.hover-border-pale-green:hover{border-color:#e7ffe7!important}
+.border-pale-yellow,.hover-border-pale-yellow:hover{border-color:#ffffcc!important}.border-pale-blue,.hover-border-pale-blue:hover{border-color:#e7ffff!important}
+    </style>
+    
+    <style>
+      .is-marginless {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .padding {
+        padding: 5em;
+      }
+
+      #app {
+        height: 100%;
+        width:100%;
+        position:fixed;
+        top:0;
+        left:0;
+      }
+
+      .relative {
+        position:relative;
+      }
+      .absolute {
+        position:absolute;
+      }
+
+      .top-left {
+        top: 0;
+        left: 0;
+      }
+      .top-right {
+        top: 0;
+        right: 0;
+      }
+      .bottom-left {
+        bottom: 0;
+        left: 0;
+      }
+      .bottom-right {
+        bottom: 0;
+        right: 0;
+      }
+      .center {
+        top: 50%;
+        right: 50%;
+      }
+
+
+      .full-width {
+        width: 100%;
+      }
+      .medium-width {
+        width: 70%;
+      }
+      .half-width {
+        width: 50%;
+      }
+
+      .full-height {
+        height: 100%;
+      }
+
+      .z0 {
+        z-index: 0;
+      }
+      .z10 {
+        z-index: 10;
+      }
+      .z20 {
+        z-index: 20;
+      }
+      .z30 {
+        z-index: 30;
+      }
+
+      .red {
+        background: darkred;
+      }
+      .blue {
+        background: darkblue;
+      }
+      .green {
+        background: darkgreen;
+      }
+      .white {
+        background: white;
+      }
+      .yellow {
+        background: yellow;
+      }
+
+      .text-white {
+        color: white;
+      }
+
+      .is-hidden {
+        display:none;
+      }
+      .shadow-one-side {
+        box-shadow: 2px 0 2px 0px #888;
+      }
+      
+      .no-overflow {
+        overflow: none;
+      }
+      
+      .auto-scroll {
+        overflow-y: auto;
+      }
+      
+      @media screen and (min-width: 0px) {
+        .half-width {
+          width: 100%;
         }
 
-        .tu-shadow {
-            -webkit-filter: drop-shadow( 1px 1px 2px darkgray );
-            filter: drop-shadow( 1px 1px 2px darkgray); /* rgba(255, 255, 255, 0.4) );*/
-            /* -webkit-filter: opacity(.6); filter: opacity(.6); */
+        #outer2.has-sidebar {
+          display: none;
         }
 
-        .tu-blue {
-            color: white !important;
-            background-color: rgb(110, 187,213) !important
+      }
+
+      @media screen and (min-width: 600px) {
+        .half-width {
+          width: 50%;
         }
 
-        .tu-right {
-            right: 0px;
+        #outer2.has-sidebar {
+          display: block;
+        }
+      }
+
+      .has-sidebar {
+        margin-left: 50%;
+        width: 50%;
+      }
+      
+      .inside {
+        margin: 0 auto;
+      }
+
+      div {
+        box-sizing: border-box;
+      }
+      
+      
+/* debug touch positions: initially outside of view */
+#touchCenter,
+#touchFirst,
+#touchSecond {
+    position: absolute;
+    left: -100px;
+    top: -100px;
+    display: block;
+    width: 2em;
+    height: 2em;
+    color: white
+}
+
+#touchFirst span {
+    background-color: rgba(255, 0, 0, 0.5);
+
+}
+
+#touchSecond span {
+    background-color: rgba(0, 0, 255, 0.5);
+}
+
+#touchCenter span {
+    background-color: rgba(0, 255, 0, 0.5);
+}
+
+.circle {
+  height: 50px;
+  width: 50px;
+  padding-left: 20px;
+  margin-left: 0px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+}
+
+      .is-active {
+        color:#fff!important;
+        background-color:#2196F3!important
+      }
+    </style>
+    <script>
+      // hold the objects that will be created after domcontentloaded
+      let mapview = null
+      let tour = null
+
+      function toggleDrawer() {
+        {
+          let el = document.getElementById('outer1')
+          el.classList.toggle('is-hidden')
+        }
+        {
+          let el = document.getElementById('outer2')
+
+          el.classList.toggle('has-sidebar')
+          el.classList.toggle('full-width')
+        }
+        // apparently the browser does not always resize the canvas
+        // hence, we need to manually call resize on the mapview
+        resize()
+      };
+
+
+    class Tour {
+        constructor() {
+            this.abort = null
         }
 
-        input[type="radio"] {
-            margin: 0px 6px 0 6px;
-        }
+        start(durationInMsec) {
 
-        legend, label {
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
-            user-select: none;
+            let i = 0
+            let signal = null
+            /** feeling lucky with the pdok geocoder? */
+            let places = [
+                { x: 210240.397, y: 541838.994, scaleDenominator: 1500 },
+                { x: 104640.715, y: 488651.103, scaleDenominator: 1500 },
+                { x: 133587.182, y: 455921.594, scaleDenominator: 1500 },
+                { x: 237386.877, y: 582036.096, scaleDenominator: 1500 },
+                { x: 78636.648, y: 438644.186, scaleDenominator: 1500 },
+                { x: 122131.371, y: 487394.733, scaleDenominator: 1500 },
+                { x: 79982.337, y: 454319.395, scaleDenominator: 1500 },
+                { x: 189705.038, y: 445983.039, scaleDenominator: 1500 }
+
+//                { x: 210240.397, y: 541838.994, scaleDenominator: 24000 },
+//                { x: 104640.715, y: 488651.103, scaleDenominator: 48000 },
+//                { x: 133587.182, y: 455921.594, scaleDenominator: 48000 },
+//                { x: 237386.877, y: 582036.096, scaleDenominator: 48000 },
+//                { x: 78636.648, y: 438644.186, scaleDenominator: 48000 },
+//                { x: 122131.371, y: 487394.733, scaleDenominator: 48000 },
+//                { x: 79982.337, y: 454319.395, scaleDenominator: 48000 },
+//                { x: 189705.038, y: 445983.039, scaleDenominator: 48000 }
+            ]
+            function fly() {
+                i %= places.length
+                let whereTo = places[i]
+                console.log('jumping ' + whereTo)
+                i += 1
+                /* hmmm... dom content loaded <> window object ? */
+                mapview.flyTo(whereTo.x, whereTo.y, whereTo.scaleDenominator)
+                signal = setTimeout(fly, durationInMsec)
+            }
+            fly()
+            
+            function abort() {
+                clearTimeout(signal)
+                mapview.abortAndRender()
+            }
+
+            this.abort = abort
         }
         
-/* PDOK geocoding */
-.suggestion {
-    color: black;
-    background-color: white;
-    padding: 0.1em;
-    user-select: none; 
-    cursor: pointer;
-}
-.suggestion:hover {
-    color: black;
-    background-color: lightgrey;
-}
-.is-active {
-    color: white;
-    background-color: darkblue;
-}
+        stop() {
+          if (this.abort !== null) { this.abort() }
+        }
+      }
 
-/* webkit disable search button ? */
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-cancel-button,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance:none;
-  display:none;
-}
-
-#geocode-placeholder #search {
-    /*
-    box-shadow: 0 2px 4px 0 rgba(0,0,0,.25); 
-    margin: 5px;
-    */
-    margin: 0.5em;
-}
-
-#name-output {
-    background-color: rgba(255, 255, 255, 0.5);
-    border: 1px solid black;
-    padding: 1em;
-    margin: 1em;
-    border-radius: 0.5em;
-    width: 100%;
-}
-    </style>
-</head>
-
-<body style="touch-action: none;" class="w3-white">
-    <!-- prevent pull to refresh in chrome: view-source:http://output.jsbin.com/qofuwa/2/quiet -->
-
-    <div class="w3-bar w3-light-grey" id="navigationBar">
-        <span class="w3-bar-item">
-            <a href="http://www.gdmc.nl/">
-                <img class="tu-shadow" src="gdmc-cube.min.svg" height="22">
-            </a>
-        </span>
-
-        <span class="w3-bar-item" id="demo_info">Vario-scale demo: Dataset_nm, Algorithm, Parameter</span>
-        <span class="w3-bar-item" id="scale-denominator">1: scale</span>
-
-        <div class="w3-dropdown-click w3-right">
-            <button id="toggleMenu" class="w3-button tu-blue"><img src="vertical.svg" height="20"></button>
-
-            <!--style="transform-origin: right top 0px; transform: scale(1); opacity: 1;"-->
-            <div id="menu"
-                 class="w3-dropdown-content w3-bar-block w3-card w3-right tu-right">
-                <a id="openSettingsButton" class="w3-bar-item w3-button">Settings</a>
-                <!--
-                <a href="#" class="w3-bar-item w3-button">Link 2</a>
-                <a href="#" class="w3-bar-item w3-button">Link 3</a>
-                <a href="#" class="w3-bar-item w3-button">Link 4</a>
-                <a href="#" class="w3-bar-item w3-button">Link 5</a>
-                <a href="#" class="w3-bar-item w3-button">Link 6</a>
-                <a href="#" class="w3-bar-item w3-button">Link 7</a>
-                <a href="#" class="w3-bar-item w3-button">Link 8</a>
-                <a href="#" class="w3-bar-item w3-button">Link 9</a>
-                <a href="#" class="w3-bar-item w3-button">Link 10</a>
-                <a href="#" class="w3-bar-item w3-button">Link 11</a>
-                -->
-            </div>
-        </div>
-    </div>
-
-    <div class="w3-display-container">
-        <div class="w3-display-topleft w3-transparent">
-            <div id='geocode-placeholder'></div>
-        </div>
-
-
-        <!-- -->
-
-
-        <canvas id="canvas" style="w3-white"></canvas>
-    </div>
-
-    <!-- The Settings Modal -->
-    <div id="settingsModal" class="w3-modal">
-        <!-- style="touch-action: none;" -->
-        <div class="w3-modal-content">
-            <span id="closeSettingsSpan" class="w3-button tu-blue w3-display-topright"><b>&times;</b></span>
-
-            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
-
-            <div class="w3-container w3-padding">
-
-                <div class="setting">
-                    <fieldset>
-                        <legend> zoom factor </legend>
-                        <div class="w3-margin">
-                            <label for="speed-025">small</label>
-                            <input type="radio" id="speed-025" name="speed" value="0.25" class="radio-btn">
-                            <label for="speed-05"></label>
-                            <input type="radio" id="speed-05" name="speed" value="0.5" class="radio-btn">
-                            <label for="speed-1"></label>
-                            <input type="radio" id="speed-1" name="speed" value="1" checked="checked" class="radio-btn">
-                            <label for="speed-2"></label>
-                            <input type="radio" id="speed-2" name="speed" value="2" class="radio-btn">
-                            <label for="speed-3"></label>
-                            <input type="radio" id="speed-4" name="speed" value="4" class="radio-btn">
-                            <label for="speed-4">large</label>
-                        </div>
-                    </fieldset>
-                    <fieldset>
-                        <legend> zoom animation (short-long)</legend>
-                        <div class="w3-padding">
-                            short (0s)<input type="range" value="1001" step="25" min="0" max="5001" id="zoom-animation" style="margin: 0 16px 0 16px;"> long (5s)
-                        </div>
-                    </fieldset>
-                    <fieldset>
-                        <legend> pan animation (short-long)</legend>
-                        <div class="w3-padding">
-                            short (0s) <input type="range" value="1001" step="500" min="0" max="5001" id="pan-animation" style="margin: 0 16px 0 16px;"> long (5s)
-                        </div>
-                    </fieldset>
-                </div>
-            </div>
-
-            <header class="w3-container w3-light-grey w3-padding"><h2>Displaying settings</h2></header>
-            <div class="w3-container w3-padding">
-                <div class="setting">
-                    <fieldset>
-                        <legend> boundary width</legend>
-                        <div>
-                            line-width value (mm): <span id="width-value"></span>
-                        </div>
-                        <div>
-                            narrow <input type="range" value="0.2" step="0.025" min="0" max="5" id="boundary-width" style="margin: 0 16px 0 16px;"> wide
-                        </div>
-                    </fieldset>
-                </div>
-            </div>
-
-            <footer class="w3-container w3-light-grey w3-padding">
-                <button class="w3-button w3-right w3-white w3-border" id="closeSettingsButton">
-                    Close
-                </button>
-            </footer>
-        </div>
-    </div>
-
-    <footer class="w3-container w3-bottom" style="pointer-events: none;">
-
-        <div class="w3-left">
-            <a href="https://www.tudelft.nl/" style="pointer-events: auto;">
-                <img class="w3-margin-top w3-margin-bottom tu-shadow" src="tudelft.svg" height="30">
-            </a>
-        </div>
-
-        <div class="w3-right">
-            <button style="pointer-events: auto;" id="zoomInButton" class="w3-button tu-shadow tu-blue w3-padding w3-margin"><b>+</b></button>
-            <button style="pointer-events: auto;" id="zoomOutButton" class="w3-button tu-shadow tu-blue w3-padding"><b>&mdash;</b></button>
-        </div>
-    </footer>
-
-    <script type="text/javascript">
-        window.addEventListener('DOMContentLoaded', function () {
-
-            // Initialize canvas, to remaining width/height of the page (subtract height of the menu)
+      function DOMContentLoaded() {
             let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
-            let canvas_nm = 'canvas'
+            let canvas_nm = 'view'
             let canvas = document.getElementById(canvas_nm);
-            var gl = canvas.getContext("webgl", { antialias: true }) ||
-                canvas.getContext("experimental-webgl", { antialias: true });
-            let hGap = 0;
-            let vGap = document.getElementById("navigationBar").offsetHeight;
-            canvas.width = window.innerWidth - hGap;
-            canvas.height = window.innerHeight - vGap;
-
-
-            //            var map_settings = {
-            //                'initialization': {
-            //                    'scale_den': 500000,
-            //                    'center2d': [3555384.53, 5907745.81],
-            //                    'navigationBar_title': 'Test, Manual',
-            //                },
-            //                'canvas_nm': canvas_nm,
-            //                'datasets': [{ 'dataset_nm': 'Test','folder_nm': 'data', 'tree_nm':'nodes.json'}],
-            //                'interaction_defaults': []
-            //            }
-
-
-            //for example, for https://pengdlzn.github.io/gpudemo/2020/03/merge/0.1/index.html,
-            //window_location = /gpudemo/2020/03/merge/0.1/
-            //more information: https://stackoverflow.com/q/1368264
-            var window_location = window.location.pathname
-            //console.log('window_location:', window_location)
-
             var map_settings = {
                 'initialization': {
                     // 1960 84423.99 447517.43
-                    'scale_den': 1_000_000, //10_000, //top10nl, start_scale
-                    //'scale_den': 100000,  //top10nl; small test, three parcels
-                    //'scale_den': 12500,
-                    // BOX(204914.35 514637.283,270231.624 580203.629)
+                    scale_den: 48000, //10_000, //top10nl, start_scale
+                    center2d: [179482.98, 434121.39],
 
-                    //'center2d': [233520.3, 556776.9],
-                    // 'center2d': [186500.0, 312450.0],     //top10nl
-                    // center2d: [84425, 447525],
-                    center2d: [85213.02, 446850.34],
-                    //'center2d': [3555384.0, 5907745.0],   //small test, three parcels
-                    //[204914 + (270231 - 204914) * 0.5,
-                    // 514637 + (580203 - 514637) * 0.5],
                     'navigationBar_title': '',
                 },
                 'canvas_nm': canvas_nm,
                 'datasets': [{
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/tree-nl/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/tiles-nl/',
-
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/9x9-quad/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/9x9-quad/',
-
-                    //                              'tree_root_file_nm': 'tree.json',
-                    //                              'tree_root_href': '/data/9x9-quad-lines-lean/',    // with trailing slash!
-                    //                              'tile_root_href': '/data/9x9-quad-lines-lean/',
-
-                    //'tree_root_file_nm': 'tree.json',
-                    //'tree_root_href': '/data/drenthe-quad-larger/',    // with trailing slash!
-                    //'tile_root_href': '/data/drenthe-quad-larger/',
-
-
                     'tree_root_file_nm': 'tree_smooth.json',
-                    //'tree_root_file_nm': 'tree.json',
-                    //'step_event_nm': 'step_event.json', //activate this entry if we want to snap to certain steps
-                    'tree_root_href': window_location + 'data/',    // with trailing slash!
-                    'tile_root_href': window_location + 'data/',
-                    /*
-                    // See:
-                    // https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/
-                    // for available tile maps
-                    */
-                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/luchtfoto/rgb/tms/1.0.0/2017_ortho25/EPSG:28992/'
+                    'tree_root_href': 'data/',    // with trailing slash!
+                    'tile_root_href': 'data/',
                     'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
-                    // 'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/brtachtergrondkaart/EPSG:28992/'
                 }],
                 tree_settings: [
                     {
@@ -320,114 +571,135 @@ input[type="search"]::-webkit-search-results-decoration {
                 'interaction_defaults': []
             }
 
-            document.getElementById("demo_info").textContent = ""
-
             // Make a new map instance
-            var map = new varioscale.Map(map_settings);
+            mapview = new varioscale.Map(map_settings);
 
-            map.loadTree();
+            let pdokSuggest = new varioscale.PdokSuggestWidget(mapview)
 
-            map.renderWmts();
+            // do we need global access to the map?
+            // if you want to interact with the map in the console of the browser, yes
+            resize()
 
-            window.map = map;
-            
-            // let scaleWidget = new varioscale.DisplayMapScaleWidget();
-            // scaleWidget.connect(map);
+            const resizeObserver = new ResizeObserver(resize);
+            resizeObserver.observe(document.getElementById(canvas_nm), {box: 'content-box'});
 
-            let subscribe_scale = (map) => {
-                let msgbus = new varioscale.MessageBusConnector();
-                msgbus.subscribe('map.scale', (topic, message, sender) => {
-                    if (sender !== map.msgbus.id) return;
-                    const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'")
-                    const xy = message[0]
-                    let el = document.getElementById("scale-denominator");
-                    el.textContent = " 1:" + scale + " [" + xy[0].toFixed(2)  + ", " + xy[1].toFixed(2) + "]";
-                });
-            }
-            subscribe_scale(map);
+            tour = new Tour()
+        }
+        
 
-            // Resize the canvas to span complete screen, when the screen is resized
-            // (note, this does include device rotation on mobile)
-            var resize = function () {
-                let canvas = document.getElementById(canvas_nm);
-                var gl = canvas.getContext("webgl", { antialias: true }) ||
-                    canvas.getContext("experimental-webgl", { antialias: true });
-                let newWidth = window.innerWidth - hGap;
-                let newHeight = window.innerHeight - vGap;
+        function resize() {
+            let el = document.getElementById("view")
+            console.log(`${el.clientWidth} ${el.clientHeight}`)
+            mapview.resize(el.clientWidth, el.clientHeight)
+        }
 
-                map.resize(newWidth, newHeight);
-                // update the canvas its size with the new size given by the browser
-                canvas.width = newWidth
-                canvas.height = newHeight
-                // schedule re-render (FIXME: we should have a API method for this (on the map class?))
-                map.abortAndRender()
-            };
-            window.addEventListener('resize', resize, false);
-            window.addEventListener('orientationchange', resize);
+        window.addEventListener('resize', resize, false);
+        window.addEventListener('orientationchange', resize);          
 
-            /* -- start slider -- */
-            let init_boundary_width_slider = () => {
-                let msgbus = new varioscale.MessageBusConnector();
-                msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
-                    let el = document.getElementById("width-value");
-                    el.innerHTML = message;
-                });
-                let slider = document.getElementById("boundary-width");
-                slider.addEventListener('input',
-                    () => {
-                        msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
-                    }
-                );
-                msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
-            };
-            init_boundary_width_slider();
-            /* -- end of slider -- */
-
-            /* -- start slider -- */
-            let init_slider = (name) => {
-                let msgbus = new varioscale.MessageBusConnector();
-                let slider = document.getElementById(name);
-                slider.addEventListener('input',
-                    () => {
-                        msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
-                        // map.abortAndRender();
-                    }
-                );
-                msgbus.publish("settings.interaction." + name, parseFloat(slider.value));
-            }
-            //init_slider("zoom-factor");
-            init_slider("pan-animation");
-            init_slider("zoom-animation");
-            /* -- end of slider -- */
-
-            /* opening and closing the settings modal dialog */
-            // FIXME: repetition of names and ids here is cumbersome
-            var modalSettingsOpen = function () {
-                toggleMenu(); // hide the menu
-                document.getElementById('settingsModal').style.display = 'block';
-            };
-            var modalSettingsClose = function () {
-                document.getElementById('settingsModal').style.display = 'none';
-            }
-            document.getElementById("openSettingsButton").addEventListener('click', modalSettingsOpen);
-            document.getElementById("closeSettingsButton").addEventListener('click', modalSettingsClose);
-            document.getElementById("closeSettingsSpan").addEventListener('click', modalSettingsClose);
-
-            // the menu on the top
-            function toggleMenu() {
-                var x = document.getElementById("menu");
-                if (x.className.indexOf("w3-show") == -1) {
-                    x.className += " w3-show";
-                } else {
-                    x.className = x.className.replace(" w3-show", "");
-                }
-            };
-            document.getElementById("toggleMenu").addEventListener('click', toggleMenu);
-
-            let pdokSuggest = new varioscale.PdokSuggestWidget(map)
-
-        });
+        window.addEventListener('DOMContentLoaded', DOMContentLoaded);
     </script>
+  </head>
+  
+  <!--
+    https://github.com/rusakov92/js-hash-router
+  -->
+  <body class="is-marginless">
 
-</body>
+    <div id="app" class="z0">
+
+      <div id="container" class="relative full-height">
+
+
+        <!-- map -->
+        <div id="outer2" class="absolute no-overflow full-width full-height z0">
+          <div id="inner2" class="blue absolute no-overflow full-width full-height">
+
+            <canvas id="view" class="absolute no-overflow full-width full-height upper-left"></canvas>
+
+              <!-- debug of touch points -->
+              <aside>
+                <div id="touchCenter">
+                  <span class="circle">&nbsp;</span>
+                </div>
+                
+                <div id="touchFirst">
+                  <span class="circle">1</span>
+                </div>
+                <div id="touchSecond">
+                  <span class="circle">2</span>
+                </div>
+              </aside>
+
+
+            <div id="upper-left" class="top-left absolute yellow" >
+              UL
+              <button onclick="toggleDrawer();">Toggle drawer</button>
+            </div>
+
+            <!--
+            <div id="upper-center" class="absolute yellow" >
+              UC
+            </div>
+            -->
+
+            <div id="upper-right" class="top-right absolute yellow" >
+              UR<div id='geocode-placeholder'></div>
+            </div>
+
+            <!--
+            <div id="center" class="center absolute yellow">
+              C
+            </div>
+            -->
+
+            <div id="bottom-left" class="bottom-left absolute yellow">
+              BL
+            </div>
+
+            <!--
+            <div id="bottom-center" class="absolute yellow">
+              BC
+            </div>
+            -->
+
+            <div id="bottom-right" class="bottom-right absolute yellow">
+                <button style="pointer-events: auto;" id="zoomInButton"><b>+</b></button>
+                <button style="pointer-events: auto;" id="zoomOutButton"><b>&mdash;</b></button>
+              BR
+            </div>
+          
+          </div>
+        </div>
+
+
+
+        <!-- drawer -->
+        <div id="outer1" class="is-hidden is-marginless no-overflow red absolute half-width full-height shadow-one-side z0">
+          <div id="inner1" class="white absolute auto-scroll full-width full-height" style="padding: 20px;">
+            <button onclick="toggleDrawer();">Toggle drawer</button>
+            
+
+            <h1>Hi there</h1>
+
+            <h2>Take the 'monopoly' tour</h2>
+                        <button onclick="tour.start(7500);">Start Jumping</button>
+            <button onclick="tour.stop();">Stop Jumping</button>
+
+            <h2>Another section</h2>
+            <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id tellus ac sapien luctus fringilla. Suspendisse lorem libero, commodo in quam a, tempor molestie urna. Vivamus volutpat accumsan odio, sodales efficitur sem tempus sit amet. Duis a neque dolor. Cras sit amet blandit est, nec sollicitudin quam. Donec ut aliquet metus. Vivamus tincidunt ligula nec malesuada iaculis. Vestibulum ultrices malesuada orci, ac facilisis nulla euismod quis. Phasellus viverra eros in libero ornare commodo. Nunc quis pharetra ex, non blandit dolor. Aliquam ac elementum risus. Etiam ac ante velit. Sed et enim dignissim quam condimentum ultrices vel ac nulla. Nam sollicitudin ex et fermentum posuere. Sed tristique auctor tellus, sit amet commodo nunc vulputate vitae.
+            </p>
+
+          </div>
+        </div>
+
+
+
+
+      </div>
+
+    </div>
+
+  </body>
 </html>
+
