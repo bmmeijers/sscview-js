@@ -112,30 +112,38 @@ export class Renderer {
             //}
 
 
-
-            //steps[i] = step
-            //console.log('render.js, step after snapping:', step)
-
-            //console.log('render.js, step after snapping:', step)
-
-
-
+            //console.log('render.js, step:', step)
             let inputopacity = tree_setting.opacity
-            let opacity1 = inputopacity
-            let opacity2 = 0 //the layer will not be drawn if opacity is 0
-            let local_statehigh = 0
+            let opacity1 = inputopacity  //for lower layer
+            let opacity2 = 0 //for higher layer; the layer will not be drawn if opacity is 0            
+            let local_statelow = local_statelows[i]
+            let local_statehigh = local_statehighs[i]
             if (tree_setting.do_color_adapt == true) {
-                if (local_statelows[i] == local_statehighs[i]) { 
+
+
+                //this is a workaround to fix the problem stated below.
+                //When comparing two maps which are respectively based on simultaneous merging and single merging
+                //we use the same step_event_exc.json of simultaneous merging in order to make the two maps to snap to the same scales.
+                //The problem is that, for the single merging, the color of an area will adapt from local_statelows[i] until local_statehighs[i]
+                //even if the area is not being merged yet.
+                //Therefore, we use the local_statelow and local_statehigh immediate to step
+                if ('is_single_merging' in tree_setting && tree_setting.is_single_merging == true) {
+                    local_statelow = Math.floor(step)
+                    local_statehigh = Math.ceil(step)
+                    //console.log('render.js local_statehigh:', local_statehigh)
+                }
+
+                if (local_statelow == local_statehigh) { //this happens when a zooming operation finishes; see map.js
                     //console.log('render.js equality happened!')
                     //do nothing, draw normally
                 }
                 else {
                     //if step == local_statelows[i], then local_statehighs[i] == local_statelows[i] because of snapping in map.js
-                    let step_progress = (step - local_statelows[i]) / (local_statehighs[i] - local_statelows[i])
+                    let step_progress = (step - local_statelow) / (local_statehigh - local_statelow)
                     opacity2 = step_progress * inputopacity
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2)
 
-                    local_statehigh = local_statehighs[i] - default_comp
+                    local_statehigh = local_statehigh - default_comp
                 }
             }
 
@@ -154,6 +162,7 @@ export class Renderer {
                 //console.log('render.js step:', step)
                 //console.log('render.js opacity1:', opacity1)
                 //console.log('render.js opacity2:', opacity2)
+                //console.log('render.js local_statehigh:', local_statehigh)
                 var matrix2 = ssctree.prepare_matrix(local_statehigh, transform)
 
                 this.render_relevant_tiles(ssctree, tiles, matrix2, opacity2);

@@ -8,7 +8,7 @@ import { zoomButtonHandler } from './handlers/mouse.scroll';
 import { touchPinchHandler } from './handlers/touch.pinch';
 import { touchDragHandler } from "./handlers/touch.drag";
 
-import Transform from './transform';
+import { Transform, meter_to_pixel } from './transform';
 import { timed } from './animate';
 import { Renderer } from "./render";
 import LayerControl from "./layercontrol";
@@ -62,7 +62,7 @@ class Map {
         this._interaction_settings = {
             zoom_factor: 1,
             zoom_duration: 1, //1 second
-            time_factor: 1, //we changed the factor because we snap when merging parallelly
+            time_factor: 1, //we changed the factor because we snap when merging simultaneously
             pan_duration: 1,  //1 second
         };
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
@@ -217,7 +217,7 @@ class Map {
         //when we merge two area, we want to continuously change the color of the loser to that of the winer
         //Therefore, we want to tune the transparecies of the two levels.
         //local_statelow is for the low level, and local_statelow for the high level
-        let local_statelows = [] //a steplow of current step for each layer
+        let local_statelows = [] //a statelow of current step for each layer
         let local_statehighs = [] //a statehigh of current step for each layer
 
 
@@ -269,41 +269,41 @@ class Map {
             }
 
 
-            ////If we want to have multi-scale map intead of vario-scale map,
-            ////we snap the scale and then snap the step
-            //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
-            //if (discrete_scales != null) {
+            //If we want to have multi-scale map intead of vario-scale map,
+            //we snap the scale and then snap the step
+            let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
+            if (discrete_scales != null) {
 
-            //    //console.log('map.js St_for_step:', St_for_step)
+                //console.log('map.js St_for_step:', St_for_step)
 
-            //    let scale_snapped_St = snap_value(St_for_step, discrete_scales,
-            //        this.map_setting.tree_settings[0].snap_style)
+                let scale_snapped_St = snap_value(St_for_step, discrete_scales,
+                    this.map_setting.tree_settings[0].snap_style)
 
-            //    //console.log('map.js scale_snapped_St:', scale_snapped_St)
+                //console.log('map.js scale_snapped_St:', scale_snapped_St)
 
+                //to be improved ...
+                if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
+                    steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
 
-            //    if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
-            //        steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+                    local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
+                    local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
+                }
+                else {
+                    console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.")
 
-            //        local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-            //        local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-            //    }
-            //    else {
-            //        console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.")
+                    // snap to a step to avoid half way generalization (e.g. merging)
+                    //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+                    steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
 
-            //        // snap to a step to avoid half way generalization (e.g. merging)
-            //        //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-            //        steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
+                    local_statehighs.push(steps[0])
+                    local_statelows.push(steps[0])
+                }
 
-            //        local_statehighs.push(steps[0])
-            //        local_statelows.push(steps[0])
-            //    }
-
-            //}
-            //else {
-            //    //console.log('map.js steps[0]:', steps[0])
-            //    //console.log('map.js St_for_step:', St_for_step)
-            //}
+            }
+            else {
+                //console.log('map.js steps[0]:', steps[0])
+                //console.log('map.js St_for_step:', St_for_step)
+            }
         }
 
 
@@ -621,10 +621,28 @@ class Map {
         let msgbus = this.msgbus;
         msgbus.subscribe('map.scale', (topic, message, sender) => {
             if (sender !== msgbus.id) return;
-            const scale = Math.round(message[1]).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+
+            let scale_denominator = message[1]
+
+            //generate text for the scale
+            const scale_denominator_text = Math.round(scale_denominator).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             //const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             let el = document.getElementById("scale-denominator");
-            el.textContent = " 1:" + scale;
+            el.textContent = " 1:" + scale_denominator_text;
+            
+            //generate text for the scale bar
+            let unit = ' m'
+            // In the html document, we introduced element 'scale-bar-text', which has length 100 pixels 
+            let meters_of_hundred_pixels = 100 * scale_denominator  / meter_to_pixel
+            let barlength = meters_of_hundred_pixels
+            if (meters_of_hundred_pixels >= 10000){
+                unit = ' km'
+                barlength = meters_of_hundred_pixels / 1000
+            }
+            let scale_bar_text = Math.round(barlength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+
+            let el2 = document.getElementById("scale-bar-text");
+            el2.textContent = scale_bar_text + unit;
         })
     }
 

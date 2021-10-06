@@ -1,6 +1,6 @@
 import { create, createvec3, vec3transform, multiply, invert, console_log } from './mat4';
 import Rectangle from './rect';
-var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels, if 1 inch equals 96 pixels
 
 
 //import { log } from 'util';
@@ -57,7 +57,8 @@ function square_viewport_matrix(box) {
 
 
 class Transform {
-    constructor(center_world, viewport_size, denominator) {
+    //
+    constructor(center_world, viewport_size, scale_denominator) {
 
         this.viewport_world = create(); //matrix: to transform a point from a viewport to the realworld
         this.world_viewport = create(); //matrix: to transform a point from the realworld to a viewport 
@@ -68,25 +69,25 @@ class Transform {
         this.viewport = null; //e.g., xmin:0, ymin:0, xmax: 1200, ymax: 929
 
         // set up initial transformation
-        this.initTransform(center_world, viewport_size, denominator)
+        this.initTransform(center_world, viewport_size, scale_denominator)
 
         this.snapped_step = Number.MAX_SAFE_INTEGER
-        this.snapped_St = denominator
+        this.snapped_St = scale_denominator
         //this.current_step = Number.MAX_SAFE_INTEGER
     }
 
     // fixme: rename -> initTransform
-    initTransform(center_world, viewport_size, denominator) {
+    initTransform(center_world, viewport_size, scale_denominator) {
         // compute from the center of the world, the viewport size and the scale
-        // denominator how much of the world is visible
+        // determine how much of the world is visible
         let cx = center_world[0],
             cy = center_world[1]
 
         // get half visible screen size in world units,
-        // when we look at it at this map scale (1:denominator)
+        // when we look at it at this map scale (1:scale_denominator)
         let half_visible_screen = [
-            0.5 * viewport_size[0] / meter_to_pixel * denominator,
-            0.5 * viewport_size[1] / meter_to_pixel * denominator
+            0.5 * viewport_size[0] / meter_to_pixel * scale_denominator,
+            0.5 * viewport_size[1] / meter_to_pixel * scale_denominator
         ]
         let xmin = cx - half_visible_screen[0],
             xmax = cx + half_visible_screen[0],
@@ -320,4 +321,5 @@ class Transform {
 
 }
 
-export default Transform
+export {Transform, meter_to_pixel};
+//export meter_to_pixel

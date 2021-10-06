@@ -9,7 +9,6 @@ import { TileContent } from "./tilecontent"
 //import { log } from "util";
 
 //import Rectangle from './rect';
-//var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
 
 // FIXME:
@@ -80,12 +79,12 @@ export class SSCTree {
                 .then(filecontent => {
                     //console.log('ssctree.js filecontent:', filecontent)
                     var current_face_num = filecontent.face_num
-                    var parallel_param = filecontent.parallel_param
+                    var simultaneous_param = filecontent.simultaneous_param
                     var step_event_exceptions = filecontent.step_event_exceptions
                     var exception_index = 0
                     var step = 1
                     while (current_face_num > 1) {
-                        var eventnum = Math.ceil(current_face_num * parallel_param)
+                        var eventnum = Math.ceil(current_face_num * simultaneous_param)
                         if (exception_index < step_event_exceptions.length && step_event_exceptions[exception_index][0] == step) {
                             eventnum = step_event_exceptions[exception_index][1]
                             exception_index += 1

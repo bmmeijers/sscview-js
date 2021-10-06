@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.varioscale = factory());
-}(this, function () { 'use strict';
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.varioscale = factory());
+}(this, (function () { 'use strict';
 
     //glCreateProgram
     //glCreateShader
@@ -39,11 +39,6 @@
     var _frame = function (fn) {
         return frame(fn);
     };
-
-    var cancel = window.cancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.msCancelAnimationFrame;
 
     //var count = 0
 
@@ -1140,7 +1135,7 @@
                 this.ymin + this.height() * 0.5]
     };
 
-    var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
+    var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels, if 1 inch equals 96 pixels
 
 
     //import { log } from 'util';
@@ -1196,7 +1191,7 @@
     // OrthoRH
 
 
-    var Transform = function Transform(center_world, viewport_size, denominator) {
+    var Transform = function Transform(center_world, viewport_size, scale_denominator) {
 
         this.viewport_world = create(); //matrix: to transform a point from a viewport to the realworld
         this.world_viewport = create(); //matrix: to transform a point from the realworld to a viewport 
@@ -1207,25 +1202,25 @@
         this.viewport = null; //e.g., xmin:0, ymin:0, xmax: 1200, ymax: 929
 
         // set up initial transformation
-        this.initTransform(center_world, viewport_size, denominator);
+        this.initTransform(center_world, viewport_size, scale_denominator);
 
         this.snapped_step = Number.MAX_SAFE_INTEGER;
-        this.snapped_St = denominator;
+        this.snapped_St = scale_denominator;
         //this.current_step = Number.MAX_SAFE_INTEGER
     };
 
     // fixme: rename -> initTransform
-    Transform.prototype.initTransform = function initTransform (center_world, viewport_size, denominator) {
+    Transform.prototype.initTransform = function initTransform (center_world, viewport_size, scale_denominator) {
         // compute from the center of the world, the viewport size and the scale
-        // denominator how much of the world is visible
+        // determine how much of the world is visible
         var cx = center_world[0],
             cy = center_world[1];
 
         // get half visible screen size in world units,
-        // when we look at it at this map scale (1:denominator)
+        // when we look at it at this map scale (1:scale_denominator)
         var half_visible_screen = [
-            0.5 * viewport_size[0] / meter_to_pixel * denominator,
-            0.5 * viewport_size[1] / meter_to_pixel * denominator
+            0.5 * viewport_size[0] / meter_to_pixel * scale_denominator,
+            0.5 * viewport_size[1] / meter_to_pixel * scale_denominator
         ];
         var xmin = cx - half_visible_screen[0],
             xmax = cx + half_visible_screen[0],
@@ -1454,6 +1449,7 @@
             
         return St
     };
+    //export meter_to_pixel
 
     var DrawProgram = function DrawProgram(gl, vertexShaderText, fragmentShaderText) {
 
@@ -1600,16 +1596,7 @@
                 '  v_TexCoord = a_TexCoord;\n' +
                 '}\n';
 
-            var fragmentShaderText = 
-                //'#ifdef GL_ES\n' +
-                //'precision mediump float;\n' +
-                //'#endif\n' +
-                //'uniform sampler2D u_Sampler;\n' +
-                //'varying vec2 v_TexCoord;\n' +
-                //'void main() {\n' +
-                //'  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
-                //'}\n';
-                "\n            precision highp float;\n          \n            uniform sampler2D uSampler;\n\n            uniform float opacity;\n\n            varying vec2 v_TexCoord;\n\n            void main() {\n\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a != 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { color.a = opacity; } \n              else \n                { discard; } \n              gl_FragColor = color;\n \n            }\n\n            ";
+            var fragmentShaderText = "\n            precision highp float;       \n            uniform sampler2D uSampler;\n            uniform float opacity;\n            varying vec2 v_TexCoord;\n            void main() {\n              vec4 color = texture2D(uSampler, v_TexCoord);\n              if (color.a == 0.0) //when clearing the buffer of fbo, we used value 0.0 for opacity; see render.js\n                { discard; } \n              else \n                { color.a = opacity; } \n              gl_FragColor = color;\n            }";
 
             DrawProgram.call(this, gl, vertexShaderText, fragmentShaderText);
         }
@@ -1639,8 +1626,6 @@
             {
                 var opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
                 gl.uniform1f(opacity_location, opacity);
-
-
             }
 
 
@@ -1830,12 +1815,12 @@
 
             if (tree_setting.do_blend == true) {
                 gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             }
             else {
                 gl.disable(gl.BLEND);
             }
-
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
         };
 
@@ -1957,10 +1942,11 @@
             }
             else {
                 gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             }        
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            
             //renderer._clearDepth()
-            //gl.disable(gl.BLEND)
+
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
             //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
@@ -2066,6 +2052,7 @@
 
             if (tree_setting.do_blend == true) {
                 gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
             }
             else {
                 //After an area merges another area, we can see a thin sliver.
@@ -2073,7 +2060,7 @@
                 //but the alpha value does not have influence anymore
                 gl.disable(gl.BLEND);
             }
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); //make it transparent according to alpha value
+            
 
             gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
@@ -2428,27 +2415,35 @@
             //}
 
 
-
-            //steps[i] = step
-            //console.log('render.js, step after snapping:', step)
-
-            //console.log('render.js, step after snapping:', step)
-
-
-
+            //console.log('render.js, step:', step)
             var inputopacity = tree_setting.opacity;
-            var opacity1 = inputopacity;
-            var opacity2 = 0; //the layer will not be drawn if opacity is 0
-            var local_statehigh = 0;
+            var opacity1 = inputopacity;  //for lower layer
+            var opacity2 = 0; //for higher layer; the layer will not be drawn if opacity is 0            
+            var local_statelow = local_statelows[i];
+            var local_statehigh = local_statehighs[i];
             if (tree_setting.do_color_adapt == true) {
-                if (local_statelows[i] == local_statehighs[i]) ;
+
+
+                //this is a workaround to fix the problem stated below.
+                //When comparing two maps which are respectively based on simultaneous merging and single merging
+                //we use the same step_event_exc.json of simultaneous merging in order to make the two maps to snap to the same scales.
+                //The problem is that, for the single merging, the color of an area will adapt from local_statelows[i] until local_statehighs[i]
+                //even if the area is not being merged yet.
+                //Therefore, we use the local_statelow and local_statehigh immediate to step
+                if ('is_single_merging' in tree_setting && tree_setting.is_single_merging == true) {
+                    local_statelow = Math.floor(step);
+                    local_statehigh = Math.ceil(step);
+                    //console.log('render.js local_statehigh:', local_statehigh)
+                }
+
+                if (local_statelow == local_statehigh) ;
                 else {
                     //if step == local_statelows[i], then local_statehighs[i] == local_statelows[i] because of snapping in map.js
-                    var step_progress = (step - local_statelows[i]) / (local_statehighs[i] - local_statelows[i]);
+                    var step_progress = (step - local_statelow) / (local_statehigh - local_statelow);
                     opacity2 = step_progress * inputopacity;
                     opacity1 = (inputopacity - opacity2) / (1 - opacity2);
 
-                    local_statehigh = local_statehighs[i] - default_comp;
+                    local_statehigh = local_statehigh - default_comp;
                 }
             }
 
@@ -2467,6 +2462,7 @@
                 //console.log('render.js step:', step)
                 //console.log('render.js opacity1:', opacity1)
                 //console.log('render.js opacity2:', opacity2)
+                //console.log('render.js local_statehigh:', local_statehigh)
                 var matrix2 = ssctree.prepare_matrix(local_statehigh, transform);
 
                 this$1.render_relevant_tiles(ssctree, tiles, matrix2, opacity2);
@@ -2636,7 +2632,7 @@
 
         //The hierarchy of the elements of controlling layers
         //modal_content
-        //  fs_div (one lyr_setting_div for each map)
+        //  fs_div (one fs_div for each map)
         //lyr_fs
         //  fs_legend
         //  lyr_setting_div (one lyr_setting_div for each layer)
@@ -2690,10 +2686,10 @@
             var canvaslyrnm = canvas_nm_bar + lyrnm;
             var id_cb = canvaslyrnm + '-cb';
             var topic_cb = 'setting.layer.' + id_cb;
-            cb_lyrnm.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleLayer(this)\"> " + lyrnm;
+            cb_lyrnm.innerHTML = "<input type=\"checkbox\" id=" + id_cb + " onclick=\"toggleCb(this)\"> " + lyrnm;
             var cb = document.getElementById(id_cb);
             cb.checked = tree_setting.do_draw;
-            cb.value = topic_cb;
+            cb.value = topic_cb;  //will be used as a topic for publishing
 
 
             msgbus.subscribe(topic_cb, function (topic, message, sender) {                
@@ -2701,14 +2697,14 @@
                 this$1.map.abortAndRender();
             });
 
-
+            //for opacity ===========================================
             var opacity_div = document.createElement("div");
             lyr_setting_div.append(opacity_div);
 
             var opacitytext_div = document.createElement("span");
             opacity_div.appendChild(opacitytext_div);
             opacitytext_div.className = 'w3-show-inline-block';
-            opacitytext_div.innerHTML = 'opacity: ';
+            opacitytext_div.innerHTML = 'Opacity: ';
 
             //make the slider for the opacity
             var opacitytext_span = document.createElement("span");
@@ -2731,6 +2727,7 @@
 
             var topic_opacity = 'setting.layer.' + canvaslyrnm + '_opacity-slider';
 
+
             //subscription of the tree_setting opacity value
             msgbus.subscribe(topic_opacity, function (topic, message, sender) {
                 opacitytext_span.innerHTML = message;
@@ -2742,7 +2739,31 @@
             slider.addEventListener('input', function () {
                 msgbus.publish(topic_opacity, parseFloat(slider.value));
             });
-                
+
+
+            //for color adapting ===========================================
+            var coloradapt_div = document.createElement("div");
+            lyr_setting_div.append(coloradapt_div);
+            var coloradapttext_div = document.createElement("span");
+            coloradapt_div.appendChild(coloradapttext_div);
+            coloradapttext_div.className = 'w3-show-inline-block';
+            coloradapttext_div.innerHTML = 'Color adapting: ';
+
+            var coloradapt_id_cb = canvaslyrnm + '-coloradapt-cb';
+            var topic_coloradapt_cb = 'setting.layer.' + coloradapt_id_cb;
+            coloradapttext_div.innerHTML += "<input type=\"checkbox\" id=" + coloradapt_id_cb + " onclick=\"toggleCb(this)\"> ";
+            var coloradapt_cb = document.getElementById(coloradapt_id_cb);
+            coloradapt_cb.checked = tree_setting.do_color_adapt;
+            coloradapt_cb.value = topic_coloradapt_cb;
+
+
+            //subscription of the tree_setting opacity value
+            msgbus.subscribe(topic_coloradapt_cb, function (topic, message, sender) {
+                tree_setting.do_color_adapt = message;
+                this$1.map.abortAndRender();
+            });
+
+
             msgbus.subscribe('go-to-start', function (topic, message, sender) {
                 //opacity value of a layer
                 slider.value = initial_tree_setting.opacity;
@@ -2750,13 +2771,16 @@
                 //if a layer should be displayed or not
                 cb.checked = initial_tree_setting.do_draw;
                 msgbus.publish(topic_cb, initial_tree_setting.do_draw);
+                //if the color of the eaten object should be adapted
+                coloradapt_cb.checked = initial_tree_setting.do_color_adapt;
+                msgbus.publish(topic_coloradapt_cb, initial_tree_setting.do_color_adapt);
             });
         });
     };
 
     // Make function toggleLayer globally accessible so that it can be used in the innerHTML of an HTML element
     // see https://stackoverflow.com/questions/14769158/making-js-local-function-globally-accessible
-    window.toggleLayer = function(cb) {
+    window.toggleCb = function(cb) {
         var msgbus = new varioscale.MessageBusConnector();
         var topic = cb.value;
 
@@ -2864,13 +2888,10 @@
         );
     };
 
-
-
     TileContent.prototype.load_image_tile = function load_image_tile (href, gl) {
             var this$1 = this;
 
         var f = function () {
-
             // setup texture as placeholder for texture to be retrieved later
             this$1.texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, this$1.texture);
@@ -2890,7 +2911,6 @@
             gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 width, height, border, srcFormat, srcType,
                 pixel);
-
             this$1.textureCoordBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this$1.textureCoordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -2968,6 +2988,11 @@
     TileContent.prototype._process_image_tile = function _process_image_tile (response, gl) {
             var this$1 = this;
 
+
+        // the json retrieved in response will contain: 
+        // {"box": [216931.52, 573100.48, 223812.8, 579981.76],
+        //  "texture_href": "7/73/80.png",
+        //  "points": [[216931.52, 579981.76, 0], [216931.52, 573100.48, 0], [223812.8, 573100.48, 0], [216931.52, 579981.76, 0], [223812.8, 573100.48, 0], [223812.8, 579981.76, 0]]}   
         var result = [];
 
         response.points.forEach(
@@ -2975,7 +3000,6 @@
         );
         // could also be: response.points.flat(1); ???
         this._upload_image_tile_mesh(gl, new Float32Array(result));
-
         /*
         // using image object to retrieve the texture
         let image = new Image()
@@ -3001,14 +3025,35 @@
             }
         )
         */
+        /*
+            					type: "wmts",
+    					options: {
+    						url: 'https://geodata.nationaalgeoregister.nl/tiles/service/wmts?',
+    						layer: 'brtachtergrondkaart',
+    						style: 'default',
+    						tileMatrixSet: "EPSG:28992",
+    						service: "WMTS",
+    						request: "GetTile",
+    						version: "1.0.0",
+    						format: "image/png"
+    					}
+        */
             
         // using createImageBitmap and fetch to retrieve the texture
-        fetch(this.texture_root_href + response.texture_href, { mode: 'cors' })
+
+        var parts = response.texture_href.split('.'); //  7/73/80.png
+        var address = parts[0].split('/');
+        var z = +address[0];
+        var along_dim = Math.pow(2, z);
+        var row = +address[1];
+        var col = +address[2];
+        var url = "https://geodata.nationaalgeoregister.nl/tiles/service/wmts?&layer=brtachtergrondkaart&style=default&tileMatrixSet=EPSG:28992&service=WMTS&request=GetTile&version=1.0.0&format=image/png";
+        url += "&TileCol="+row+"&TileRow="+(along_dim-col)+"&tileMatrix="+z;
+        fetch(url, { mode: 'cors' })
             .then(function (response) {
                 if (!response.ok) {
                     throw response;
                 }
-
                 return response.blob();
             })
             .then(function (blob) {
@@ -3083,7 +3128,6 @@
     //import { log } from "util";
 
     //import Rectangle from './rect';
-    //var meter_to_pixel = 3779.5275590551; // 1 meter equals 3779.5275590551 pixels
 
 
     // FIXME:
@@ -3155,12 +3199,12 @@
                 .then(function (filecontent) {
                     //console.log('ssctree.js filecontent:', filecontent)
                     var current_face_num = filecontent.face_num;
-                    var parallel_param = filecontent.parallel_param;
+                    var simultaneous_param = filecontent.simultaneous_param;
                     var step_event_exceptions = filecontent.step_event_exceptions;
                     var exception_index = 0;
                     var step = 1;
                     while (current_face_num > 1) {
-                        var eventnum = Math.ceil(current_face_num * parallel_param);
+                        var eventnum = Math.ceil(current_face_num * simultaneous_param);
                         if (exception_index < step_event_exceptions.length && step_event_exceptions[exception_index][0] == step) {
                             eventnum = step_event_exceptions[exception_index][1];
                             exception_index += 1;
@@ -3769,7 +3813,7 @@
         this._interaction_settings = {
             zoom_factor: 1,
             zoom_duration: 1, //1 second
-            time_factor: 1, //we changed the factor because we snap when merging parallelly
+            time_factor: 1, //we changed the factor because we snap when merging simultaneously
             pan_duration: 1,  //1 second
         };
         //this.if_snap = false //if we want to snap, then we only snap according to the first dataset
@@ -3926,7 +3970,7 @@
         //when we merge two area, we want to continuously change the color of the loser to that of the winer
         //Therefore, we want to tune the transparecies of the two levels.
         //local_statelow is for the low level, and local_statelow for the high level
-        var local_statelows = []; //a steplow of current step for each layer
+        var local_statelows = []; //a statelow of current step for each layer
         var local_statehighs = []; //a statehigh of current step for each layer
 
 
@@ -3978,41 +4022,37 @@
             }
 
 
-            ////If we want to have multi-scale map intead of vario-scale map,
-            ////we snap the scale and then snap the step
-            //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
-            //if (discrete_scales != null) {
+            //If we want to have multi-scale map intead of vario-scale map,
+            //we snap the scale and then snap the step
+            var discrete_scales = this.map_setting.tree_settings[0].discrete_scales;
+            if (discrete_scales != null) {
 
-            ////console.log('map.js St_for_step:', St_for_step)
+                //console.log('map.js St_for_step:', St_for_step)
 
-            //let scale_snapped_St = snap_value(St_for_step, discrete_scales,
-            //    this.map_setting.tree_settings[0].snap_style)
+                var scale_snapped_St = snap_value(St_for_step, discrete_scales,
+                    this.map_setting.tree_settings[0].snap_style);
 
-            ////console.log('map.js scale_snapped_St:', scale_snapped_St)
+                //console.log('map.js scale_snapped_St:', scale_snapped_St)
 
+                //to be improved ...
+                if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
+                    steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St);
 
-            //if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
-            //    steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
+                    local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'));
+                    local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'));
+                }
+                else {
+                    console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.");
 
-            //    local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-            //    local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-            //}
-            //else {
-            //    console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.")
+                    // snap to a step to avoid half way generalization (e.g. merging)
+                    //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
+                    steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St);
 
-            //    // snap to a step to avoid half way generalization (e.g. merging)
-            //    //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-            //    steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
+                    local_statehighs.push(steps[0]);
+                    local_statelows.push(steps[0]);
+                }
 
-            //    local_statehighs.push(steps[0])
-            //    local_statelows.push(steps[0])
-            //}
-
-            //}
-            //else {
-            ////console.log('map.js steps[0]:', steps[0])
-            ////console.log('map.js St_for_step:', St_for_step)
-            //}
+            }
         }
 
 
@@ -4334,10 +4374,28 @@
         var msgbus = this.msgbus;
         msgbus.subscribe('map.scale', function (topic, message, sender) {
             if (sender !== msgbus.id) { return; }
-            var scale = Math.round(message[1]).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+            var scale_denominator = message[1];
+
+            //generate text for the scale
+            var scale_denominator_text = Math.round(scale_denominator).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
             //const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
             var el = document.getElementById("scale-denominator");
-            el.textContent = " 1:" + scale;
+            el.textContent = " 1:" + scale_denominator_text;
+                
+            //generate text for the scale bar
+            var unit = ' m';
+            // In the html document, we introduced element 'scale-bar-text', which has length 100 pixels 
+            var meters_of_hundred_pixels = 100 * scale_denominator  / meter_to_pixel;
+            var barlength = meters_of_hundred_pixels;
+            if (meters_of_hundred_pixels >= 10000){
+                unit = ' km';
+                barlength = meters_of_hundred_pixels / 1000;
+            }
+            var scale_bar_text = Math.round(barlength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+            var el2 = document.getElementById("scale-bar-text");
+            el2.textContent = scale_bar_text + unit;
         });
     };
 
@@ -4352,4 +4410,4 @@
 
     return exported;
 
-}));
+})));

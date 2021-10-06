@@ -1,3 +1,4 @@
+/* for the setting panel */
 .my-modal {
 	z-index: 3;
 	/* padding-top: 100px; */
@@ -27,6 +28,12 @@
 	outline-style: solid;
 	outline-color: black; */
 	/* width: 600px */
+}
+
+/* for the scale bar in the lower left of the web map */
+.my-margin-top {
+    margin-top: 32px !important; /* this influences the distance between the text and the bar  */
+	height: 12px; /* this influences the distance to the bottom of the web page */
 }
 
 .span-40{

@@ -425,12 +425,12 @@ void main()
 
         if (tree_setting.do_blend == true) {
             gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         }
         else {
             gl.disable(gl.BLEND)
         }
-
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
     }
 }
@@ -568,10 +568,11 @@ void main()
         }
         else {
             gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         }        
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        
         //renderer._clearDepth()
-        //gl.disable(gl.BLEND)
+
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 
         //gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readout);
@@ -677,6 +678,7 @@ void main()
 
         if (tree_setting.do_blend == true) {
             gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
         }
         else {
             //After an area merges another area, we can see a thin sliver.
@@ -684,7 +686,7 @@ void main()
             //but the alpha value does not have influence anymore
             gl.disable(gl.BLEND)
         }
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) //make it transparent according to alpha value
+        
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPosBufr.numItems);
 

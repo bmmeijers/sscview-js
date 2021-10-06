@@ -43,7 +43,7 @@ class LayerControl {
 
         //The hierarchy of the elements of controlling layers
         //modal_content
-        //  fs_div (one lyr_setting_div for each map)
+        //  fs_div (one fs_div for each map)
         //    lyr_fs
         //      fs_legend
         //      lyr_setting_div (one lyr_setting_div for each layer)
@@ -97,10 +97,10 @@ class LayerControl {
             let canvaslyrnm = canvas_nm_bar + lyrnm
             let id_cb = canvaslyrnm + '-cb'
             let topic_cb = 'setting.layer.' + id_cb
-            cb_lyrnm.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggleLayer(this)"> ` + lyrnm
+            cb_lyrnm.innerHTML = `<input type="checkbox" id=${id_cb} onclick="toggleCb(this)"> ` + lyrnm
             let cb = document.getElementById(id_cb)
             cb.checked = tree_setting.do_draw
-            cb.value = topic_cb
+            cb.value = topic_cb  //will be used as a topic for publishing
 
 
             msgbus.subscribe(topic_cb, (topic, message, sender) => {                
@@ -108,14 +108,14 @@ class LayerControl {
                 this.map.abortAndRender();
             });
 
-
+            //for opacity ===========================================
             var opacity_div = document.createElement("div");
             lyr_setting_div.append(opacity_div)
 
             var opacitytext_div = document.createElement("span")
             opacity_div.appendChild(opacitytext_div)
             opacitytext_div.className = 'w3-show-inline-block'
-            opacitytext_div.innerHTML = 'opacity: '
+            opacitytext_div.innerHTML = 'Opacity: '
 
             //make the slider for the opacity
             var opacitytext_span = document.createElement("span");
@@ -138,6 +138,7 @@ class LayerControl {
 
             let topic_opacity = 'setting.layer.' + canvaslyrnm + '_opacity-slider'
 
+
             //subscription of the tree_setting opacity value
             msgbus.subscribe(topic_opacity, (topic, message, sender) => {
                 opacitytext_span.innerHTML = message;
@@ -149,7 +150,31 @@ class LayerControl {
             slider.addEventListener('input', () => {
                 msgbus.publish(topic_opacity, parseFloat(slider.value));
             });
-            
+
+
+            //for color adapting ===========================================
+            var coloradapt_div = document.createElement("div");
+            lyr_setting_div.append(coloradapt_div)
+            var coloradapttext_div = document.createElement("span")
+            coloradapt_div.appendChild(coloradapttext_div)
+            coloradapttext_div.className = 'w3-show-inline-block'
+            coloradapttext_div.innerHTML = 'Color adapting: '
+
+            let coloradapt_id_cb = canvaslyrnm + '-coloradapt-cb'
+            let topic_coloradapt_cb = 'setting.layer.' + coloradapt_id_cb
+            coloradapttext_div.innerHTML += `<input type="checkbox" id=${coloradapt_id_cb} onclick="toggleCb(this)"> `
+            let coloradapt_cb = document.getElementById(coloradapt_id_cb)
+            coloradapt_cb.checked = tree_setting.do_color_adapt
+            coloradapt_cb.value = topic_coloradapt_cb
+
+
+            //subscription of the tree_setting opacity value
+            msgbus.subscribe(topic_coloradapt_cb, (topic, message, sender) => {
+                tree_setting.do_color_adapt = message;
+                this.map.abortAndRender();
+            });
+
+
             msgbus.subscribe('go-to-start', (topic, message, sender) => {
                 //opacity value of a layer
                 slider.value = initial_tree_setting.opacity;
@@ -157,6 +182,9 @@ class LayerControl {
                 //if a layer should be displayed or not
                 cb.checked = initial_tree_setting.do_draw
                 msgbus.publish(topic_cb, initial_tree_setting.do_draw);
+                //if the color of the eaten object should be adapted
+                coloradapt_cb.checked = initial_tree_setting.do_color_adapt
+                msgbus.publish(topic_coloradapt_cb, initial_tree_setting.do_color_adapt);
             });
         });
     }
@@ -165,12 +193,20 @@ class LayerControl {
 
 // Make function toggleLayer globally accessible so that it can be used in the innerHTML of an HTML element
 // see https://stackoverflow.com/questions/14769158/making-js-local-function-globally-accessible
-window.toggleLayer = function(cb) {
+window.toggleCb = function(cb) {
     let msgbus = new varioscale.MessageBusConnector();
     let topic = cb.value;
 
     //this topic is subscribed in method add_layercontrols of class LayerControl
     msgbus.publish(topic, cb.checked);
 }
+
+//window.toggleColorAdapt = function (cb) {
+//    let msgbus = new varioscale.MessageBusConnector();
+//    let topic = cb.value;
+
+//    //this topic is subscribed in method add_layercontrols of class LayerControl
+//    msgbus.publish(topic, cb.checked);
+//}
 
 export default LayerControl
