@@ -4323,8 +4323,15 @@
             this._abort();
         }
         this._action = 'zoomAnimated';
-        //console.log('map.js this._interaction_settings.time_factor0:', this._interaction_settings.time_factor)
-        //console.log('map.js zoom_factor:', zoom_factor)
+
+        //zoom out to get the specified scale, e.g., 1:67217
+        //if (zoom_factor < 1)
+        //{
+        //let scale_denominator = this.getTransform().getScaleDenominator()
+        //zoom_factor = scale_denominator / 67217
+        //}
+            
+
         var interpolator = this.animateZoom(x, y, zoom_factor);
 
         var zoom_duration = this._interaction_settings.zoom_duration * this._interaction_settings.time_factor;
