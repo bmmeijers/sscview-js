@@ -45,6 +45,27 @@ function mul(a, b) {
     return result;
 }
 
+/** Returns dot product of v1 and v2 */
+function dot(v1, v2) {
+    let dot_value = 0;
+    for (let i = 0; i < v1.length; i++) {
+        dot_value += v1[i] * v2[i];
+    }
+    return dot_value;
+}
+
+/** Returns the norm of v, *squared*. */
+function norm2(v) {
+
+    return dot(v, v);
+}
+
+/** L2 norm ~= euclidean length */
+function norm(a) {
+    return Math.sqrt(norm2(a));
+}
+
+
 /** flyTo interpolation, produces a function
 that can interpolate for a fly to path, given the setup of
 start - end position and scale and total duration */
@@ -62,6 +83,9 @@ export function doFlyTo(startCenter, startDenominator, size, targetCenter, targe
 
     let travelVector = sub(targetCenter, startCenter)
     console.log(`travel vec := ${travelVector} `)
+    
+    let travelDist = norm(travelVector)
+    console.log (travelDist)
     // bail out -- no animation, just jump
     //    let options = options || {};
     //    if (options.animate === false || !Browser.any3d) {
@@ -83,7 +107,7 @@ export function doFlyTo(startCenter, startDenominator, size, targetCenter, targe
     let w0 = Math.max(size[0], size[1]),
         w1 = w0 * targetDenominator / startDenominator, // this.getZoomScale(startDenominator, targetDenominator),
         u1 = (distance(startCenter, targetCenter)) || 1,
-        rho = 1.2, // Parameter that we can use to influence the steepness of the arc
+        rho = Math.sqrt(2), // Parameter that we can use to influence the steepness of the arc
         rho2 = rho * rho;
 
 //    console.log(`w0 ${w0}`)
@@ -96,7 +120,7 @@ export function doFlyTo(startCenter, startDenominator, size, targetCenter, targe
         let s1 = i ? -1 : 1,
             s2 = i ? w1 : w0,
             t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1,
-            b1 = 2 * s2 * rho2 * u1,
+            b1 = 2.0 * s2 * rho2 * u1,
             b = t1 / b1,
             sq = Math.sqrt(b * b + 1) - b;
         // workaround for floating point precision bug when sq = 0, log = -Infinite,
@@ -118,7 +142,14 @@ export function doFlyTo(startCenter, startDenominator, size, targetCenter, targe
 //    console.log(S)
     
     let start = now()
-    let duration = durationSecs * 1000
+    let factor = 1.0
+    if (travelDist > 50000) {
+        factor = 1.5
+    }
+
+    let duration = durationSecs * factor * 1000
+    
+
 
         // duration = options.duration ? 1000 * options.duration : 1000 * S * 0.8;
 
@@ -151,7 +182,7 @@ export function doFlyTo(startCenter, startDenominator, size, targetCenter, targe
         }
 
     }
-    return interpolate
+    return [interpolate, duration / 1000.0]
 }
 
 //function test() {

@@ -125,6 +125,8 @@ export function dragHandler(map) {
         // // (to prevent map moving too far: heuristic, half the window size)
         // var tx = Math.max(Math.min((vx * 0.5) * (duration / 1000), max_distance), -max_distance)
         // var ty = Math.max(Math.min((vy * 0.5) * (duration / 1000), max_distance), -max_distance)
+
+
         // map.panAnimated(tx, ty);
 
         // FIXME: settings
@@ -132,6 +134,10 @@ export function dragHandler(map) {
         // var duration = 1000; // parseFloat(document.getElementById('panduration').value);
         let tx = (vx * 0.5) * duration;
         let ty = (vy * 0.5) * duration;
+
+        console.log(duration)
+        console.log(tx)
+        console.log(ty)
         _trace = null;
         map.panAnimated(tx, ty);
         // console.log('mouseup')

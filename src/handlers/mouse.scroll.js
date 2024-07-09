@@ -26,7 +26,7 @@ export function scrollHandler (map) {
         evt.preventDefault();
         // return if previous evt is shorter than n msec ago
         const now = _now();
-        if ((now - _prev) < 20)
+        if ((now - _prev) < 5)
         {
             return 
         }
@@ -54,9 +54,11 @@ export function scrollHandler (map) {
 
         // standard value for zoom scroll_factor
         var scroll_factor = 0.1;
-        const direction = Math.max(-1, Math.min(1, -value));
+        let direction = Math.max(-1, Math.min(1, -value));
         if (_trace === null)
         {
+            // FIXME: use the trace for determining the direction
+            // i.e. average few wheel clicks
             _trace = new Trace(direction);
         }
         else
@@ -99,11 +101,12 @@ export function scrollHandler (map) {
                     scroll_factor = 0.5
                     break;
             }
-            scroll_factor *= getspeed()
-            _trace.shift(2000);
+            scroll_factor *= _map._interaction_settings.zoom_factor  //getspeed()
+            _trace.shift(200);
 //            console.log(delta + " " + prev[1] + " " + scroll_factor);
         }
-
+        // determine average dir
+        direction = _trace.average() >= 0 ? +1 : -1;
         //if the canvas has size 800 x 800, 
         //evt.clientX: x-coordinate in pixel, starting from the left of the canvas (800 x 800)
         //evt.clientY: y-coordinate in pixel, starting from the top of the canvas (800 x 800)        
@@ -129,16 +132,16 @@ export function scrollHandler (map) {
 
 
 function getspeed() {
-    var radios = document.getElementsByName('speed');
-    let factor = 1
-    for (var i = 0, length = radios.length; i < length; i++) {
-        if (radios[i].checked) {
-            // do whatever you want with the checked radio
-            factor = parseFloat(radios[i].value)
-            // only one radio can be logically checked, don't check the rest
-            break;
-        }
-    }
+    // var radios = document.getElementsByName('speed');
+    let factor = 4
+//    for (var i = 0, length = radios.length; i < length; i++) {
+//        if (radios[i].checked) {
+//            // do whatever you want with the checked radio
+//            factor = parseFloat(radios[i].value)
+//            // only one radio can be logically checked, don't check the rest
+//            break;
+//        }
+//    }
 
     return factor
 }
@@ -150,13 +153,13 @@ export function zoomButtonHandler(map) {
 
     document.getElementById("zoomInButton").addEventListener('click',
         function () {
-            map.zoomInAnimated(canvas.width / 2, canvas.height / 2, getspeed())
+            map.zoomInAnimated(canvas.width / 2, canvas.height / 2, map._interaction_settings.zoom_factor ) //getspeed())
         }
     )
 
     document.getElementById("zoomOutButton").addEventListener('click',
         function () {
-            map.zoomOutAnimated(canvas.width / 2, canvas.height / 2, getspeed())
+            map.zoomOutAnimated(canvas.width / 2, canvas.height / 2, map._interaction_settings.zoom_factor )// getspeed())
         }
     )
 }

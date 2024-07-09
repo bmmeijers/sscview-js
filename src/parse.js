@@ -35,6 +35,7 @@ function parse_obj(txt) {
 
     //let grouped_triangles = [] //for webgl, it is important to keep the order of the triangles in a group
 
+    var edgeId = null
 
     txt.split('\n').forEach(line => {
         // skip empty line
@@ -45,6 +46,7 @@ function parse_obj(txt) {
         //in order to remove the empty element, .replace(/\s*$/, '') is used.
         line = line.replace(/\s*$/, ''); //remove all the spaces at the end.
         let words = line.split(' ')
+        
 
         // dispatch based on first character on the line
         switch (words[0])
@@ -89,7 +91,10 @@ function parse_obj(txt) {
                     //console.log('')
                     //console.log('parse.js words[1]:', words[1])
                     step_high = parseFloat(words[1])
-                    //console.log('parse.js step_high:', step_high)
+                    edgeId = parseInt(words[2])
+                   // if (edgeId == 55636) {
+                   //     console.log('parse.js step_high:', step_high, 'for edgeId 55636')
+                   // }
                 }
                 break
             }
@@ -105,11 +110,19 @@ function parse_obj(txt) {
                 let point_records = [];
                 for (let j = 0; j < polyline.length; j++) {
                     //console.log('')
-                    //console.log('parse.js polyline.length:', polyline.length)
+
                     //console.log('parse.js j:', j)
                     let pt = polyline[j];
                     //console.log('parse.js pt:', pt)
+                    console.assert(pt[2] < step_high)
                     point_records.push([pt[0], pt[1], pt[2], step_high]); //pt[2] is step_low
+                    //point_records.push([pt[0], pt[1], 0.0, step_high]); //pt[2] is step_low
+                }
+
+                if (edgeId === 22006) // 55636 || edgeId === 60833)
+                {
+                    console.log(`parse.js polyline for ${edgeId}:`, polyline)
+                    console.log(`         point_records for ${edgeId}:`, point_records)
                 }
 
                 for (var k = 0; k < point_records.length - 1; k++) {
@@ -142,7 +155,7 @@ function parse_obj(txt) {
             }
         }
     })
-
+    
     //trianglegroups.push(grouped_triangles)
     //let trianglegroup_dts = [] //a list of dictionaries; each dictionary stores a group of triangles
     //for (var i = 1; i < trianglegroups.length; i++) { //trianglegroups[0] is empty

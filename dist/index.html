@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Test</title>
+    <title>Space Scale Cube viewer</title>
     <link rel="shortcut icon" href="#">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -412,6 +412,9 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
         box-sizing: border-box;
       }
       
+      #suggestion-output {
+        width: 100%;
+      }
       
 /* debug touch positions: initially outside of view */
 #touchCenter,
@@ -472,8 +475,53 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
         }
         // apparently the browser does not always resize the canvas
         // hence, we need to manually call resize on the mapview
-        resize()
+        // resize()
       };
+
+    let subscribeScale = (map) => {
+      let msgbus = new varioscale.MessageBusConnector();
+      msgbus.subscribe('map.scale', (topic, message, sender) => {
+        if (mapview === null || sender !== mapview.msgbus.id) return;
+        const scale = (Math.round(message[1] / 1) * 1).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "")
+        const xy = message[0]
+        let el = document.getElementById("scale-denominator-placeholder");
+        el.textContent = " 1:" + scale + "  [" + xy[0].toFixed(0)  + ", " + xy[1].toFixed(0) + "]";
+      });
+    }
+    subscribeScale(mapview);
+
+    let subscribeStep = (map) => {
+      let msgbus = new varioscale.MessageBusConnector();
+      msgbus.subscribe('map.step', (topic, message, sender) => {
+        if (mapview === null || sender !== mapview.msgbus.id) return;
+        const step = message
+        let el = document.getElementById("step-placeholder");
+        el.textContent = step.toFixed(0);
+      });
+    }
+    subscribeStep(mapview);
+
+    let subscribeChunks = (map) => {
+      let msgbus = new varioscale.MessageBusConnector();
+      msgbus.subscribe('data.ssc.chunksInView', (topic, message, sender) => {
+        if (mapview === null || sender !== mapview.msgbus.id) return;
+        const chunks = message
+        let el = document.getElementById("chunks-placeholder");
+        el.textContent = chunks.toFixed(0) + " chunks in view";
+      });
+    }
+    subscribeChunks(mapview);
+
+    let subscribeDownloads = (map) => {
+      let msgbus = new varioscale.MessageBusConnector();
+      msgbus.subscribe('data.ssc.chunksDownloading', (topic, message, sender) => {
+        if (mapview === null || sender !== mapview.msgbus.id) return;
+        const chunks = message
+        let el = document.getElementById("downloads-placeholder")
+        el.textContent = "fetching " + chunks.toFixed(0)
+      });
+    }
+    subscribeDownloads(mapview);
 
 
     class Tour {
@@ -484,7 +532,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
         start(durationInMsec) {
 
             let i = 0
-            let signal = null
+            var signal = null
             /** feeling lucky with the pdok geocoder? */
             let places = [
                 { x: 210240.397, y: 541838.994, scaleDenominator: 1500 },
@@ -520,7 +568,6 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
                 clearTimeout(signal)
                 mapview.abortAndRender()
             }
-
             this.abort = abort
         }
         
@@ -529,16 +576,86 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
         }
       }
 
+
+
+        // -- start slider -- 
+        // let init_boundary_width_slider = () => {
+        //     let msgbus = new varioscale.MessageBusConnector();
+        //     msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => { 
+        //         let el = document.getElementById("width-value");
+        //         el.innerHTML = message;
+        //     } );
+        //     let slider = document.getElementById("boundary-width");
+        //     slider.addEventListener('input',
+        //         () => {
+        //             msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+        //         }
+        //     );
+        //     msgbus.publish("settings.render.boundary-width", parseFloat(slider.value));
+        // };
+        
+        let init_slider = (name) => {
+            let msgbus = new varioscale.MessageBusConnector();
+            let slider = document.getElementById(name);
+            slider.addEventListener('input',
+                () => {
+                    msgbus.publish("settings.interaction." + name, parseFloat(slider.value) / 1000.0);
+                    document.getElementById(name+"-value").innerHTML = parseFloat(slider.value) / 1000.0 + "s."
+                    // map.abortAndRender();
+                }
+            );
+            msgbus.publish("settings.interaction." + name, parseFloat(slider.value) / 1000.0);
+        }
+        /*
+        //init_slider("zoom-factor");
+        
+        -- end of slider -- 
+        */
+
+
+
       function DOMContentLoaded() {
+
+            
+            init_slider("pan-duration");
+            init_slider("zoom-duration");
+
+            let registerZoomFactor = () => {
+              const form = document.getElementById("zoom-factor-form");
+              let msgbus = new varioscale.MessageBusConnector();
+              const myHandler = (event) => {
+                
+                console.log("Radio clicked value", form["zoom-factor"].value);
+
+                msgbus.publish("settings.interaction.zoom-factor", parseFloat(form["zoom-factor"].value));
+              };
+              form.addEventListener("change", myHandler);
+            }
+            registerZoomFactor()
+
+            // init_boundary_width_slider();
+
+
             let map_nm = '' // "left" or "right" if we want to compare two maps in the same brower tab
             let canvas_nm = 'view'
             let canvas = document.getElementById(canvas_nm);
             var map_settings = {
                 'initialization': {
                     // 1960 84423.99 447517.43
-                    scale_den: 48000, //10_000, //top10nl, start_scale
-                    center2d: [179482.98, 434121.39],
+                    // scale_den: 48000, //10_000, //top10nl, start_scale
+                    // center2d: [179482.98, 434121.39],
 
+                    // limburg: 1:227861 [193822, 317733
+                    //scale_den: 50000,
+                    //center2d: [184902, 311846],
+                    
+                    // tiny limburg
+                    //scale_den: 10000,
+                    //center2d: [190697, 309311],
+
+                    // 1:24000 [233040, 556282]
+                    scale_den: 384000,
+                    center2d: [233040, 556282],
                     'navigationBar_title': '',
                 },
                 'canvas_nm': canvas_nm,
@@ -546,7 +663,8 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
                     'tree_root_file_nm': 'tree_smooth.json',
                     'tree_root_href': 'data/',    // with trailing slash!
                     'tile_root_href': 'data/',
-                    'texture_root_href': 'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
+                    'texture_root_href': 'https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0'//'https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopoachtergrondkaart/EPSG:28992/'
+                     //?service=WMS&request=GetCapabilities
                 }],
                 tree_settings: [
                     {
@@ -574,6 +692,12 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             // Make a new map instance
             mapview = new varioscale.Map(map_settings);
 
+            function resize() {
+              let el = document.getElementById("view")
+              console.log(`${el.clientWidth} ${el.clientHeight}`)
+              mapview.resize(el.clientWidth, el.clientHeight)
+            }
+
             let pdokSuggest = new varioscale.PdokSuggestWidget(mapview)
 
             // do we need global access to the map?
@@ -583,32 +707,222 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             const resizeObserver = new ResizeObserver(resize);
             resizeObserver.observe(document.getElementById(canvas_nm), {box: 'content-box'});
 
-            tour = new Tour()
+            // tour = new Tour()
+
+
+
+            window.addEventListener('resize', resize, false);
+            window.addEventListener('orientationchange', resize);     
+
+            
+            
+
         }
         
 
-        function resize() {
-            let el = document.getElementById("view")
-            console.log(`${el.clientWidth} ${el.clientHeight}`)
-            mapview.resize(el.clientWidth, el.clientHeight)
-        }
-
-        window.addEventListener('resize', resize, false);
-        window.addEventListener('orientationchange', resize);          
+     
 
         window.addEventListener('DOMContentLoaded', DOMContentLoaded);
     </script>
+    
+    <script>
+// /** https://github.com/rusakov92/js-hash-router */
+// var Router = (function() {
+
+// var root = '/',
+//     routes = [],
+//     // If True searches /404 rout
+//     // If False notting happens!
+//     has404 = false;
+
+// /**
+//  * Add new route to the routes array.
+//  *
+//  * @param  {String}   path       The path you want to register
+//  * @param  {Function} controller The Function to execute
+//  * @retrun {Object}              To chaine the methods
+//  */
+// function add(path, func) {
+//     routes.push(buildPath(path, func));
+//     return this;
+// }
+
+// /**
+//  * Execute the router function.
+//  *
+//  * @param  {String} path If you want to test path
+//  */
+// function execute(path) {
+
+//     path = path.slice(2).split('/');
+
+//     var route = searchRoute(path),
+//         properties = [];
+
+//     if (!route) {
+//         if (has404) {
+//             goTo('404');
+//         }
+//         return;
+//     }
+
+//     if (route.propIndex) {
+//         route.propIndex.forEach(function(value) {
+//             properties.push(path[value]);
+//         });
+//     }
+
+//     route.func.apply({}, properties);
+// }
+
+// /**
+//  * Add event listener to work on hash change.
+//  *
+//  * @return {Object} To chaine the methods
+//  */
+// function start() {
+//     execute(getHash());
+//     window.addEventListener('hashchange', function() {
+//         execute(getHash());
+//     });
+
+//     return this;
+// }
+
+// /**
+//  * Go to route.
+//  *
+//  * @param  {String} path Path you want to go
+//  * @return {Object}      To chaine the methods
+//  */
+// function goTo(path) {
+//     window.location.hash = path || root;
+//     return this;
+// }
+
+// /**
+//  * Build object from path to execute easier.
+//  *
+//  * @param  {String}   path Path to build
+//  * @param  {Function} func Function to execute
+//  * @return {Object}        Return object with all the properties
+//  */
+// function buildPath(path, func) {
+
+//     path = path.slice(1).split('/');
+
+//     var propIndex = [],
+//         pathInfo = {
+//             func: func,
+//             path: path,
+//             // Position of dynamic parts if any
+//             propIndex: undefined,
+//             // Position of static parts
+//             checkIndex: []
+//         };
+
+
+//     path.forEach(function(value) {
+//         if(value.search(/^{+|}$/g) !== -1) {
+
+//             if (propIndex.indexOf(path.indexOf(value)) !== -1) {
+//                 throw 'Identifiers must be unique!';
+//             }
+
+//             propIndex.push(path.indexOf(value));
+//         }
+//         else {
+//             pathInfo.checkIndex.push(path.indexOf(value));
+//         }
+//     });
+
+//     pathInfo.propIndex = propIndex.length ? propIndex : null;
+
+//     return pathInfo;
+// }
+
+// /**
+//  * Search route with given path.
+//  *
+//  * @param  {Array}  path The path must be array, cleared and splite on "/" symbol
+//  * @return {Object}      Returns the route or null
+//  */
+// function searchRoute(path) {
+
+//     for (var i = routes.length - 1; i >= 0; i--) {
+
+//         var route = routes[i];
+
+//         if (route.path.length === path.length) {
+
+//             var compare = [],
+//                 match = [];
+
+//             for (var j = 0; j < route.checkIndex.length; j++) {
+//                 compare.push(path[route.checkIndex[j]]);
+//                 match.push(route.path[route.checkIndex[j]]);
+//             }
+
+//             if (compare.join('') === match.join('')) {
+//                 return route;
+//             }
+//         }
+//     }
+
+//     return null;
+// }
+
+// /**
+//  * Get the hash from the URL.
+//  *
+//  * @return {String}
+//  */
+// function getHash() {
+//     return window.location.hash || '#' + root;
+// }
+
+// return {
+//     config: function(opt) {
+//         root = opt.root || '/';
+//         has404 = opt.has404 || false;
+//         return this;
+//     },
+//     add: add,
+//     start: start,
+//     goTo: goTo
+// };
+
+// })();
+
+// Router
+// .config({
+// // Changes the default rout
+// root: '/login',
+// // Adds 404 page
+// has404: true
+// })
+// .add('/404', function() {
+// console.log('404 page');
+// })
+// .add('/page1', function() {
+// console.log('page1');
+// })
+// .add('/register', function() {
+// console.log('register page');
+// })
+// .add('/user/{id}/page/{number}', function(id, number) {
+// console.log('User with' + id + ' on Page ' + number);
+// })
+// //.start();
+
+    </script>
   </head>
   
-  <!--
-    https://github.com/rusakov92/js-hash-router
-  -->
   <body class="is-marginless">
 
     <div id="app" class="z0">
 
       <div id="container" class="relative full-height">
-
 
         <!-- map -->
         <div id="outer2" class="absolute no-overflow full-width full-height z0">
@@ -631,8 +945,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
               </aside>
 
 
-            <div id="upper-left" class="top-left absolute yellow" >
-              UL
+            <div id="upper-left" class="top-left absolute" >
               <button onclick="toggleDrawer();">Toggle drawer</button>
             </div>
 
@@ -643,7 +956,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             -->
 
             <div id="upper-right" class="top-right absolute yellow" >
-              UR<div id='geocode-placeholder'></div>
+              <div id='geocode-placeholder'></div>
             </div>
 
             <!--
@@ -652,8 +965,14 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             </div>
             -->
 
-            <div id="bottom-left" class="bottom-left absolute yellow">
-              BL
+            <!-- bottom left -->
+            <div id="bottom-left" class="bottom-left absolute text-black">
+              <div id="scale-denominator-placeholder"></div>
+              <div>step: <span id="step-placeholder" ></span></div>
+              <div>
+                <span id="chunks-placeholder" ></span> &ndash;
+                <span id="downloads-placeholder"></span>
+              </div>
             </div>
 
             <!--
@@ -662,10 +981,10 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             </div>
             -->
 
-            <div id="bottom-right" class="bottom-right absolute yellow">
-                <button style="pointer-events: auto;" id="zoomInButton"><b>+</b></button>
-                <button style="pointer-events: auto;" id="zoomOutButton"><b>&mdash;</b></button>
-              BR
+            <!-- bottom right -->
+            <div id="bottom-right" class="bottom-right absolute">
+              <button style="pointer-events: auto;" id="zoomInButton"><b>+</b></button>
+              <button style="pointer-events: auto;" id="zoomOutButton"><b>&mdash;</b></button>
             </div>
           
           </div>
@@ -677,12 +996,54 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
         <div id="outer1" class="is-hidden is-marginless no-overflow red absolute half-width full-height shadow-one-side z0">
           <div id="inner1" class="white absolute auto-scroll full-width full-height" style="padding: 20px;">
             <button onclick="toggleDrawer();">Toggle drawer</button>
-            
 
+            
+            <header class="w3-container w3-light-grey w3-padding"><h2>Interaction settings</h2></header>
+
+            <div class="w3-container w3-padding">
+
+                <div class="setting">
+                    <fieldset>
+                        <legend> zoom factor </legend>
+                        <div class="w3-margin">
+                          <form id="zoom-factor-form">
+                            <label for="speed-025">small</label>
+                            <input type="radio" id="speed-025" name="zoom-factor" value="0.25" class="radio-btn">
+                            <label for="speed-05"></label>
+                            <input type="radio" id="speed-05" name="zoom-factor" value="0.5" class="radio-btn">
+                            <label for="speed-1"></label>
+                            <input type="radio" id="speed-1" name="zoom-factor" value="1" checked="checked" class="radio-btn">
+                            <label for="speed-2"></label>
+                            <input type="radio" id="speed-2" name="zoom-factor" value="2" class="radio-btn">
+                            <label for="speed-3"></label>
+                            <input type="radio" id="speed-4" name="zoom-factor" value="4" class="radio-btn">
+                            <label for="speed-4">large</label>
+                          </form>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> zoom animation (short-long)</legend>
+                        <div>value: <span id="zoom-duration-value"></span></div>
+                        <div class="w3-padding">
+                            short (0s)<input type="range" value="1001" step="25" min="0" max="5001" id="zoom-duration" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend> pan animation (short-long)</legend>
+                        <div>value: <span id="pan-duration-value"></span></div>
+                        <div class="w3-padding">
+                            short (0s) <input type="range" value="1001" step="100" min="0" max="5001" id="pan-duration" style="margin: 0 16px 0 16px;"> long (5s)
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <!--
             <h1>Hi there</h1>
 
             <h2>Take the 'monopoly' tour</h2>
-                        <button onclick="tour.start(7500);">Start Jumping</button>
+
+            <button onclick="tour.start(7500);">Start Jumping</button>
             <button onclick="tour.stop();">Stop Jumping</button>
 
             <h2>Another section</h2>
@@ -690,7 +1051,27 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id tellus ac sapien luctus fringilla. Suspendisse lorem libero, commodo in quam a, tempor molestie urna. Vivamus volutpat accumsan odio, sodales efficitur sem tempus sit amet. Duis a neque dolor. Cras sit amet blandit est, nec sollicitudin quam. Donec ut aliquet metus. Vivamus tincidunt ligula nec malesuada iaculis. Vestibulum ultrices malesuada orci, ac facilisis nulla euismod quis. Phasellus viverra eros in libero ornare commodo. Nunc quis pharetra ex, non blandit dolor. Aliquam ac elementum risus. Etiam ac ante velit. Sed et enim dignissim quam condimentum ultrices vel ac nulla. Nam sollicitudin ex et fermentum posuere. Sed tristique auctor tellus, sit amet commodo nunc vulputate vitae.
             </p>
 
+            <div id="page1" class="is-hidden">
+              <h1>Page1</h1>
+              <ul>
+                <li><a href="#page1">page 1</a></li>
+                <li><a href="#page2">page 2</a></li>
+                <li><a href="#page3">page 3</a></li>
+              </ul>
+            </div>
+            
+            <div id="page2" class="is-hidden">
+              <h1>Page 2</h1>
+            </div>
+
+            <div id="page3" class="is-hidden">
+              <h1>Page 3</h1>
+            </div>
+
           </div>
+          -->          
+
+
         </div>
 
 

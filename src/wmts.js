@@ -1,3 +1,5 @@
+import { LRU } from './lru';
+
 class Tile
 {
     /** A Tile in the TilePyramid */
@@ -31,14 +33,38 @@ class Tile
     /** the URL where we can get the image for this tile */
     getRequestUrl()
     {
-        let url = "https://geodata.nationaalgeoregister.nl/tiles/service/wmts?"
-        url += "service=WMTS&request=GetTile&version=1.0.0&format=image/png8"
+
+// https://tiles-eu1.arcgis.com/202vNPaQPEKL5sph/arcgis/rest/services/HR_QuickOrtho_2021_RD/MapServer/WMTS/tile/1.0.0/HR_QuickOrtho_2021_RD/{Style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.jpeg
+// style = default
+// tilematrixset = default028mm
+// layer = HR_QuickOrtho_2021_RD
+// tileMatrix = [0, ..., 15]
+
+
+
+        let url = "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0"
+        // let url = "https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0"
+        url += "?"
+        url += "service=WMTS&request=GetTile&version=1.0.0&format=image/png"
         url += "&tileMatrixSet=" + this.tileMatrix.tileMatrixSet
         url += "&layer=" + this.tileMatrix.layer
         url += "&style=" + this.tileMatrix.style
         url += "&tileMatrix=" + this.tileMatrix.level
         url += "&TileCol=" + this.col
         url += "&TileRow=" + this.row
+
+//        let url = "https://tiles-eu1.arcgis.com/202vNPaQPEKL5sph/arcgis/rest/services/HR_QuickOrtho_2021_RD/MapServer/WMTS/tile/1.0.0/HR_QuickOrtho_2021_RD/"
+//        url += "default/"
+//        url += "default028mm/"
+//        url += this.tileMatrix.level + "/"
+//        url += this.row + "/"
+//        url += this.col + ".jpeg"
+
+// style = default
+// tilematrixset = default028mm
+// layer = HR_QuickOrtho_2021_RD
+// tileMatrix = [0, ..., 15]
+
         return url
     }
 
@@ -52,16 +78,12 @@ class Tile
 class TileMatrix
 {
     /** One matrix of tiles in the tile pyramid */
-    constructor(level, scaleDenominator)
+    constructor(layer, level, scaleDenominator)
     {
         this.scaleDenominator = scaleDenominator
 
-//        this.layer = "opentopo"
-//        this.layer = "2016_ortho25"
-        this.layer = "brtachtergrondkaart"
-//        this.layer = "top25raster"
-//        this.layer = "ahn2_05m_ruw"
-        
+        this.layer = layer
+
         this.style = "default"
         this.tileMatrixSet = "EPSG:28992" // some also have 16 levels
 
@@ -147,17 +169,19 @@ class TileMatrix
     }
 }
 
-export class WMTSLayer // TiledWebMapScheme ??
+export class WMTSLayer // TiledWebMapDataSource ?? // WMTSDataSource(layer, baseUrl)
 {
     /** a tiled map layer, with images available at multiple map scales */
-    constructor() // layerName, style, tileMatrixSetName)
+    constructor(layer) // layerName, style, tileMatrixSetName)
     {
         // layer has TileMatrixSet -> TileMatrix[*] -> Tile[*]
         this.tileMatrixSet = []
 
+        // TODO: expose in constructor, so we can make a layer for less than whole pyramid
+        // and make CompositeWMTSLayer, so we can use the top25k/50k/250k inside of 1 object
         let scaleDenominator = 12288000.0
-        for (let i = 0; i < 14; i++) {
-            this.tileMatrixSet.push(new TileMatrix(i, scaleDenominator))
+        for (let i = 0; i < 19; i++) { // MM: 20211201: was 14, changed to 19 for new HighRes aerial photo
+            this.tileMatrixSet.push(new TileMatrix(layer, i, scaleDenominator))
             scaleDenominator /= 2
         }
     }
@@ -198,11 +222,11 @@ let isPowerOf2 = ((value) => { return (value & (value - 1)) == 0 })
 /** generate a random color in rgb space 
 (note, may be biased to darker colors, due to how color space is organized
 */
-let getRandomColor = () =>  {
+let getRandomColor = (opacity=1.0) =>  {
     let r = Math.floor(Math.random() * 255) // Math.min(Math.floor(Math.random() * 256) / 256., 0.75)
     let g = Math.floor(Math.random() * 255) // Math.min(Math.floor(Math.random() * 256) / 256., 0.75)
     let b = Math.floor(Math.random() * 255) // Math.min(Math.floor(Math.random() * 256) / 256., 0.75)
-    return [r, g, b, 0]
+    return [r, g, b, opacity]
 }
 
 // FIXME: maybe use this, later:
@@ -271,42 +295,25 @@ class GPUTile
 //        console.log(coords)
     }
 
-    /** init the texture as a white image of 1x1 pixel */
+    /** init the texture its coordinate buffer */
     initTexture() {
-//        return
         let gl = this.gl
         this.textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
-        let shift = 0.5/256.
+        let shift = 0.0 // 0.5/256.
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
             // we shift 1/2 pixel so that borders 
             // with texture mapping are invisible
+            // maybe better to solve with setting gl.LINEAR / gl.NEAREST ?
             shift, shift,
-            shift, 1-shift,
-            1-shift, shift,
-            1-shift, 1-shift
-            
-//            0., 0.,
-//            0., 1.,
-//            1., 0.,
-//            1., 1.
-            
-//            0.0, 0.0,
-//            0.0, 1.0,
-//            1.0, 1.0,
-//            0.0, 0.0,
-//            1.0, 1.0,
-//            1.0, 0.0
+            shift, 1.0-shift,
+            1.0-shift, shift,
+            1.0-shift, 1.0-shift
         ]), gl.STATIC_DRAW);
-        return // TMP
-        
+//        return
+
 //        this.texture = gl.createTexture();
 //        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-//        // Because images have to be download over the internet
-//        // they might take a moment until they are ready.
-//        // Until then we put a single pixel in the texture so we can
-//        // use it immediately. When the image has finished downloading
-//        // we'll update the texture with the contents of the image.
 //        const level = 0;
 //        const internalFormat = gl.RGBA;
 //        const width = 1;
@@ -314,7 +321,7 @@ class GPUTile
 //        const border = 0;
 //        const srcFormat = gl.RGBA;
 //        const srcType = gl.UNSIGNED_BYTE;
-//        const pixel = new Uint8Array([255, 0, 0, 1]) //getRandomColor());  // white
+//        const pixel = new Uint8Array(getRandomColor());  // random color
 //        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
 //            width, height, border, srcFormat, srcType,
 //            pixel);
@@ -333,16 +340,24 @@ class GPUTile
     /** once we have an image download, replace the initial 1x1 white pixel */
     uploadTexture(bitmap)
     {
+//        return
         // guard: somehow texture has been removed already, so bail out
 //        if (this.texture === null) { return }
         let gl = this.gl
         this.texture = gl.createTexture();
         // no need to create new texture here, just replace the uploaded bitmap
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        // @!FIXME: dependent on whether the remote image has a transparency
+        // channel (A) we should either use gl.RGB or gl.RGBA here...
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
         // create mip maps
         if (isPowerOf2(bitmap.width) && isPowerOf2(bitmap.height)) {
+
             gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+//            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+//            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         } else {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -350,10 +365,10 @@ class GPUTile
         }
     }
 
-    /** destroy the gpu resources that were allocated */
-    destroy()
+    /** dispose the gpu resources that were allocated */
+    dispose()
     {
-        let gl = this.gl
+        const gl = this.gl
         // clear buffers 
         let buffers = [this.vertexCoordBuffer, this.textureCoordBuffer]
         buffers.forEach(
@@ -447,35 +462,28 @@ class DrawProgram {
 
     clearColor() {
         let gl = this.gl
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
     }
     
-    drawTile(matrix, tile)
+    drawTile(matrix, tile, opacity)
     {
         // guard: if no data in the tile, we will skip rendering
         let triangleVertexPosBufr = tile.vertexCoordBuffer;
         if (triangleVertexPosBufr === null || tile.texture === null) {
-//            console.warn('no data found for rendering')
             return;
         }
-        // render
         let gl = this.gl;
         let shaderProgram = this.shaderProgram;
         gl.useProgram(shaderProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPosBufr);
-        //stride = 24: each of the six values(x, y, z, r_frac, g_frac, b_frac) takes 4 bytes
-        //itemSize = 3: x, y, z;   
-//        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 3, 24, 0);
         this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexPosition_modelspace', 2, 2*4, 0);
-        //itemSize = 3: r_frac, g_frac, b_frac;   offset = 12: the first 12 bytes are for x, y, z
-//        this._specifyDataForShaderProgram(gl, shaderProgram, 'vertexColor', 3, 24, 12);
 
         let M_location = gl.getUniformLocation(shaderProgram, 'M');
         gl.uniformMatrix4fv(M_location, false, matrix);
 
         let opacity_location = gl.getUniformLocation(shaderProgram, 'opacity');
-        gl.uniform1f(opacity_location, 1.0);
+        gl.uniform1f(opacity_location, opacity);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, tile.textureCoordBuffer)
         this._specifyDataForShaderProgram(gl, shaderProgram, 'aTextureCoord', 2, 0, 0)
@@ -489,25 +497,248 @@ class DrawProgram {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-//        gl.disable(gl.BLEND);
-//        gl.enable(gl.DEPTH_TEST);
-//        gl.drawArrays(gl.TRIANGLES, 0, tile.content.buffer.numItems); // FIXME!
-
         gl.disable(gl.CULL_FACE)
         gl.disable(gl.DEPTH_TEST)
-//        gl.disable(gl.BLEND)
 
-        // mode  -- A GLenum specifying the type primitive to render.
-        // first -- A GLint specifying the starting index in the array of vector points. 
-        // count -- A GLsizei specifying the number of indices to be rendered. 
-
-        // 2 triangles per tile -> 6 vertices
-//        TRIANGLE_STRIP
-//        gl.drawArrays(gl.TRIANGLES, 0, 6)
+        // 2 triangles per tile -> 4 vertices organised as strip
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
-
 }
+
+
+class FboDrawProgram {
+    constructor(gl, vertexShaderText, fragmentShaderText) {
+        const vertexShader   = loadShader(gl, gl.VERTEX_SHADER,   vertexShaderText);
+        const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
+
+        // create program: attach, link, validate, detach, delete
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            console.error('ERROR linking program!', gl.getProgramInfoLog(shaderProgram));
+            return;
+        }
+        gl.validateProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.VALIDATE_STATUS)) {
+            console.error('ERROR validating program!', gl.getProgramInfoLog(shaderProgram));
+            return;
+        }
+
+        this.shaderProgram = shaderProgram;
+        this.gl = gl;
+
+        this.vertexTexCoordBuffer = null
+        this.initVertexBuffer()
+       
+         // creates a shader of the given type, uploads the source and
+        // compiles it.
+        function loadShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source); // Send the source of the shader
+            gl.compileShader(shader); // Compile the shader program
+            // See if it compiled successfully
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('ERROR occurred while compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+    }
+
+    clearColor() {
+        let gl = this.gl
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
+    }
+
+    draw(texture, opacity) {
+        //console.log('drawprograms.js tree_setting.opacity 3:', tree_setting.opacity)
+        let gl = this.gl;
+        let shaderProgram = this.shaderProgram;
+        gl.useProgram(shaderProgram);
+
+        this.bindVertexBuffer()
+        this.bindAttributes()
+
+        let opacityLocation = gl.getUniformLocation(this.shaderProgram, 'opacity');
+        gl.uniform1f(opacityLocation, opacity);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        const uSampler = gl.getUniformLocation(shaderProgram, 'uSampler');
+        gl.uniform1i(uSampler, 0);
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.disable(gl.DEPTH_TEST);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // just 2 triangles to render the texture
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    initVertexBuffer() {
+        let gl = this.gl
+        var verticesTexCoords = new Float32Array([
+            // Vertex coordinates, texture coordinate
+            -1,  1,  0.0, 1.0,
+            -1, -1,  0.0, 0.0,
+            1,   1,  1.0, 1.0,
+            1,  -1,  1.0, 0.0,
+        ]);
+        // var n = 4; // The number of vertices
+
+        // Create the buffer object
+        var vertexTexCoordBuffer = gl.createBuffer();
+        if (!vertexTexCoordBuffer) {
+            console.error('Failed to create the buffer object');
+            return
+        }
+        // Bind the buffer object to target
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
+        
+        console.log(`FSIZE should be: ${verticesTexCoords.BYTES_PER_ELEMENT}`);
+        this.vertexTexCoordBuffer = vertexTexCoordBuffer
+    }
+    
+    bindVertexBuffer() {
+        let gl = this.gl
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTexCoordBuffer);
+    }
+    
+    bindAttributes() {
+        let gl = this.gl
+        const FSIZE = 4 // verticesTexCoords.BYTES_PER_ELEMENT;
+        //Get the storage location of a_Position, assign and enable buffer
+        var a_Position = gl.getAttribLocation(this.shaderProgram, 'a_Position');
+        if (a_Position < 0) {
+            console.error('Failed to get the storage location of a_Position');
+            return
+        }
+        gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+        gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+        // Get the storage location of a_TexCoord
+        var a_TexCoord = gl.getAttribLocation(this.shaderProgram, 'a_TexCoord');
+        if (a_TexCoord < 0) {
+            console.error('Failed to get the storage location of a_TexCoord');
+            return;
+        }
+        // Assign the buffer object to a_TexCoord variable
+        gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+        gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
+    }
+}
+
+// https://github.com/stackgl/gl-fbo/blob/master/fbo.js
+class OffscreenTexture {
+    constructor(gl) {
+        this.gl = gl
+        this.frameBuffer = null
+        this.texture = null
+        this.depthBuffer = null
+        this.createBuffers()
+    }
+
+    createBuffers() {
+        const gl = this.gl
+        var framebuffer, texture, depthBuffer;
+        // Create a frame buffer object (FBO)
+        framebuffer = gl.createFramebuffer();
+        if (!framebuffer) {
+            console.error('Failed to create frame buffer object');
+            return
+        }
+        // Create a texture object
+        texture = gl.createTexture(); // Create a texture object
+        if (!texture) {
+            console.error('Failed to create texture object');
+            return
+        }
+        // Create a renderbuffer object
+        depthBuffer = gl.createRenderbuffer();
+        if (!depthBuffer) {
+            console.error('Failed to create renderbuffer object');
+            return
+        }
+        this.texture = texture; // Store the texture object
+        this.depthBuffer = depthBuffer
+        this.frameBuffer = framebuffer
+
+    }
+
+    initFrameBuffer(OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT) {
+        const gl = this.gl
+        if (this.texture === null || this.depthBuffer === null || this.frameBuffer === null) {
+            console.error('framebuffer / texture / depthbuffer not yet initialized')
+            return
+        }
+        let texture = this.texture;
+        let depthBuffer = this.depthBuffer
+        let framebuffer = this.frameBuffer
+
+        // texture
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+        // depth buffer
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+
+        // attach the texture and the depth buffer to the framebuffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+
+        // check if the framebuffer is configured correctly
+        var e = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (gl.FRAMEBUFFER_COMPLETE !== e) {
+            console.error('Frame buffer object is incomplete: ' + e.toString());
+            return
+        }
+
+        // unbind the used objects
+        this.unbind()
+    }
+
+    getTexture() {
+        return this.texture
+    }
+
+    setViewport(width, height) {
+        // make sure that the framebuffer
+        this.initFrameBuffer(width, height)
+    }
+
+    clearColor() {
+        let gl = this.gl
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffer
+    }
+
+    bind() {
+        let gl = this.gl
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+        this.clearColor()
+    }
+
+    unbind() {
+        let gl = this.gl
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    }
+}
+
 
 function center2d(box2d) {
     // 2D center of bottom of box
@@ -528,58 +759,33 @@ function distance2d(target, against) {
     return dx2+dy2
 }
 
-
-// Poly fill for browsers that do not support createImageBitmap natively
-// https://dev.to/nektro/createimagebitmap-polyfill-for-safari-and-edge-228
-if (!('createImageBitmap' in window)) {
-    window.createImageBitmap = async function(blob) {
-        return new Promise((resolve, reject) => {
-            let img = document.createElement('img')
-            img.addEventListener('load', function() {
-                resolve(this)
-            })
-            img.src = URL.createObjectURL(blob)
-            // now that we have the image, revoke the blob
-            URL.revokeObjectURL(blob)
+/** a replacement for the createImageBitmap function, 
+as it is not available in all browsers (e.g. webkit) and 
+createImageBitmap behaves differently handling transparent images
+[not sure why]
+*/
+async function createImage(blob) {
+    return new Promise((resolve, reject) => {
+        let img = new Image() // document.createElement('img')
+        img.addEventListener('load', function() {
+            resolve(this)
         })
-    }
+        img.src = URL.createObjectURL(blob)
+        // now that we have the image, revoke the blob
+        URL.revokeObjectURL(blob)
+    })
 }
-
 
 export class WMTSRenderer 
 {
-    constructor(gl, msgBus)
+    constructor(gl, msgBus, layer, progressiveRetrieval = false)
     {
-        this.layer = new WMTSLayer()
+        this.layer = new WMTSLayer(layer)
         this.gl = gl
         this.msgBus = msgBus
+        this.progressiveRetrieval = progressiveRetrieval
         
         this.program = new DrawProgram(this.gl,
-
-//`
-//precision highp float;
-
-//attribute vec3 vertexPosition_modelspace;
-//attribute vec3 vertexColor;
-//uniform mat4 M;
-//varying vec4 fragColor;
-//uniform float opacity;
-
-//void main()
-//{
-//    fragColor = vec4(vertexColor, opacity);
-//    gl_Position = M * vec4(vertexPosition_modelspace, 1);
-//}
-//`,
-//`
-//precision highp float;
-
-//varying vec4 fragColor;
-//void main()
-//{
-//    gl_FragColor = vec4(fragColor);
-//}
-//`
 `
 precision highp float;
 
@@ -608,12 +814,49 @@ uniform float opacity;
 void main()
 {
     vec4 color = texture2D(uSampler, vTextureCoord);
+    if (color.a <= 0.0) {
+        // to re-color / make 1 color transparent 
+        // (does not work well if we have anti-aliased image)
+        // || (color.r > 0.98 && color.g > 0.98 && color.b > 0.98)) color.rgb == makeTransparent.rgb
+        discard;
+    }
     color.a = opacity;
     gl_FragColor = color;
 }
+`)
+        this.fboProgram = new FboDrawProgram(this.gl, `
+precision highp float;
+attribute vec4 a_Position;
+attribute vec2 a_TexCoord;
+varying vec2 v_TexCoord;
+
+void main() {
+    gl_Position = a_Position;
+    v_TexCoord = a_TexCoord;
+}
+`,
 `
-        )
-        this.activeTiles = new Map()
+precision highp float;
+uniform sampler2D uSampler;
+uniform float opacity;
+varying vec2 v_TexCoord;
+void main() {
+    vec4 color = texture2D(uSampler, v_TexCoord);
+    if (color.a == 0.0) {
+        // discard a fully transparent fragment
+         discard; 
+    }  else {
+        color.a = opacity; 
+    } 
+    gl_FragColor = color;
+}
+`)
+        this.offscreenTexture = new OffscreenTexture(this.gl)
+
+//        this.activeTiles = new Map() // Maybe this should be a LRU Cache with maximum size
+
+        // FIXME: what is the right size of the LRU ?
+        this.activeTiles = new LRU(2048, 0, (item) => {item.dispose()})
         this.activeDownloads = new Map()
     }
 
@@ -639,22 +882,24 @@ void main()
         return tilesInView
     }
 
-    update(aabb, scaleDenominator, matrix) {
+    update(aabb, scaleDenominator, matrix, opacity) {
+
+        let tilesInView = null
         let tilesInViewCurrent = this.layer.tilesInView(aabb, scaleDenominator)
         tilesInViewCurrent = this.sortRadially(tilesInViewCurrent, aabb)
-
-//        let tilesInViewAbove2 = this.layer.tilesInView(aabb, 2 * scaleDenominator)
-//        tilesInViewAbove2 = this.sortRadially(tilesInViewAbove2, aabb)
-
-//        let tilesInViewAbove4 = this.layer.tilesInView(aabb, 4 * scaleDenominator)
-//        tilesInViewAbove4 = this.sortRadially(tilesInViewAbove4, aabb)
-
-//        let tilesInView = tilesInViewAbove4
-//        let tilesInView = tilesInViewAbove4.concat(tilesInViewAbove2).concat(tilesInViewCurrent)
-
-//        let tilesInView = tilesInViewAbove2.concat(tilesInViewCurrent)
-
-        let tilesInView = tilesInViewCurrent
+        // when progressive retrieval is set to true, also load
+        // tile level above this level, and render these tiles first
+        // displaying a progressive effect when showing the tiles
+        if (this.progressiveRetrieval === true)
+        {
+            let tilesInViewAbove2 = this.layer.tilesInView(aabb, 2 * scaleDenominator)
+            tilesInViewAbove2 = this.sortRadially(tilesInViewAbove2, aabb)
+            let tilesInViewAbove4 = this.layer.tilesInView(aabb, 4 * scaleDenominator)
+            tilesInViewAbove4 = this.sortRadially(tilesInViewAbove4, aabb)
+            tilesInView = tilesInViewAbove4.concat(tilesInViewAbove2).concat(tilesInViewCurrent)
+        } else {
+            tilesInView = tilesInViewCurrent
+        }
 
         let gpuTiles = []
         tilesInView.forEach((tile) => {
@@ -673,12 +918,11 @@ void main()
                 // 
                 gpuTile.uploadPoints(tile.bounds()) 
                 gpuTile.initTexture()
-
                 // if we would abort a running request
                 // how do we make sure to re-request this info?
                 // * easiest:
                 //    should we also remove it from the activeTiles map
-                //    and destroy the resources from the GPU?
+                //    and dispose the resources from the GPU?
                 // * harder:
                 //    keep info on GPU, but re-request texture later?
 
@@ -696,14 +940,17 @@ void main()
                         if (!response.ok) {
                             // throw response;
                             console.warn(response)
-                            let tileToDestroy = this.activeTiles.get(tileId)
-                            tileToDestroy.destroy()
+                            let tileToDispose = this.activeTiles.get(tileId)
+                            tileToDispose.dispose()
                             this.activeTiles.delete(tileId)
                         }
                         return response.blob()}
                     )
                     .then((blob) => {
-                        let bitmap = createImageBitmap(blob)
+                        // with createImageBitmap we run into black pixels for transparent parts of the tiles
+                        // premultipliedalpha: false?
+//                        let bitmap = createImageBitmap(blob) 
+                        let bitmap = createImage(blob) 
                         return bitmap
                     }).then((bitmap) => {
                         gpuTile.uploadTexture(bitmap)
@@ -727,46 +974,39 @@ void main()
             let tileId = tile.getId()
             tileIdsOnScreen.add(tileId)
         })
-//        console.log(tileIdsOnScreen)
-        let purge = false
-        
-            // cancel unneeded tiles when we have a rather huge backlog
-            // note, we express this against how many tiles are needed on screen
-//            if (this.activeDownloads.size > (2 * tileIdsOnScreen.size))
-//            {
-//                console.log(`cancelling as activeDownloads size has grown to ${this.activeDownloads.size} > ${(2 * tileIdsOnScreen.size)}`)
-                let list = this.activeDownloads.entries()
-                for (let i = 0; i < this.activeDownloads.size; i++) // for .. of  does not work with rollup
-                {
-                    let [tileId, abortController] = list.next().value
-                    if (!tileIdsOnScreen.has(tileId)) {
-                        setTimeout(()=> {
-                            // console.log(`cancelling download of ${tileId}`)
-                            abortController.abort();
-                            // also remove the tile from the GPU and from the activeTiles list
-                            let gpuTileToCancel = this.activeTiles.get(tileId)
-                            if (gpuTileToCancel === undefined)
-                            {
-                                // console.log('no-op')
-                            }
-                            else {
-                                gpuTileToCancel.destroy()
-                            }
-                            this.activeTiles.delete(tileId)
-                            // activeDownloads.delete(tileId) is called in catch() of fetch
-                        })
-                    }
-                }
-//            }
 
+        // cancel download of unneeded tiles
+        let list = this.activeDownloads.entries()
+        // for .. of  does not play nice with rollup
+        for (let i = 0; i < this.activeDownloads.size; i++) 
+        {
+            let [tileId, abortController] = list.next().value;
+            if (!tileIdsOnScreen.has(tileId)) {
+                setTimeout(()=> {
+                    // console.log(`cancelling download of ${tileId}`)
+                    abortController.abort()
+                    // also remove the tile from the GPU and from the activeTiles list
+                    let gpuTileToCancel = this.activeTiles.get(tileId)
+                    if (gpuTileToCancel !== undefined) {
+                        gpuTileToCancel.dispose()
+                    }
+                    this.activeTiles.delete(tileId)
+                    // activeDownloads.delete(tileId) is called in catch() of fetch
+                })
+            }
+        }
+
+        let purge = false
         if (purge === true) {
             // purge all tiles not on screen if we get many activeTiles
             // this also cancels downloads for tiles not currently on screen
+            // note, we express this against how many tiles are needed on screen
             const factor = 8
             if (this.activeTiles.size > (factor * tileIdsOnScreen.size)) {
                 console.log(`purging old tiles ${this.activeTiles.size} > ${(factor * tileIdsOnScreen.size)}`)
                 let list = this.activeTiles.entries()
-                for (let i = 0; i < this.activeTiles.size; i++) // for .. of  does not work with rollup
+                // for .. of  does not play nice with rollup
+                for (let i = 0; i < this.activeTiles.size; i++) 
                 {
                     let [tileId, gpuTileToCancel] = list.next().value
                     if (!tileIdsOnScreen.has(tileId)) {
@@ -775,7 +1015,7 @@ void main()
                             let abortController = this.activeDownloads.get(tileId)
                             abortController.abort();
                         }
-                        gpuTileToCancel.destroy()
+                        gpuTileToCancel.dispose()
                         this.activeTiles.delete(tileId)
                     }
                 }
@@ -792,12 +1032,29 @@ void main()
 //        }
 //        console.log(tileIdsToRemove)
 
-        // draw all tiles we see
-        this.program.clearColor()
+        // @!FIXME: the framebuffer / off-screen pass is only needed when we do have
+        // 'progressiveRendering === true' (otherwise no z-overlaps of tiles)
+
+        // off-screen pass, render stacked tiles opaque to framebuffer
+        this.offscreenTexture.bind()
         gpuTiles.forEach((gpuTile) => {
-            this.program.drawTile(matrix, gpuTile)
+            this.program.drawTile(matrix, gpuTile, 1.0) 
         })
+        this.offscreenTexture.unbind()
+        // on-screen pass, render obtained texture using wanted opacity
+        this.fboProgram.draw(this.offscreenTexture.getTexture(), opacity)
     }
+    
+    clearColor() {
+        this.program.clearColor()
+    }
+
+    /** set size of the screen */
+    setViewport(width, height) {
+        // re-inits the framebuffer (offscreen texture) to correct size
+        this.offscreenTexture.setViewport(width, height)
+    }
+
 }
 // how to continue?
 

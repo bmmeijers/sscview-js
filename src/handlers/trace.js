@@ -28,6 +28,17 @@ class Trace
         const now = _now();
         this._trace.push([now, val]);
     }
+    
+    average()
+    {
+        let sum = 0
+        this._trace.forEach( (record) => {
+            // let time = record[0]
+            let val = record[1]
+            sum += val/this._trace.length
+        })
+        return sum
+    }
 
     first()
     {

@@ -15,25 +15,24 @@ import { Renderer } from "./render";
 import { doFlyTo } from './fly'
 
 import { WMTSRenderer } from './wmts';
-
 import { TextRenderer } from './text';
+
+import { BackgroundRenderer } from './background';
+
 // import LayerControl from "./layercontrol";
 
 // import MyLoader from './loader';
 // import { TileSet , Evictor } from './tiles';
-import { SSCTree, Evictor, snap_value } from './ssctree';
+//import { SSCTree, Evictor, snap_value } from './ssctree';
+
+import { SSCLayer, SSCRenderer } from './ssc';
 
 import { MessageBusConnector } from './pubsub'
 
-import { initFramebufferObject } from './drawprograms';
+
 
 class Map {
     constructor(map_setting, canvasnm_in_cbnm = false) {
-        //console.log('map.js test:')
-        //console.log('map.js map_setting:', map_setting)
-        this.ssctrees = []
-        this.map_setting = map_setting
-        let tree_settings = map_setting.tree_settings
 
         let container = map_setting['canvas_nm']
         if (typeof container === 'string') {
@@ -46,18 +45,10 @@ class Map {
             throw new Error(`Container '${container}' not found.`)
         }
 
-        //if we want to include the canvas name in the check box name (cbnm)
-        //when we have two canvases in a comparer, we should have this.canvasnm_in_cbnm == true
-        this.canvasnm_in_cbnm = canvasnm_in_cbnm
-
-
-        // FIXME: to not circle map updates (can this be done more elegantly?)
-        //        this._should_broadcast_move = true;
-
-        this._action = 'zoomAnimated' //if we are zooming, we may want to snap to a valid state
+        // if we are zooming, we may want to snap to a valid state
+        this._action = 'zoomAnimated' 
         this._abort = null
 
-        //console.log('map.js map_setting.initialization.center2d:', map_setting.initialization.center2d)
         this._transform = new Transform(
             map_setting.initialization.center2d,
             [this._container.width, this._container.height],
@@ -74,133 +65,84 @@ class Map {
 
         this.msgbus = new MessageBusConnector()
         this.msgbus.subscribe('data.tile.loaded', (topic, message, sender) => {
-            //console.log('1 subscribe data.tile.loaded')
-//            if (this._abort === null) {
-//                //console.log('Rendering because received:', topic, ", ", message, ", ", sender)
-//                this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
-//            }
-            this.renderWmts()
-            this.renderText()
+            this.render()
         })
 
         this.msgbus.subscribe('data.tree.loaded', (topic, message, sender) => {
             this.panAnimated(0, 0) // animate for a small time, so that when new tiles are loaded, we are already rendering
         })
 
-        this.msgbus.subscribe("settings.boundary-width", (topic, message, sender) => {
-            this.renderer.settings.boundary_width = parseFloat(message);
+        this.msgbus.subscribe("settings.render.boundary-width", (topic, message, sender) => {
+            // this.renderer.settings.boundary_width = parseFloat(message);
+            console.log("new value for " + topic + " : " + parseFloat(message))
             this.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.zoom-factor", (topic, message, sender) => {
-            //            console.log(message);
-
+        this.msgbus.subscribe("settings.interaction.zoom-factor", (topic, message, sender) => {
+            console.log("new value for " + topic + " : " + parseFloat(message))
             this._interaction_settings.zoom_factor = parseFloat(message);
-            //console.log('map.js zoom_factor:', this._interaction_settings.zoom_factor)
-            //this.abortAndRender();
         });
 
-        this.msgbus.subscribe("settings.zoom-duration", (topic, message, sender) => {
-            //            console.log(message);
+        this.msgbus.subscribe("settings.interaction.zoom-duration", (topic, message, sender) => {
+            console.log("new value for " + topic + " : " + parseFloat(message))
             this._interaction_settings.zoom_duration = parseFloat(message);
-            //this.abortAndRender();
         });
-        this.msgbus.subscribe("settings.pan-duration", (topic, message, sender) => {
-            //            console.log('setting pan_duration: ' + message);
+        this.msgbus.subscribe("settings.interaction.pan-duration", (topic, message, sender) => {
+            console.log("new value for " + topic + " : " + parseFloat(message))
             this._interaction_settings.pan_duration = parseFloat(message);
-            //this.abortAndRender();
         });
 
-        this.subscribe_scale()
-
-        /*
-        var layercontrol = new LayerControl(this, map_setting)
-        layercontrol.add_layercontrols()
-        */
-
-        tree_settings.forEach(tree_setting => {
-            //console.log('map.js tree_setting:', tree_setting)
-            this.ssctrees.push(new SSCTree(this.msgbus, tree_setting))
-        })
-        //console.log('map.js this.ssctrees:', this.ssctrees)
-
-
-        this.msgbus.subscribe("go-to-start", (topic, message, sender) => {
-
-            let tr = this.getTransform();
-            let center = map_setting.initialization.center2d
-            let denominator = map_setting.initialization.scale_den
-            let newWidth = tr.viewport.xmax
-            let newHeight = tr.viewport.ymax
-            tr.initTransform(center, [newWidth, newHeight], denominator);
-            //this.renderer.setViewport(newWidth, newHeight)
-            this.abortAndRender()
-        });
-
-
-        //this.ssctree = this.ssctrees[0]
         this.gl = this.getWebGLContext()
-        //console.log('map.js container.width, container.height:', this._container.width, this._container.height)
-        initFramebufferObject(this.gl, this._container.width, this._container.height) //set gl.fbo
-        this.renderer = new Renderer(this.gl, this._container, this.ssctrees);
+
+//        this.renderer = new Renderer(this.gl, this._container, this.ssctrees);
         //this.renderer.setViewport(this.getCanvasContainer().width,
         //                          this.getCanvasContainer().height)
 
         dragHandler(this)  // attach mouse handlers
         scrollHandler(this)
+
+        // FIXME: the name of the buttons is fixed?
         zoomButtonHandler(this)
+
         //        moveHandler(this)
         touchPinchHandler(this) // attach touch handlers
         touchDragHandler(this)
 
-        this.mapTilesRenderer = new WMTSRenderer(this.getWebGLContext(), this.msgbus)
+        ///////////////////////////
+        //      "opentopo"
+        //      "2020_ortho25"
+        //      "brtachtergrondkaart"
+        //      "top25raster"
+        //      "ahn2_05m_ruw"
+        //      "lufolabels"
+        // FIXME: this should be a series of layers!
 
-        this.textRenderer = new TextRenderer(this.getWebGLContext(), this.msgbus)
+        let backgroundRenderer = new BackgroundRenderer(this.getWebGLContext(), this.msgbus)
+//        backgroundRenderer.setViewport(this.getCanvasContainer().width, this.getCanvasContainer().height)
 
-        {
-            let St = this.getTransform().getScaleDenominator()
-            //this.ssctree.get_step_from_St(St, this.if_snap)
-            this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St])
-        }
-
-        //this.evictor = new Evictor(this.ssctrees, this.gl)
-        //// every 30 seconds release resources
-        //window.setInterval(
-        //    () => {
-        //        let St = this.getTransform().getScaleDenominator()
-
-        //        let box3ds = []
-        //        const box2d = this.getTransform().getVisibleWorld()
-        //        this.ssctrees.forEach((ssctree) => {
-        //            var step = ssctree.get_step_from_St(St)
-
-        //            //const near_St = this.ssctree.stepMap(this.getTransform().getScaleDenominator())
-        //            //const near = near_St[0]
-
-        //            box3ds.push([box2d.xmin, box2d.ymin, step, box2d.xmax, box2d.ymax, step])
-
-        //        })
-        //        this.evictor.evict(box3ds)
-        //        this.render()
-
-        //    },
-        //    60 * 1000 * 2.5 // every X mins (expressed in millisec)
-        //    //10000 // every X mins (expressed in millisec)
-        //)
-
-    }
-
-    loadTree() {
-        //this.ssctree.load()
-
-        this.ssctrees.forEach((ssctree) => {
-            //console.log('map.js ssctree.tree_setting:', ssctree.tree_setting)
-            ssctree.load()
-            //var if_snap = ssctree.load()
-            //if (if_snap == true ) {
-            //    this.if_snap = true
-            //}
+        
+        let sscLayer = new SSCLayer(this.msgbus, {
+            'tree_root_file_nm': 'tree.json',
+            'tree_root_href': 'http://127.0.0.1:5000/',
+            'tile_root_href': 'http://127.0.0.1:5000/',
         })
+        sscLayer.load()
+
+        this.renderers = [
+            backgroundRenderer,
+            // new BackgroundRenderer(this.getWebGLContext(), this.msgbus),
+            new WMTSRenderer(this.getWebGLContext(), this.msgbus, "Actueel_orthoHR", true),
+            // new WMTSRenderer(this.getWebGLContext(), this.msgbus, "brtachtergrondkaart", false),
+            // new SSCRenderer(this.getWebGLContext(), this.msgbus, sscLayer),
+            new TextRenderer(this.getWebGLContext(), this.msgbus),
+
+
+        ]
+        // update all renderers their size
+        console.log(`map SIZE ${this.getCanvasContainer().clientWidth}, ${this.getCanvasContainer().clientHeight}`)
+        this.resize(this.getCanvasContainer().clientWidth, this.getCanvasContainer().clientHeight)
+        
+
     }
 
     getCanvasContainer() {
@@ -216,250 +158,43 @@ class Map {
         return this._transform;
     }
 
-    render(k = 0) {
-    
-        
-        //console.log('')
-
-        let ssctrees = this.ssctrees
-        let St = this.getTransform().getScaleDenominator()
-        let St_for_step = St
-        let steps = []  //record a step for each layer
-
-        //when we merge two area, we want to continuously change the color of the loser to that of the winer
-        //Therefore, we want to tune the transparecies of the two levels.
-        //local_statelow is for the low level, and local_statelow for the high level
-        let local_statelows = [] //a steplow of current step for each layer
-        let local_statehighs = [] //a statehigh of current step for each layer
-
-
-        //snapped_step and snapped_St have been computed by this.getTransform().updateViewportTransform()
-        let snapped_step = this.getTransform().snapped_step
-        let snapped_St = this.getTransform().snapped_St //the St obtained from a snapped step
-
-
-
-
-        //We treat the first layer differently, because we snap according to only the first layer
-        //if k==1, we are at the end of a zooming operation, 
-        //we directly use the snapped_step and snapped_St to avoid rounding problems
-        if (ssctrees[0].if_snap == false) {
-            let returned = this.deal_without_snapstate(St, this.ssctrees)
-
-            steps = returned.steps
-            local_statelows = returned.local_statelows
-            local_statehighs = returned.local_statehighs
-        }
-        else {
-            if (k == 1 &&
-                this._action == 'zoomAnimated' &&  //we snap only when zooming, but not panning
-                snapped_step != Number.MAX_SAFE_INTEGER) { //we are not at the state of just having loaded data
-                St_for_step = snapped_St
-                steps.push(snapped_step)  //we only snap according to the first dataset
-                //console.log('map.js snapped_step:', snapped_step)
-                local_statelows.push(snapped_step)
-                local_statehighs.push(snapped_step)
-            }
-            else {
-                steps.push(ssctrees[0].get_step_from_St(St_for_step))
-
-                //Notice that the two snapped states can be the same
-                local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-                local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-
-
-                //console.log('map.js steps[0]:', steps[0])
-                //console.log('map.js local_statehighs[0]:', local_statehighs[0])
-                //console.log('map.js local_statelows[0]:', local_statelows[0])
-            }
-
-            //add steps of other layers
-            for (var i = 1; i < ssctrees.length; i++) {
-                steps.push(ssctrees[i].get_step_from_St(St_for_step))
-                local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'))
-                local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'))
-            }
-
-
-            ////If we want to have multi-scale map intead of vario-scale map,
-            ////we snap the scale and then snap the step
-            //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
-            //if (discrete_scales != null) {
-
-            //    //console.log('map.js St_for_step:', St_for_step)
-
-            //    let scale_snapped_St = snap_value(St_for_step, discrete_scales,
-            //        this.map_setting.tree_settings[0].snap_style)
-
-            //    //console.log('map.js scale_snapped_St:', scale_snapped_St)
-
-
-            //    if (ssctrees[0].if_snap == false) { //this should be the normal case because we do not want to snap and have discrete_scales at the same time
-            //        steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
-
-            //        local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-            //        local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-            //    }
-            //    else {
-            //        console.log("The map may work, but we didn't consider the case carefully, where we snap and we have discrete_scales.")
-
-            //        // snap to a step to avoid half way generalization (e.g. merging)
-            //        //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-            //        steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
-
-            //        local_statehighs.push(steps[0])
-            //        local_statelows.push(steps[0])
-            //    }
-
-            //}
-            //else {
-            //    //console.log('map.js steps[0]:', steps[0])
-            //    //console.log('map.js St_for_step:', St_for_step)
-            //}
-        }
-
-        this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), St_for_step])
-
-        //this.renderer._clearColor()
-        this.renderer.render_ssctrees(steps, this.getTransform(), St_for_step, local_statelows, local_statehighs)
-
-        this.renderWmts()
-        this.renderText()
-
-//                render()
-//    {
-//        const result = this.getTransform().stepMap()
-//        const near = result[0]
-//        // let box2d = this.getTransform().visibleWorld()
-//        // console.log(box2d + ' @' + near);
-//        // let denominator = result[1]
-//        let matrix = this.getTransform().world_square
-//        const far = -1
-//        matrix[10] = -2.0 / (near - far)
-//        matrix[14] = (near + far) / (near - far)
-//        const box2d = this.getTransform().visibleWorld()
-//        const box3d = [box2d.xmin, box2d.ymin, near, box2d.xmax, box2d.ymax, near]
-//        let gl = this._container.getContext('experimental-webgl', { alpha: false, antialias: true })
-//        this.tileset.getTiles(box3d, gl)
-//        this.renderer.render(matrix, box3d);
-//        // this.loader.getContent([[box2d.xmin, box2d.ymin], [box2d.xmax, box2d.ymax]])
-//    }
-    }
-
-    renderText() {
+    render() {
         let transform = this.getTransform()
         let visibleWorld = transform.getVisibleWorld()
         let scaleDenominator = transform.getScaleDenominator()
         let aabb = [visibleWorld.xmin, visibleWorld.ymin, visibleWorld.xmax, visibleWorld.ymax]
-        let matrix = this.getTransform().world_square
-        this.textRenderer.update(aabb, scaleDenominator, matrix)
-    }
+        let matrix = this.getTransform().worldSquareMatrix
 
-    renderWmts() {
-        let transform = this.getTransform()
-        let visibleWorld = transform.getVisibleWorld()
-        let scaleDenominator = transform.getScaleDenominator()
-        let aabb = [visibleWorld.xmin, visibleWorld.ymin, visibleWorld.xmax, visibleWorld.ymax]
-        let matrix = this.getTransform().world_square
-        this.mapTilesRenderer.update(aabb, scaleDenominator, matrix)
-    }
+        this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), scaleDenominator])
 
-    deal_without_snapstate(St, ssctrees) {
-
-        let steps = []
-        let local_statelows = [] //a steplow of current step for each layer
-        let local_statehighs = [] //a statehigh of current step for each layer
-
-        //add steps of other layers
-        for (var i = 0; i < ssctrees.length; i++) {
-            let scale_snapped_St = St
-            let discrete_scales = this.map_setting.tree_settings[i].discrete_scales
-            if (discrete_scales != null) { //this is the normal case
-                scale_snapped_St = snap_value(St, discrete_scales,
-                    this.map_setting.tree_settings[i].snap_style)
+//        this.renderers[0].clearColor()
+        this.renderers.forEach(
+            (renderer, i) => {
+                let opacity = 1.0
+                if (i==0) {
+                    opacity = 1.0;
+                } else {
+                    opacity = 0.75;
+                }
+                /*
+                switch (i) {
+                    case 0:
+                        opacity = 1.0
+                        break
+                    case 1:
+                        opacity = 0.9
+                        break
+                    case 2:
+                        opacity = 1.0
+                        break
+                    default:
+                        break
+                }
+                */
+                renderer.update(aabb, scaleDenominator, matrix, opacity)
             }
-
-            steps.push(ssctrees[i].get_step_from_St(scale_snapped_St))
-            local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'))
-            local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'))
-        }
-        return { steps: steps, local_statelows: local_statelows, local_statehighs: local_statehighs }
-        //return [steps, local_statelows, local_statehighs]
-
-        ////If we want to have multi-scale map intead of vario-scale map,
-        ////we snap the scale and then snap the step
-        //let discrete_scales = this.map_setting.tree_settings[0].discrete_scales
-        //if (discrete_scales != null) {
-
-        //    //console.log('map.js St_for_step:', St_for_step)
-
-        //    let scale_snapped_St = snap_value(St_for_step, discrete_scales,
-        //        this.map_setting.tree_settings[0].snap_style)
-
-        //    //console.log('map.js scale_snapped_St:', scale_snapped_St)
-
-        //    if (ssctrees[0].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
-        //        //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-        //        steps[0] = ssctrees[0].get_snappedstep_from_St(scale_snapped_St)
-
-        //        local_statehighs.push(steps[0])
-        //        local_statelows.push(steps[0])
-        //    }
-        //    else {
-        //        steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
-
-        //        local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-        //        local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-        //    }
-
-        //}
-        //else {
-        //    //console.log('map.js steps[0]:', steps[0])
-        //    //console.log('map.js St_for_step:', St_for_step)
-        //}
-
-        ////add steps of other layers
-        //for (var i = 1; i < ssctrees.length; i++) {
-        //    steps.push(ssctrees[i].get_step_from_St(St_for_step))
-        //    local_statehighs.push(ssctrees[i].snap_state(steps[i], 'ceil'))
-        //    local_statelows.push(ssctrees[i].snap_state(steps[i], 'floor'))
-        //}
-
-        ////add steps of other layers
-        //for (var i = 0; i < ssctrees.length; i++) {
-        //    //If we want to have multi-scale map intead of vario-scale map,
-        //    //we snap the scale and then snap the step
-        //    let discrete_scales = this.map_setting.tree_settings[i].discrete_scales
-        //    if (discrete_scales != null) {
-
-        //        //console.log('map.js St_for_step:', St_for_step)
-
-        //        let scale_snapped_St = snap_value(St_for_step, discrete_scales,
-        //            this.map_setting.tree_settings[i].snap_style)
-
-        //        //console.log('map.js scale_snapped_St:', scale_snapped_St)
-
-        //        if (ssctrees[i].if_snap == true) { // snap to a step to avoid half way generalization (e.g. merging)
-        //            //steps[0] = ssctrees[0].get_zoom_snappedstep_from_St(scale_snapped_St)
-        //            steps[i] = ssctrees[i].get_snappedstep_from_St(scale_snapped_St)
-
-        //            local_statehighs.push(steps[0])
-        //            local_statelows.push(steps[0])
-        //        }
-        //        else {
-        //            steps[0] = ssctrees[0].get_step_from_St(scale_snapped_St)
-
-        //            local_statehighs.push(ssctrees[0].snap_state(steps[0], 'ceil'))
-        //            local_statelows.push(ssctrees[0].snap_state(steps[0], 'floor'))
-        //        }
-
-        //    }
-        //    else {
-        //        //console.log('map.js steps[0]:', steps[0])
-        //        //console.log('map.js St_for_step:', St_for_step)
-        //    }
-        //}
-
+        )
+        // this.getWebGLContext().flush()
     }
 
     doEaseNone(start, end) {
@@ -469,9 +204,9 @@ class Map {
                 let delta = start[i] + k * (end[i] - start[i]);
                 m[i] = delta;
             }
-            // update the world_square matrix
-            this.getTransform().world_square = m;
-            this.getTransform().updateViewportTransform()
+            // update the worldSquareMatrix matrix
+            this.getTransform().worldSquareMatrix = m;
+            this.getTransform().updateSingleStepTransform()
             this.render(k);
             if (k == 1) {
                 this._abort = null
@@ -489,9 +224,9 @@ class Map {
                 let delta = c * 0.5 * D + start[i];
                 m[i] = delta;
             }
-            // update the world_square matrix
-            this.getTransform().world_square = m;
-            this.getTransform().updateViewportTransform()
+            // update the worldSquareMatrix matrix
+            this.getTransform().worldSquareMatrix = m;
+            this.getTransform().updateSingleStepTransform()
             this.render(k);
             if (k == 1) {
                 this._abort = null
@@ -509,15 +244,29 @@ class Map {
                 let delta = c * D + start[i];
                 m[i] = delta;
             }
-            // update the world_square matrix
-            this.getTransform().world_square = m;
-            this.getTransform().updateViewportTransform()
+            // update the worldSquareMatrix matrix
+            this.getTransform().worldSquareMatrix = m;
+            this.getTransform().updateSingleStepTransform()
             this.render(k);
             if (k === 1) {
                 this._abort = null
             }
         }
         return interpolate;
+    }
+    
+    doInterpolate( start, end ) {
+        let interpolate = (k) => {
+
+            let transform = this.getTransform()
+            transform.initTransform(centerWorld, viewportSize, scaleDenominator)
+
+            this.render(k);
+            if (k === 1) {
+                this._abort = null
+            }
+        }
+        return interpolate
     }
 
     doEaseOutQuint(start, end) {
@@ -530,9 +279,9 @@ class Map {
                 let delta = c * t5p1 + start[i];
                 m[i] = delta;
             }
-            // update the world_square matrix
-            this.getTransform().world_square = m;
-            this.getTransform().updateViewportTransform()
+            // update the worldSquareMatrix matrix
+            this.getTransform().worldSquareMatrix = m;
+            this.getTransform().updateSingleStepTransform()
             this.render(k);
             if (k == 1) {
                 this._abort = null
@@ -541,20 +290,46 @@ class Map {
         return interpolate;
     }
 
-    animateZoom(x, y, zoom_factor) {
-        const start = this.getTransform().world_square;
-        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
-            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
-        const end = this.getTransform().world_square;  //world_square is updated in function compute_zoom_parameters
+//    animateZoom(x, y, zoom_factor) {
+//        const start = this.getTransform().worldSquareMatrix;
+//        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
+//            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
+//        const end = this.getTransform().worldSquareMatrix;  //worldSquareMatrix is updated in function compute_zoom_parameters
+//        var interpolate = this.doEaseOutSine(start, end);
+//        //var interpolate = this.doEaseNone(start, end);
+//        return interpolate;
+//    }
+
+
+    animateZoom(x, y, factor)
+    {
+        const rect = this.getCanvasContainer().getBoundingClientRect();
+        const start = this.getTransform().worldSquareMatrix;
+        this.getTransform().zoom(factor, x, rect.height - y);
+        const end = this.getTransform().worldSquareMatrix;
         var interpolate = this.doEaseOutSine(start, end);
-        //var interpolate = this.doEaseNone(start, end);
         return interpolate;
     }
 
+    nonAnimatedZoom(x, y, factor)
+    {
+        const rect = this.getCanvasContainer().getBoundingClientRect();
+        this.getTransform().zoom(factor, x, rect.height - y);
+        this.abortAndRender()
+    }
+
+    nonAnimatedZoomAndPan(zoomAround, zoomFactor, panDist)
+    {
+        const rect = this.getCanvasContainer().getBoundingClientRect();
+        this.getTransform().zoom(zoomFactor, zoomAround[0], rect.height - zoomAround[1]);
+        this.getTransform().pan(panDist[0], -panDist[1]);
+        this.abortAndRender()
+    }
+
     animatePan(dx, dy) {
-        const start = this.getTransform().world_square;
+        const start = this.getTransform().worldSquareMatrix;
         this.getTransform().pan(dx, -dy);
-        const end = this.getTransform().world_square;
+        const end = this.getTransform().worldSquareMatrix;
         var interpolate = this.doEaseOutSine(start, end);
         //var interpolate = this.doEaseNone(start, end);
         return interpolate;
@@ -574,7 +349,7 @@ class Map {
 
         let targetCenter = [x, y]
         let targetDenominator = scale
-        let durationSecs = 10
+        let durationSecs = 5.0
 
         let transform = this.getTransform()
 
@@ -583,26 +358,22 @@ class Map {
 
         let container = this.getCanvasContainer();
         let viewportSize = [container.width, container.height];
-        
-        let interpolate = doFlyTo(visibleWorldCenter, scaleDenominator, viewportSize, targetCenter, targetDenominator, durationSecs)
+
+        // get an interpolation function and adjusted duration (if large distance, we fly longer)
+        let [interpolate, durationSecsAdapted] = doFlyTo(visibleWorldCenter, scaleDenominator, viewportSize, targetCenter, targetDenominator, durationSecs)
 
         let goFly = (x) => {
             let result = interpolate(x) // get the center and scale denominator from the flyToInterpolator
+            let container = this.getCanvasContainer();
+            let viewportSize = [container.width, container.height];
             this.getTransform().initTransform(result[0], viewportSize, result[1]);
-            this.renderWmts()
-            this.renderText()
+            this.render()
             // we could add argument to render: 
             // isInFlightRender:bool, then we can reduce tile level, while in flight (x<1)
             // while we can get the full detail / final map when x = 1
             this.msgbus.publish('map.scale', [this.getTransform().getCenterWorld(), this.getTransform().getScaleDenominator()])
         }
-        this._abort = timed(goFly, durationSecs, this);
-
-//        for (let time = 145000; time <= 145000+(durationSecs*1000); time += 500)
-//        {
-//            interpolate(time)
-//        }
-
+        this._abort = timed(goFly, durationSecsAdapted, this);
     }
 
     panBy(dx, dy) {
@@ -614,12 +385,6 @@ class Map {
         this.render();
     }
 
-    zoom(x, y, zoom_factor) {
-        this._interaction_settings.time_factor = this.getTransform().compute_zoom_parameters(
-            this.ssctrees[0], zoom_factor, x, this.getCanvasContainer().getBoundingClientRect().height - y, this.ssctrees[0].if_snap);
-        this.render();
-    }
-
     abortAndRender() {
         // aborts running animation
         // and renders the map based on the current transform
@@ -627,18 +392,19 @@ class Map {
             this._abort();
             this._abort = null;
         }
+        console.log('abortAndRender')
         this.getTransform().pan(0, 0);
         this.render();
     }
 
-    zoomInAnimated(x, y, op_factor) {
+    zoomInAnimated(x, y, step) {
         //e.g., op_factor: 0.0625; 1.0 + op_factor: 1.0625
-        this.zoomAnimated(x, y, 1.0 + op_factor * this._interaction_settings.zoom_factor)
+        this.zoomAnimated(x, y, 1.0 + step) // 1.0 + op_factor * this._interaction_settings.zoom_factor)
     }
 
-    zoomOutAnimated(x, y, op_factor) {
+    zoomOutAnimated(x, y, step) {
         //e.g., op_factor: 0.0625; 1.0 / (1.0 + op_factor): 0.9411764705882353
-        this.zoomAnimated(x, y, 1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor))
+        this.zoomAnimated(x, y, 1.0 / (1.0 + step)) //1.0 / (1.0 + op_factor * this._interaction_settings.zoom_factor))
     }
 
     zoomAnimated(x, y, zoom_factor) {
@@ -678,34 +444,42 @@ class Map {
         //console.log('map.js center:', center)
         let denominator = tr.getScaleDenominator();
         // re-initialize the transform
-        //console.log('map.js newWidth, newHeight:', newWidth, newHeight)
+        console.log('map.js newWidth, newHeight:', newWidth, newHeight)
+        let canvas = this.getCanvasContainer()
+        canvas.width = newWidth
+        canvas.height = newHeight
         //console.log('map.js center:', center)
         tr.initTransform(center, [newWidth, newHeight], denominator);
         // update the viewport size of the renderer
-        this.renderer.setViewport(newWidth, newHeight)
-        let gl = this.gl
+//        this.renderer.setViewport(newWidth, newHeight)
+//        
+        this.renderers.forEach(
+            (renderer, i) => {
+                renderer.setViewport(newWidth, newHeight)
+            }
+        )
+        this.render()
+//        let gl = this.gl
 
-        let fbo = gl.fbo;
-        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
-        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, newWidth, newHeight);
+//        let fbo = gl.fbo;
+//        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+//        gl.bindRenderbuffer(gl.RENDERBUFFER, fbo.depthBuffer);
+//        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+//        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, newWidth, newHeight);
 
-        // Unbind the buffer object;
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+//        // Unbind the buffer object;
+//        gl.bindTexture(gl.TEXTURE_2D, null);
+//        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     }
-
-    subscribe_scale() {
-        let msgbus = this.msgbus;
-        msgbus.subscribe('map.scale', (topic, message, sender) => {
-            if (sender !== msgbus.id) return;
-            const scale = Math.round(message[1]).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-            //const scale = (Math.round(message[1] / 5) * 5).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-            let el = document.getElementById("scale-denominator");
-            el.textContent = " 1:" + scale;
-        })
-    }
+    
+//  function resizeCanvasToDisplaySize() {
+//      let width = gl.canvas.clientWidth;
+//      let height = gl.canvas.clientHeight;
+//      if (gl.canvas.width != width ||  gl.canvas.height != height) {
+//          gl.canvas.width = width;
+//          gl.canvas.height = height;
+//      }
+//  }
 
 }
 

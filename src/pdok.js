@@ -20,6 +20,8 @@ export default class PdokSuggestWidget {
             highlight: -1
         }
         
+        this.abortController = null;
+        
         setVisibilityOff()
     }
 
@@ -44,15 +46,23 @@ export default class PdokSuggestWidget {
         parent.appendChild(buttonElement)
 
         let divElement0 = document.createElement('div')
+        parent.appendChild(divElement0)
+
         divElement0.style.position = 'relative'
 
         let divElement1 = document.createElement('div')
         divElement1.setAttribute('id', 'name-output')
+        divElement1.setAttribute('class', 'container white')
         divElement1.style.position = 'absolute'
         divElement1.style.zIndex = 1
 
         divElement0.appendChild(divElement1)
-        parent.appendChild(divElement0)
+
+        let ulElement = document.createElement('ul')
+        divElement1.setAttribute('id', 'suggestion-output')
+        divElement1.setAttribute('class', 'ul white')
+
+        divElement1.appendChild(ulElement)
     }
 
     /** add event listeners to the button and the search bar */
@@ -69,7 +79,7 @@ export default class PdokSuggestWidget {
             }
         );
         const search = document.getElementById('search');
-        search.addEventListener('input', () => { debounce(this.getSuggestions(search.value), 500) } );
+        search.addEventListener('input', () => { debounce(this.getSuggestions(search.value), 750) } );
         search.addEventListener('keyup', (evt) => { this.onKeyUp (evt) });
     }
 
@@ -88,9 +98,25 @@ export default class PdokSuggestWidget {
         if (options) {
             Object.assign(parameters, options);
         }
-        const response = await fetch('https://geodata.nationaalgeoregister.nl/locatieserver/v3/suggest' + formatURL({
+                /*
+                let abortController = new AbortController();
+                const signal = abortController.signal;
+                // fire request for tile retrieval
+                fetch(tile.getRequestUrl(), { mode: 'cors', signal})
+                abortController.abort()
+                */
+
+        if (this.abortController !== null) {
+            this.abortController.abort()
+            this.abortController = null
+        }
+        this.abortController = new AbortController()
+        const signal = this.abortController.signal;
+
+        let endpoint_url = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest'
+        const response = await fetch(endpoint_url + formatURL({
             query: parameters,
-        }));
+        }),  { mode: 'cors', signal});
         if (!response.ok) {
             throw new Error('Response from locatieserver suggest endpoint not ok');
         }
@@ -116,6 +142,7 @@ export default class PdokSuggestWidget {
     
     parseSuggestReponse(response) {
         let suggestions = []
+        let i = 0
         for (const doc of response.response.docs) {
             if ('highlighting' in response && 'id' in doc && doc.id in response.highlighting && 'suggest' in response.highlighting[doc.id] && response.highlighting[doc.id].suggest.length > 0)
             {
@@ -126,37 +153,48 @@ export default class PdokSuggestWidget {
                     type: doc.type
                 })
             }
+            i += 1
+            if (i >= 4) { break }
         }
         return suggestions
     }
 
     displaySuggestions(suggestions) {
         // remove old suggestions, if any
-        removeAllChilds('name-output')
+        removeAllChilds('suggestion-output')
 
         // add new elements
-        let div = document.getElementById('name-output')
+        let ul = document.getElementById('suggestion-output')
         for (let item of suggestions)
         {
-            let p = document.createElement("p")
-            p.setAttribute('class', 'suggestion')
+            let li = document.createElement("li")
+            li.setAttribute('class', 'suggestion is-marginless')
+            
             let a = document.createElement("a")
-            a.innerHTML = item.suggestion + " [" +item.type+"]"
-            a.addEventListener('click', this.performLookupForId.bind(this, item), false);
-            p.appendChild(a)
-            div.appendChild(p)
+            a.innerHTML = `<div style="display: inline-block; cursor: pointer; width: 100%;">
+<div class="small">${item.suggestion}</div>
+<div class="text-gray small">${item.type}</div>
+</div>`
+            a.addEventListener('click', 
+                (event) => {
+                    event.preventDefault()
+                    this.performLookupForId(item)
+                });
+            li.appendChild(a)
+            ul.appendChild(li)
         }
     }
 
     /** Perform a lookup for the id */
     performLookupForId(obj) {
+        console.log(obj)
         // put the clicked value into the bar
         let el = document.getElementById('search')
         el.value = obj.suggestion
         // make the lookup call for the interested one
         this.pdokLookup( obj.id ).then((response) => { this.onLookupResult(response) })
         // remove all suggestions
-        removeAllChilds('name-output')
+        removeAllChilds('suggestion-output')
     }
 
     /** Perform a request to the lookup service */
@@ -167,9 +205,18 @@ export default class PdokSuggestWidget {
         if (options) {
             Object.assign(parameters, options);
         }
-        const response = await fetch('https://geodata.nationaalgeoregister.nl/locatieserver/v3/lookup' + formatURL({
+
+        if (this.abortController !== null) {
+            this.abortController.abort()
+            this.abortController = null
+        }
+        this.abortController = new AbortController()
+        const signal = this.abortController.signal;
+
+        let endpoint_url = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup'
+        const response = await fetch(endpoint_url + formatURL({
             query: parameters,
-        }));
+        }),  { mode: 'cors', signal});
         if (!response.ok) {
             throw new Error('Response from locatieserver lookup endpoint not ok');
         }
@@ -286,10 +333,11 @@ export default class PdokSuggestWidget {
 
     updateHighlight()
     {
-        let childs = document.getElementById("name-output").childNodes;
+        let childs = document.getElementById("suggestion-output").childNodes;
         for (let i=0; i < childs.length; i++) 
         {
             childs[i].classList.remove("is-active")
+            childs[i].classList.add("small")
         }
         if (childs.length > 0 && this.state.highlight >= 0 && this.state.highlight < childs.length) // FIXME:or length-1?
         {
@@ -309,12 +357,13 @@ function debounce(callback, wait) {
 }
 
 
-// FIXME: non-hardcoded container names
+// FIXME: non-hardcoded container / class names
 let setVisibilityOn = () => {
-    document.getElementById("name-output").classList.remove("w3-hide")
+//     document.getElementById("name-output").classList.remove("w3-hide")
 }
 let setVisibilityOff = () => {
-    document.getElementById("name-output").classList.add("w3-hide")
+    removeAllChilds('suggestion-output')
+//    document.getElementById("name-output").classList.add("w3-hide")
 }
 
 /** format the parameters for use in a URL */

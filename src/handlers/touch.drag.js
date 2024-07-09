@@ -11,10 +11,9 @@ export function touchDragHandler(map) {
 
     function getTouchPoint(event) {
         const r = canvas.getBoundingClientRect();
-        const touches = event.touches;       
+        const touches = event.touches;
         const x = touches[0].clientX - r.left - canvas.clientLeft;
         const y = touches[0].clientY - r.top - canvas.clientTop;
-            
         return [x, y];
     }
 
@@ -22,7 +21,8 @@ export function touchDragHandler(map) {
     var _state = null;
 
     function doTouchDragStart(evt) {
-        if (evt.touches.length > 1) {
+        console.log(evt)
+        if (!evt.touches || evt.touches.length > 1) {
             return;
         }
         // prevent cursor to turn into text selection on chrome
@@ -46,14 +46,24 @@ export function touchDragHandler(map) {
         // when we detect more than 1 finger on the screen
         // we obviously do not want to pan, so we set the state to
         // pending (i.e. currently we do not handle events for panning)
-        if (evt.touches.length > 1) 
+        if (!evt.touches || evt.touches.length > 1) 
         {
             _state = 'pending';
             return;
         }
         evt.preventDefault();
         let point = getTouchPoint(evt);
-        
+
+        var el = document.getElementById("touchFirst")
+        el.style.left = Math.floor(point[0]) + "px"
+        el.style.top = Math.floor(point[1]) + "px"
+        el = document.getElementById("touchCenter")
+        el.style.left = "0px"
+        el.style.top = "0px"
+        el = document.getElementById("touchSecond")
+        el.style.left = "0px"
+        el.style.top = "0px"
+
         // how much did the map move since last time?
         let prev = _trace.last()[1];
         let dx = point[0] - prev[0];
@@ -78,10 +88,8 @@ export function touchDragHandler(map) {
         }
     }
     function doTouchDragEnd(evt) {
-        if (evt.touches.length !== 0) { return; }
-        canvas.removeEventListener("touchmove", doTouchDragMove, { capture: true, passive: false });
-        canvas.removeEventListener("touchend", doTouchDragEnd, false);
-        canvas.addEventListener("touchstart", doTouchDragStart, false);
+        if (!evt.touches || evt.touches.length !== 0) { return; }
+        console.log("doTouchDragEnd")
         // canvas.removeEventListener("touchmove", doMouseDrag, { capture: true, passive: false });
         // canvas.removeEventListener("touchend", doMouseUp, { capture: true, passive: false });
         // canvas.addEventListener("touchstart", doMouseDown, { capture: true, passive: false });
@@ -145,10 +153,12 @@ export function touchDragHandler(map) {
                 console.log('touch drag end - ANIMATE');
                 console.log([tx, ty]);
                 map.panAnimated(tx, ty);
-
                 break;
             }
         }
+        canvas.removeEventListener("touchmove", doTouchDragMove, { capture: true, passive: false });
+        canvas.removeEventListener("touchend", doTouchDragEnd, false);
+        canvas.addEventListener("touchstart", doTouchDragStart, false);
         _state = 'pending';
         _trace = null;
         console.log('touchend');
