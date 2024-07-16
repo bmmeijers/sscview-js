@@ -1,7 +1,7 @@
 //import { LRU } from './lru';
+// import parse_obj from './parse';
 
-import parse_obj from './parse';
-import { LineDrawProgram, PolygonDrawProgram } from './tmp_draw';
+import { LineDrawProgram, PolygonDrawProgram } from './ssc_draw';
 import { clone } from './mat4.js';
 import {WorkerHelper} from './helper.js';
 
